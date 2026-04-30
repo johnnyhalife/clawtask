@@ -16,12 +16,16 @@ function enrichComment(db: ReturnType<typeof getDb>, row: any) {
   return { ...row, humanRequested: row.humanRequested === 1, author };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
+  const url = new URL(req.url);
+  const order = url.searchParams.get('order') === 'desc' ? 'DESC' : 'ASC';
+  const limit = parseInt(url.searchParams.get('limit') ?? '0', 10);
+  const limitClause = limit > 0 ? ` LIMIT ${limit}` : '';
   const rows = db
-    .prepare('SELECT * FROM comments WHERE taskId = ? ORDER BY createdAt ASC')
+    .prepare(`SELECT * FROM comments WHERE taskId = ? AND content != '' ORDER BY createdAt ${order}${limitClause}`)
     .all(taskId) as any[];
   return ok(rows.map((r) => enrichComment(db, r)));
 }

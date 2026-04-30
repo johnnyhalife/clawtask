@@ -108,6 +108,41 @@ function MsgActions({ date }: { date: string }) {
   );
 }
 
+
+// ─── Agent message group ──────────────────────────────────────────────────────
+function AgentMessageGroup({ items, author, authorId }: { items: Comment[]; author: unknown; authorId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const authorName = (author as any)?.displayName || authorId;
+  const latest = items[items.length - 1];
+  const hasMultiple = items.length > 1;
+
+  return (
+    <div className="py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+      <div className="flex items-center gap-3 mb-2">
+        <ActorAvatar name={authorName} isAgent size={28} />
+        <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "\'Instrument Sans\', sans-serif" }}>{actorLabel(authorName, true)}</span>
+        {hasMultiple && (
+          <button
+            onClick={() => setExpanded(v => !v)}
+            style={{ fontSize: '0.72rem', color: 'var(--color-base-500)', background: 'var(--color-base-200)', border: 'none', borderRadius: 4, padding: '1px 7px', cursor: 'pointer', fontFamily: "\'Instrument Sans\', sans-serif" }}
+          >
+            {expanded ? `− collapse` : `+${items.length - 1} earlier`}
+          </button>
+        )}
+        <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "\'Roboto Mono\', monospace" }}>{relativeTime(latest.createdAt)}</span>
+      </div>
+      {hasMultiple && expanded && items.slice(0, -1).map(c => (
+        <div key={c.id} className="ml-10 mb-3 prose-clawtask text-sm" style={{ color: 'var(--color-base-700)', fontFamily: "\'Instrument Sans\', sans-serif", borderLeft: '2px solid var(--color-base-250)', paddingLeft: 12, opacity: 0.75 }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{c.content}</ReactMarkdown>
+        </div>
+      ))}
+      <div className="ml-10 prose-clawtask text-sm" style={{ color: 'var(--color-base-800)', fontFamily: "\'Instrument Sans\', sans-serif" }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{latest.content}</ReactMarkdown>
+      </div>
+    </div>
+  );
+}
+
 // ─── Timeline entry ───────────────────────────────────────────────────────────
 function TimelineEntry({ item }: { item: (Comment | Activity) & { _timelineType: string } }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -335,15 +370,33 @@ export default function IssuePage() {
     }
   };
 
+  // Filter out empty agent messages (noise from adapter turns with no text output)
+  const visibleComments = comments.filter(c => c.content.trim() !== '');
+
   const allTimeline = [
-    ...comments.map(c => ({ ...c, _timelineType: 'comment' as const })),
+    ...visibleComments.map(c => ({ ...c, _timelineType: 'comment' as const })),
     ...activities.map(a => ({ ...a, _timelineType: 'activity' as const })),
   ].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const chatTimeline = comments
+  // Chat tab: group consecutive agent messages into a single collapsible block
+  const rawChat = visibleComments
     .filter(c => c.type === 'message')
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .map(c => ({ ...c, _timelineType: 'comment' as const }));
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  // Build grouped chat timeline: consecutive same-agent messages → one group
+  type ChatGroup = { id: string; authorId: string; authorType: string; author: unknown; items: Comment[]; createdAt: string; _timelineType: 'comment-group' };
+  const chatTimeline: (ChatGroup | (Comment & { _timelineType: 'comment' }))[] = [];
+  for (const c of rawChat) {
+    const last = chatTimeline[chatTimeline.length - 1];
+    if (last && last._timelineType === 'comment-group' && last.authorId === c.authorId && c.authorType === 'agent') {
+      (last as ChatGroup).items.push(c);
+      (last as ChatGroup).createdAt = c.createdAt;
+    } else if (c.authorType === 'agent') {
+      chatTimeline.push({ id: c.id, authorId: c.authorId, authorType: c.authorType, author: c.author, items: [c], createdAt: c.createdAt, _timelineType: 'comment-group' });
+    } else {
+      chatTimeline.push({ ...c, _timelineType: 'comment' as const });
+    }
+  }
 
   const timeline = activeTab === 'chat' ? chatTimeline : allTimeline;
 
@@ -448,7 +501,10 @@ export default function IssuePage() {
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom))' }}>
-          {timeline.map(item => <TimelineEntry key={item.id} item={item} />)}
+          {timeline.map(item => item._timelineType === 'comment-group'
+            ? <AgentMessageGroup key={item.id} items={(item as any).items} author={(item as any).author} authorId={(item as any).authorId} />
+            : <TimelineEntry key={item.id} item={item as any} />
+          )}
           {timeline.length === 0 && (
             <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
               {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
@@ -604,7 +660,10 @@ export default function IssuePage() {
                 </button>
               </div>
             )}
-            {timeline.map(item => <TimelineEntry key={item.id} item={item} />)}
+            {timeline.map(item => item._timelineType === 'comment-group'
+            ? <AgentMessageGroup key={item.id} items={(item as any).items} author={(item as any).author} authorId={(item as any).authorId} />
+            : <TimelineEntry key={item.id} item={item as any} />
+          )}
             {timeline.length === 0 && (
               <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
                 {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}

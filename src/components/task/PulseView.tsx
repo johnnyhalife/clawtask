@@ -259,6 +259,72 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
 }
 
 // ─── Main PulseView ───────────────────────────────────────────────────────────
+// ─── Active run card with live status ────────────────────────────────────────
+function ActiveRunCard({ task, onClick }: { task: Task; onClick: () => void }) {
+  const [latestComment, setLatestComment] = useState<Comment | null>(null);
+
+  const loadLatest = useCallback(() => {
+    fetch(`/api/v1/tasks/${task.id}/comments?limit=1&order=desc`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok && d.data?.length) {
+          const c = d.data[d.data.length - 1] as Comment;
+          if (c.content?.trim()) setLatestComment(c);
+        }
+      })
+      .catch(() => {});
+  }, [task.id]);
+
+  useEffect(() => { loadLatest(); }, [loadLatest]);
+
+  useSse((event) => {
+    if ((event.type === 'comment.added' || event.type === 'comment.updated') &&
+        (event.data as any)?.taskId === task.id) {
+      const c = event.data as Comment;
+      if (c.content?.trim()) setLatestComment(c);
+    }
+    if (event.type === 'task.updated' && (event.data as any)?.id === task.id) {
+      loadLatest();
+    }
+  });
+
+  const typeIcon = latestComment?.type === 'tool'
+    ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+
+  return (
+    <button
+      type="button"
+      className="w-full text-left rounded-lg px-4 py-3 transition-colors"
+      style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', cursor: 'pointer' }}
+      onClick={onClick}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-base-400)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span style={{ fontFamily: "\'Roboto Mono\', monospace", fontSize: '0.72rem', color: 'var(--color-base-500)' }}>{task.issueId}</span>
+        <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: '#3189FF22', color: '#3189FF', border: '1px solid #3189FF44', fontFamily: "\'Instrument Sans\', sans-serif" }}>in progress</span>
+        <span className="ml-auto text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "\'Instrument Sans\', sans-serif" }}>{(task.assignee as any)?.displayName}</span>
+      </div>
+      <div className="text-sm font-medium mb-1.5" style={{ color: 'var(--color-base-800)', fontFamily: "\'Instrument Sans\', sans-serif" }}>{task.title}</div>
+      {latestComment && (
+        <div className="flex items-start gap-1.5 mt-1">
+          <span style={{ color: '#3189FF', flexShrink: 0, marginTop: 2 }}>{typeIcon}</span>
+          <span className="text-xs truncate" style={{ color: 'var(--color-base-500)', fontFamily: "\'Instrument Sans\', sans-serif", fontStyle: 'italic' }}>
+            {latestComment.content.split('\n')[0].slice(0, 120)}
+          </span>
+        </div>
+      )}
+      {!latestComment && (
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#3189FF', animation: 'pulse 1.5s infinite' }} />
+          <span className="text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "\'Instrument Sans\', sans-serif" }}>working…</span>
+        </div>
+      )}
+    </button>
+  );
+}
+
 export function PulseView() {
   const { theme } = useTheme(); // subscribe so cells re-render on theme change
   const router = useRouter();
@@ -396,22 +462,11 @@ export function PulseView() {
             </h3>
             <div className="space-y-2">
               {activeRuns.map(task => (
-                <button
+                <ActiveRunCard
                   key={task.id}
-                  type="button"
-                  className="w-full text-left rounded-lg px-4 py-3 transition-colors"
-                  style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', cursor: 'pointer' }}
+                  task={task}
                   onClick={() => router.push(`/issues/${task.issueId.toLowerCase()}`)}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-base-400)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', color: 'var(--color-base-500)' }}>{task.issueId}</span>
-                    <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: '#3189FF22', color: '#3189FF', border: '1px solid #3189FF44', fontFamily: "'Instrument Sans', sans-serif" }}>in progress</span>
-                    <span className="ml-auto text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>{(task.assignee as any)?.displayName}</span>
-                  </div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{task.title}</div>
-                </button>
+                />
               ))}
             </div>
           </section>
