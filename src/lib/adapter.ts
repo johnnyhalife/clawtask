@@ -687,6 +687,22 @@ class AdapterService {
       const existing = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId) as any;
       if (existing) {
         const newContent = existing.content + content;
+
+        // If the accumulated content ends with a paragraph break (\n\n), seal this
+        // comment and let the next chunk open a fresh one — mirrors how OpenClaw
+        // separates distinct agent messages from each other and from tool calls.
+        if (newContent.endsWith('\n\n') || newContent.endsWith('\n\n ')) {
+          const sealed = newContent.trimEnd();
+          if (sealed) {
+            db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+              .run(sealed, conn.currentCommentId);
+            const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
+            broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
+          }
+          conn.currentCommentId = null; // next chunk opens a new comment
+          return;
+        }
+
         db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
           .run(newContent, conn.currentCommentId);
         const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
@@ -694,6 +710,9 @@ class AdapterService {
         return;
       }
     }
+
+    // Skip whitespace-only chunks that would create empty comments
+    if (!content.trim()) return;
 
     const commentId = uuidv4();
     db.prepare(`
