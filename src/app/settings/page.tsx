@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTheme } from '@/components/ui/ThemeProvider';
 
-type SettingsTab = 'general' | 'adapter' | 'agents';
+type SettingsTab = 'general' | 'adapter' | 'agents' | 'projects';
 
 // ----- General Tab -----
 function GeneralSettings() {
@@ -396,6 +396,115 @@ function AgentsSettings() {
   );
 }
 
+// ----- Projects Tab -----
+const PRESET_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#EF4444','#06B6D4','#F97316'];
+
+function ProjectsSettings() {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
+
+  const load = () =>
+    fetch('/api/v1/projects').then(r => r.json()).then(d => { if (d.ok) setProjects(d.data); });
+
+  useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    if (!newName.trim()) return;
+    await apiPost('/api/v1/projects', { name: newName.trim(), color: newColor });
+    setNewName('');
+    setNewColor(PRESET_COLORS[0]);
+    load();
+  };
+
+  const save = async (id: string) => {
+    await apiPatch(`/api/v1/projects/${id}`, { name: editName.trim(), color: editColor });
+    setEditingId(null);
+    load();
+  };
+
+  const remove = async (id: string) => {
+    await apiDelete(`/api/v1/projects/${id}`);
+    load();
+  };
+
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditName(p.name);
+    setEditColor(p.color);
+  };
+
+  const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string) => void }) => (
+    <div className="flex items-center gap-1.5">
+      {PRESET_COLORS.map(c => (
+        <button key={c} onClick={() => onChange(c)}
+          style={{ width: 18, height: 18, borderRadius: '50%', background: c, border: value === c ? '2px solid white' : '2px solid transparent', boxShadow: value === c ? `0 0 0 2px ${c}` : 'none', flexShrink: 0 }}
+        />
+      ))}
+      <input type="color" value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: 18, height: 18, padding: 0, border: 'none', borderRadius: '50%', cursor: 'pointer', background: 'none' }}
+        title="Custom color"
+      />
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <h2 style={{ color: 'var(--color-base-900)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 20 }}>Projects</h2>
+
+      {/* Existing projects */}
+      <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {projects.length === 0 && (
+          <p style={{ color: 'var(--color-base-500)', fontSize: '0.8rem' }}>No projects yet.</p>
+        )}
+        {projects.map(p => (
+          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, background: 'var(--color-base-100)', border: '1px solid var(--color-base-200)' }}>
+            {editingId === p.id ? (
+              <>
+                <ColorPicker value={editColor} onChange={setEditColor} />
+                <input value={editName} onChange={e => setEditName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') save(p.id); if (e.key === 'Escape') setEditingId(null); }}
+                  autoFocus
+                  style={{ flex: 1, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 4, padding: '3px 8px', color: 'var(--color-base-900)', fontSize: '0.82rem' }}
+                />
+                <button onClick={() => save(p.id)} style={{ fontSize: '0.75rem', color: '#3B82F6', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Save</button>
+                <button onClick={() => setEditingId(null)} style={{ fontSize: '0.75rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <span style={{ width: 14, height: 14, borderRadius: '50%', background: p.color, flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ flex: 1, color: 'var(--color-base-800)', fontSize: '0.82rem' }}>{p.name}</span>
+                <button onClick={() => startEdit(p)} style={{ fontSize: '0.72rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Edit</button>
+                <button onClick={() => remove(p.id)} style={{ fontSize: '0.72rem', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Delete</button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* New project */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14, borderRadius: 6, background: 'var(--color-base-100)', border: '1px solid var(--color-base-200)' }}>
+        <p style={{ color: 'var(--color-base-700)', fontSize: '0.78rem', fontWeight: 600, margin: 0 }}>New Project</p>
+        <ColorPicker value={newColor} onChange={setNewColor} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={newName} onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') create(); }}
+            placeholder="Project name"
+            style={{ flex: 1, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 4, padding: '5px 10px', color: 'var(--color-base-900)', fontSize: '0.82rem' }}
+          />
+          <button onClick={create} disabled={!newName.trim()}
+            style={{ padding: '5px 14px', borderRadius: 4, background: '#3B82F6', color: 'white', border: 'none', cursor: newName.trim() ? 'pointer' : 'not-allowed', opacity: newName.trim() ? 1 : 0.5, fontSize: '0.82rem', fontWeight: 600 }}>
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ----- Main Settings Page -----
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -406,6 +515,7 @@ export default function SettingsPage() {
     { key: 'general', label: 'General' },
     { key: 'adapter', label: 'OpenClaw Adapter' },
     { key: 'agents', label: 'Agents' },
+    { key: 'projects', label: 'Projects' },
   ];
 
   return (
@@ -484,6 +594,7 @@ export default function SettingsPage() {
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'adapter' && <AdapterSettings />}
             {activeTab === 'agents' && <AgentsSettings />}
+            {activeTab === 'projects' && <ProjectsSettings />}
           </div>
         </div>
       </div>

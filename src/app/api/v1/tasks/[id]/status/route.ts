@@ -32,8 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .run(body.status, taskId);
 
   const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any);
-  // Don't log pulse activity for archiving — it's a housekeeping action, not progress
-  if (body.status !== 'archived') {
+  if (body.status === 'archived') {
+    logActivity(db, { taskId, actorId, actorType, verb: 'archived', meta: { from: task.status } });
+  } else {
     logActivity(db, { taskId, actorId, actorType, verb: 'status_changed', meta: { from: task.status, to: body.status } });
   }
   broadcastSse({ type: 'task.updated', data: updated });

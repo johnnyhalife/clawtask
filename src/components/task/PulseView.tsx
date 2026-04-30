@@ -31,9 +31,10 @@ function intensityColor(n: number, dark = true): string {
 function verbLabel(verb: string) {
   const m: Record<string, string> = {
     created: 'created issue', updated: 'updated', status_changed: 'changed status',
-    priority_changed: 'changed priority', commented: 'commented', assigned: 'assigned',
+    priority_changed: 'changed priority', commented: 'commented', assigned: 'assigned to',
     unassigned: 'unassigned', closed: 'closed', reopened: 'reopened',
-    tagged: 'added tag', untagged: 'removed tag',
+    tagged: 'added tag', untagged: 'removed tag', project_changed: 'moved to project',
+    cancelled: 'cancelled', archived: 'archived',
   };
   return m[verb] ?? verb.replace(/_/g, ' ');
 }
@@ -44,6 +45,10 @@ function verbIcon(verb: string) {
     case 'status_changed':   return <><circle cx="12" cy="12" r="9" /><polyline points="12 8 12 12 14 14" /></>;
     case 'commented':        return <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />;
     case 'assigned':         return <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>;
+    case 'priority_changed':  return <><polyline points="18 15 12 9 6 15"/></>;
+    case 'tagged':            return <><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></>;
+    case 'project_changed':   return <><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>;</>
+    case 'archived':           return <><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>;</>
     default:                 return <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>;
   }
 }
@@ -168,6 +173,28 @@ function ActivityRow({ a }: { a: Activity }) {
             <span style={{ color: STATUS_COLOR[meta.from] ?? 'var(--color-base-650)' }}>{meta.from?.replace('_', ' ')}</span>
             <span style={{ color: 'var(--color-base-400)' }}>→</span>
             <span style={{ color: STATUS_COLOR[meta.to] ?? 'var(--color-base-650)', fontWeight: 600 }}>{meta.to?.replace('_', ' ')}</span>
+          </span>
+        )}
+        {a.verb === 'priority_changed' && meta.from && meta.to && (
+          <span className="flex items-center gap-1" style={{ fontSize: '0.72rem', color: 'var(--color-base-500)' }}>
+            <span style={{ textDecoration: 'line-through' }}>{meta.from}</span>
+            <span style={{ color: 'var(--color-base-400)' }}>→</span>
+            <span style={{ fontWeight: 600 }}>{meta.to}</span>
+          </span>
+        )}
+        {a.verb === 'assigned' && (
+          <span style={{ fontSize: '0.72rem', color: meta.assigneeType === 'agent' ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-650)', fontWeight: 600 }}>
+            {meta.assigneeName ?? meta.assigneeId}
+          </span>
+        )}
+        {(a.verb === 'tagged' || a.verb === 'untagged') && (
+          <span style={{ fontSize: '0.72rem', background: 'var(--color-base-200)', borderRadius: 4, padding: '1px 6px', color: 'var(--color-base-600)', fontWeight: 500 }}>
+            {meta.tagName ?? meta.tagId}
+          </span>
+        )}
+        {a.verb === 'project_changed' && (
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-base-650)', fontWeight: 600 }}>
+            {meta.to ? (meta.projectName ?? meta.to) : <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--color-base-500)' }}>removed</span>}
           </span>
         )}
       </div>

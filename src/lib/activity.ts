@@ -73,6 +73,18 @@ export function enrichActivity(db: Database.Database, row: ActivityRow) {
     if (assignee) parsedMeta.assigneeName = assignee.displayName;
   }
 
+  // For tagged/untagged, resolve tag name
+  if ((row.verb === 'tagged' || row.verb === 'untagged') && parsedMeta.tagId) {
+    const tag = db.prepare('SELECT name FROM tags WHERE id = ?').get(parsedMeta.tagId) as { name: string } | undefined;
+    if (tag) parsedMeta.tagName = tag.name;
+  }
+
+  // For project_changed, resolve project name
+  if (row.verb === 'project_changed' && parsedMeta.to) {
+    const project = db.prepare('SELECT name FROM projects WHERE id = ?').get(parsedMeta.to) as { name: string } | undefined;
+    if (project) parsedMeta.projectName = project.name;
+  }
+
   return {
     ...row,
     humanRequested: row.humanRequested === 1,

@@ -45,6 +45,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       if (field === 'assigneeId' && body[field] !== task.assigneeId) {
         assigneeChanged = true;
+        if (body[field]) {
+          const assigneeType = body.assigneeType ?? task.assigneeType ?? 'human';
+          logActivity(db, { taskId: params.id, actorId, actorType, verb: 'assigned', meta: { assigneeId: body[field], assigneeType } });
+        } else {
+          logActivity(db, { taskId: params.id, actorId, actorType, verb: 'unassigned', meta: { prevAssigneeId: task.assigneeId, prevAssigneeType: task.assigneeType } });
+        }
+      }
+      if (field === 'projectId' && body[field] !== task.projectId) {
+        logActivity(db, { taskId: params.id, actorId, actorType, verb: 'project_changed', meta: { from: task.projectId ?? null, to: body[field] ?? null } });
       }
     }
   }
@@ -57,14 +66,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // Tags
   if (body.tags && Array.isArray(body.tags)) {
+    const prevTags = (db.prepare('SELECT tagId FROM task_tags WHERE taskId = ?').all(params.id) as any[]).map(r => r.tagId);
+    const nextTags: string[] = body.tags;
+    const added = nextTags.filter(t => !prevTags.includes(t));
+    const removed = prevTags.filter(t => !nextTags.includes(t));
     db.prepare('DELETE FROM task_tags WHERE taskId = ?').run(params.id);
-    for (const tagId of body.tags) {
+    for (const tagId of nextTags) {
       db.prepare('INSERT OR IGNORE INTO task_tags (taskId, tagId) VALUES (?, ?)').run(params.id, tagId);
+    }
+    for (const tagId of added) {
+      logActivity(db, { taskId: params.id, actorId, actorType, verb: 'tagged', meta: { tagId } });
+    }
+    for (const tagId of removed) {
+      logActivity(db, { taskId: params.id, actorId, actorType, verb: 'untagged', meta: { tagId } });
     }
   }
 
   const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any);
-  logActivity(db, { taskId: params.id, actorId, actorType, verb: 'updated' });
   broadcastSse({ type: 'task.updated', data: updated });
 
   // If assignee changed to an agent, trigger dispatch

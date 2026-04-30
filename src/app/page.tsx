@@ -16,7 +16,6 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = searchParams.get('tab') || 'pulse';
-  const mineFilter = searchParams.get('mineFilter') || 'assigned'; // assigned | created | activity
   const projectId = searchParams.get('projectId') || '';
   const tagId = searchParams.get('tagId') || '';
   const q = searchParams.get('q') || '';
@@ -67,12 +66,6 @@ function HomeContent() {
     [activeTab, projectId, tagId]
   );
 
-  // For My Issues activity/created filters: fetch task IDs the human acted on
-  const { data: meTaskIds } = useApi<{ created: string[]; activity: string[] }>(
-    activeTab === 'mine' ? '/api/v1/me/task-ids' : '',
-    [activeTab]
-  );
-
   useSse((event) => {
     if (['task.created', 'task.updated'].includes(event.type)) {
       reloadTasks();
@@ -84,19 +77,6 @@ function HomeContent() {
   const getFilteredTasks = (): Task[] => {
     if (!taskData?.tasks) return [];
     let tasks = taskData.tasks;
-
-    // My Issues — client-side filter by sub-tab
-    if (activeTab === 'mine') {
-      if (mineFilter === 'assigned') {
-        tasks = tasks.filter(t => t.assigneeType === 'human');
-      } else if (mineFilter === 'created') {
-        const ids = new Set(meTaskIds?.created ?? []);
-        tasks = tasks.filter(t => ids.has(t.id));
-      } else if (mineFilter === 'activity') {
-        const ids = new Set(meTaskIds?.activity ?? []);
-        tasks = tasks.filter(t => ids.has(t.id));
-      }
-    }
 
     // Search
     if (q) {
@@ -147,35 +127,10 @@ function HomeContent() {
           onNewTask={() => setShowCreate(true)}
           filters={filters}
           onFiltersChange={setFilters}
-          hideAssignee={activeTab === 'mine'}
+          hideAssignee={false}
           hideToolbar={isPulse}
           totalCount={isPulse ? undefined : getFilteredTasks().length}
         />
-
-        {/* My Issues sub-nav */}
-        {activeTab === 'mine' && (
-          <div className="flex-shrink-0 flex items-center gap-1 px-5 pt-3 pb-0"
-            style={{ borderBottom: '1px solid var(--color-base-300)', background: 'var(--color-base)' }}>
-            {(['assigned', 'created', 'activity'] as const).map(f => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => router.push(`/?tab=mine&mineFilter=${f}`)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-t-md transition-colors"
-                style={{
-                  background: mineFilter === f ? 'var(--color-base-100)' : 'transparent',
-                  color: mineFilter === f ? 'var(--color-base-900)' : 'var(--color-base-600)',
-                  border: mineFilter === f ? '1px solid var(--color-base-300)' : '1px solid transparent',
-                  borderBottom: mineFilter === f ? '1px solid var(--color-base-100)' : '1px solid transparent',
-                  marginBottom: mineFilter === f ? '-1px' : '0',
-                  fontFamily: "'Instrument Sans', sans-serif",
-                }}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
@@ -201,12 +156,7 @@ function HomeContent() {
                 tasks={getFilteredTasks()}
                 groupBy={filters.groupBy}
                 onNewTask={() => setShowCreate(true)}
-                emptyMessage={
-                  activeTab === 'mine' && mineFilter === 'assigned' ? 'No tasks assigned to you.' :
-                  activeTab === 'mine' && mineFilter === 'created' ? 'No tasks created by you.' :
-                  activeTab === 'mine' && mineFilter === 'activity' ? 'No tasks with your activity.' :
-                  'No tasks found.'
-                }
+                emptyMessage="No tasks found."
                 onTaskUpdated={reloadTasks}
               />
             </div>
