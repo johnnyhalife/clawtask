@@ -61,9 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (content.includes('\n')) {
       return content.split(/\n/).map((s: string) => s.trim()).filter(Boolean);
     }
-    // Split on sentence boundaries before transition phrases
-    const transitions = /(?<=[\.\!\?])\s+(?=(?:Now|Let me|Found|Done|All|No |Got |Downloading|Uploading|Searching|Fetching|Checking|Deal |PDF |The task|Task is|I |Here|Moving|Posting|Marked))/g;
-    const parts = content.split(transitions).map((s: string) => s.trim()).filter(Boolean);
+    // Split on sentence end (./!/?) optionally followed by whitespace then capital letter
+    const parts = content.split(/(?<=[.!?])\s*(?=[A-Z])/).map((s: string) => s.trim()).filter(Boolean);
     return parts.length > 1 ? parts : [content];
   };
 
