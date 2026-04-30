@@ -644,7 +644,17 @@ class AdapterService {
     const apiKey = agentRow?.apiKey ?? '';
 
     const slug = (task.issueId as string).toLowerCase();
-    const message = `You have been assigned task ${task.issueId} in Clawtask.\n\nYour Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to http://localhost:3333/api/v1/\n\nFirst, set the task status to "in_progress" via POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "in_progress" }. Then fetch full details from http://localhost:3333/api/v1/tasks/${slug} and complete the work. Post progress comments and mark done when finished.`;
+    const message = `You have been assigned task ${task.issueId} in Clawtask.
+
+Your Clawtask API key: ${apiKey}
+Use it as Bearer token on ALL requests to http://localhost:3333/api/v1/
+
+Instructions:
+1. Set status to in_progress: POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "in_progress" }
+2. Fetch full task details: GET http://localhost:3333/api/v1/tasks/${slug}
+3. Do the work.
+4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
+5. When done, mark it: POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "done" }`;
     const idempotencyKey = uuidv4();
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
 
