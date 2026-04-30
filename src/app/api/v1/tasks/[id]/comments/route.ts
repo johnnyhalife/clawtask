@@ -49,8 +49,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const commentType: string = body.type || 'message';
 
   // For agent message-type comments, split on double newlines into separate records
+  // Split agent messages into separate comments.
+  // Agents often concatenate thoughts without double newlines, so split on:
+  // 1. Double newlines (preferred)
+  // 2. Single newlines
+  // 3. Sentence boundaries before common agent transition phrases
+  const splitAgentContent = (content: string): string[] => {
+    if (content.includes('\n\n')) {
+      return content.split(/\n{2,}/).map((s: string) => s.trim()).filter(Boolean);
+    }
+    if (content.includes('\n')) {
+      return content.split(/\n/).map((s: string) => s.trim()).filter(Boolean);
+    }
+    // Split on sentence boundaries before transition phrases
+    const transitions = /(?<=[\.\!\?])\s+(?=(?:Now|Let me|Found|Done|All|No |Got |Downloading|Uploading|Searching|Fetching|Checking|Deal |PDF |The task|Task is|I |Here|Moving|Posting|Marked))/g;
+    const parts = content.split(transitions).map((s: string) => s.trim()).filter(Boolean);
+    return parts.length > 1 ? parts : [content];
+  };
+
   const segments: string[] = actorType === 'agent' && commentType === 'message'
-    ? rawContent.split(/\n{2,}/).map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+    ? splitAgentContent(rawContent)
     : [rawContent];
 
   let lastComment: any = null;

@@ -436,13 +436,11 @@ class AdapterService {
 
       const stream = typeof payload.stream === 'string' ? payload.stream : null;
 
-      // Turn end: job stream with state=done closes the current comment so next output starts fresh
-      if (stream === 'job' && (payload.data as any)?.state === 'done') {
+      // Any non-assistant stream event (tool call, job update) = boundary between thoughts
+      if (stream !== 'assistant') {
         conn.currentCommentId = null;
         return;
       }
-
-      if (stream !== 'assistant') return;
 
       const data = payload.data as any;
       const isDelta = typeof data?.delta === 'string';
