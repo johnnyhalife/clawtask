@@ -697,7 +697,7 @@ Instructions:
     const agentAuthor = db.prepare('SELECT id, openclawAgentId, displayName FROM agents WHERE id = ?').get(conn.agentId);
 
     if (isDelta) {
-      // Streaming delta — accumulate into current comment
+      // Accumulate delta into current comment
       if (conn.currentCommentId) {
         const existing = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId) as any;
         if (existing) {
@@ -706,10 +706,14 @@ Instructions:
             .run(newContent, conn.currentCommentId);
           const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
           broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
+          // Seal comment on sentence boundary — next delta opens a fresh one
+          if (/[.!?]\s*$/.test(newContent)) {
+            conn.currentCommentId = null;
+          }
           return;
         }
       }
-      // No current comment — create one and start accumulating
+      // No current comment — create one
       const commentId = uuidv4();
       db.prepare(`INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
         VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
