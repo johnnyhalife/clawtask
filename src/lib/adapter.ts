@@ -425,6 +425,11 @@ class AdapterService {
       return;
     }
 
+    // Log every agent event in full so we can understand the protocol
+    if (frame.event === 'agent') {
+      console.log('[adapter:raw]', JSON.stringify(frame));
+    }
+
     // Agent stream events: filter by runId and stream=assistant
     if (frame.event === 'agent' && conn.currentTaskId) {
       const payload = frame.payload as any;
