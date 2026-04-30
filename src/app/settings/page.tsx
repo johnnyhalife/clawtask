@@ -401,6 +401,22 @@ function AgentsSettings() {
 // ----- Projects Tab -----
 const PRESET_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#EF4444','#06B6D4','#F97316'];
 
+function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {PRESET_COLORS.map(c => (
+        <button key={c} onClick={() => onChange(c)}
+          style={{ width: 18, height: 18, borderRadius: '50%', background: c, border: value === c ? '2px solid white' : '2px solid transparent', boxShadow: value === c ? `0 0 0 2px ${c}` : 'none', flexShrink: 0 }}
+        />
+      ))}
+      <input type="color" value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: 18, height: 18, padding: 0, border: 'none', borderRadius: '50%', cursor: 'pointer', background: 'none' }}
+        title="Custom color"
+      />
+    </div>
+  );
+}
+
 function ProjectsSettings() {
   const [projects, setProjects] = useState<any[]>([]);
   const [newName, setNewName] = useState('');
@@ -438,20 +454,6 @@ function ProjectsSettings() {
     setEditName(p.name);
     setEditColor(p.color);
   };
-
-  const ColorPicker = ({ value, onChange }: { value: string; onChange: (c: string) => void }) => (
-    <div className="flex items-center gap-1.5">
-      {PRESET_COLORS.map(c => (
-        <button key={c} onClick={() => onChange(c)}
-          style={{ width: 18, height: 18, borderRadius: '50%', background: c, border: value === c ? '2px solid white' : '2px solid transparent', boxShadow: value === c ? `0 0 0 2px ${c}` : 'none', flexShrink: 0 }}
-        />
-      ))}
-      <input type="color" value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: 18, height: 18, padding: 0, border: 'none', borderRadius: '50%', cursor: 'pointer', background: 'none' }}
-        title="Custom color"
-      />
-    </div>
-  );
 
   return (
     <div style={{ maxWidth: 560 }}>

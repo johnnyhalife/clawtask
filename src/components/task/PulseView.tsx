@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, Comment, Task } from '@/types';
 import { useSse } from '@/hooks/useSse';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { TaskDrawer } from './TaskDrawer';
 import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
@@ -222,21 +223,19 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
           style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-650)' }}>
           <VerbIcon verb={primaryVerb} />
         </div>
-        {/* Label */}
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>
-            {count} {count === 1 ? 'activity' : 'activities'}
-          </span>
+        {/* Label — single line with ellipsis */}
+        <div className="flex-1 min-w-0" style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+          <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{count} {count === 1 ? 'activity' : 'activities'}</span>
           {' '}
           <span className="text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>on</span>
           {' '}
+          {group.issueId && <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 4 }}>{group.issueId}</span>}
           <button
             type="button"
             className="text-sm font-medium"
             style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}
             onClick={e => { e.stopPropagation(); if (group.taskId !== '__no_task__') onOpenTask(group.taskId, group.issueId); }}
           >
-            {group.issueId && <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 4 }}>{group.issueId}</span>}
             {group.title}
           </button>
         </div>
@@ -263,6 +262,7 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
 export function PulseView() {
   const { theme } = useTheme(); // subscribe so cells re-render on theme change
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [allActivity, setAllActivity] = useState<Activity[]>([]);
   const [activeRuns, setActiveRuns] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -333,8 +333,9 @@ export function PulseView() {
             {totalCount} {totalCount === 1 ? 'activity' : 'activities'} in {periodLabel}
           </h2>
 
-          {/* Contribution graph */}
-          <div className="rounded-xl p-4" style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)' }}>
+          {/* Contribution graph — hidden on mobile */}
+          {!isMobile && <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div className="rounded-xl p-4" style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', minWidth: 600 }}>
             {/* Month labels row */}
             <div className="flex" style={{ marginBottom: 4, paddingLeft: 28 }}>
               {weeks.map((week, wi) => {
@@ -383,6 +384,7 @@ export function PulseView() {
               <span style={{ fontSize: '0.68rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>More</span>
             </div>
           </div>
+          </div>}
         </div>
 
         {/* Active runs */}
@@ -453,8 +455,8 @@ export function PulseView() {
         </section>
       </div>
 
-      {/* ── Year rail — aligned with graph, not title ── */}
-      <div className="flex-shrink-0 flex flex-col gap-1" style={{ width: 52, marginTop: '2.5rem' }}>
+      {/* ── Year rail — hidden on mobile ── */}
+      {!isMobile && <div className="flex-shrink-0 flex flex-col gap-1" style={{ width: 52, marginTop: '2.5rem' }}>
         {[...availableYears].map(year => {
           const isT12 = year === new Date().getFullYear();
           const active = isT12 ? selectedYear === 'T12' : selectedYear === year;
@@ -481,7 +483,7 @@ export function PulseView() {
             </button>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

@@ -64,10 +64,6 @@ export function Sidebar({ appName, workspaceLogo }: { appName: string; workspace
   const router = useRouter();
   const activeTab = searchParams.get('tab') || 'pulse';
   const isMobile = useIsMobile();
-
-  // On mobile, sidebar is hidden — BottomNav takes over
-  if (isMobile) return null;
-
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: tags, reload: reloadTags } = useApi<Tag[]>('/api/v1/tags');
   const [projectsOpen, setProjectsOpen] = useState(true);
@@ -86,6 +82,9 @@ export function Sidebar({ appName, workspaceLogo }: { appName: string; workspace
     window.addEventListener('clawtask:refresh-sidebar', handler);
     return () => window.removeEventListener('clawtask:refresh-sidebar', handler);
   }, [reloadProjects, reloadTags]);
+
+  // On mobile, sidebar is hidden — BottomNav takes over
+  if (isMobile) return null;
 
   // Get initials from appName
   const initials = appName
