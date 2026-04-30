@@ -110,11 +110,19 @@ function MsgActions({ date }: { date: string }) {
 
 
 // ─── Agent message group ──────────────────────────────────────────────────────
+const COLLAPSE_LINES = 8;
+
 function AgentMessageGroup({ items, author, authorId }: { items: Comment[]; author: unknown; authorId: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const [groupExpanded, setGroupExpanded] = useState(false);
+  const [contentExpanded, setContentExpanded] = useState(false);
   const authorName = (author as any)?.displayName || authorId;
   const latest = items[items.length - 1];
   const hasMultiple = items.length > 1;
+  const lines = latest.content.split('\n');
+  const isLong = lines.length > COLLAPSE_LINES;
+  const displayContent = isLong && !contentExpanded
+    ? lines.slice(0, COLLAPSE_LINES).join('\n') + '\u2026'
+    : latest.content;
 
   return (
     <div className="py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
@@ -123,22 +131,30 @@ function AgentMessageGroup({ items, author, authorId }: { items: Comment[]; auth
         <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "\'Instrument Sans\', sans-serif" }}>{actorLabel(authorName, true)}</span>
         {hasMultiple && (
           <button
-            onClick={() => setExpanded(v => !v)}
+            onClick={() => setGroupExpanded(v => !v)}
             style={{ fontSize: '0.72rem', color: 'var(--color-base-500)', background: 'var(--color-base-200)', border: 'none', borderRadius: 4, padding: '1px 7px', cursor: 'pointer', fontFamily: "\'Instrument Sans\', sans-serif" }}
           >
-            {expanded ? `− collapse` : `+${items.length - 1} earlier`}
+            {groupExpanded ? `− collapse` : `+${items.length - 1} earlier`}
           </button>
         )}
         <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "\'Roboto Mono\', monospace" }}>{relativeTime(latest.createdAt)}</span>
       </div>
-      {hasMultiple && expanded && items.slice(0, -1).map(c => (
+      {hasMultiple && groupExpanded && items.slice(0, -1).map(c => (
         <div key={c.id} className="ml-10 mb-3 prose-clawtask text-sm" style={{ color: 'var(--color-base-700)', fontFamily: "\'Instrument Sans\', sans-serif", borderLeft: '2px solid var(--color-base-250)', paddingLeft: 12, opacity: 0.75 }}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{c.content}</ReactMarkdown>
         </div>
       ))}
       <div className="ml-10 prose-clawtask text-sm" style={{ color: 'var(--color-base-800)', fontFamily: "\'Instrument Sans\', sans-serif" }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{latest.content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
       </div>
+      {isLong && (
+        <button
+          onClick={() => setContentExpanded(v => !v)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--color-base-500)', fontFamily: "\'Instrument Sans\', sans-serif", paddingLeft: 40 }}
+        >
+          {contentExpanded ? 'Show less ↑' : 'Show more ↓'}
+        </button>
+      )}
     </div>
   );
 }
