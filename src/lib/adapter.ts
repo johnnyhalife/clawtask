@@ -445,15 +445,19 @@ class AdapterService {
       if (stream !== 'assistant') return;
 
       const data = payload.data as any;
-      const chunk = typeof data?.delta === 'string' ? data.delta
+      const isDelta = typeof data?.delta === 'string';
+      const chunk = isDelta ? data.delta
         : typeof data?.text === 'string' ? data.text
         : null;
 
       if (!chunk) return;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[adapter] stream chunk', isDelta ? 'delta' : 'text', JSON.stringify(chunk).slice(0, 80));
+      }
 
       try {
         const db = getDb();
-        this.handleAgentOutput(conn, db, chunk);
+        this.handleAgentOutput(conn, db, chunk, isDelta);
       } catch {}
     }
   }
@@ -678,51 +682,44 @@ class AdapterService {
 
   // ─── Output streaming ─────────────────────────────────────────────────────
 
-  private handleAgentOutput(conn: AgentConnection, db: any, content: string) {
+  private handleAgentOutput(conn: AgentConnection, db: any, content: string, isDelta: boolean) {
     if (!conn.currentTaskId) return;
+    if (!content.trim()) return;
 
     const agentAuthor = db.prepare('SELECT id, openclawAgentId, displayName FROM agents WHERE id = ?').get(conn.agentId);
 
-    if (conn.currentCommentId) {
-      const existing = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId) as any;
-      if (existing) {
-        const newContent = existing.content + content;
-
-        // If the accumulated content ends with a paragraph break (\n\n), seal this
-        // comment and let the next chunk open a fresh one — mirrors how OpenClaw
-        // separates distinct agent messages from each other and from tool calls.
-        if (newContent.endsWith('\n\n') || newContent.endsWith('\n\n ')) {
-          const sealed = newContent.trimEnd();
-          if (sealed) {
-            db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-              .run(sealed, conn.currentCommentId);
-            const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
-            broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
-          }
-          conn.currentCommentId = null; // next chunk opens a new comment
+    if (isDelta) {
+      // Streaming delta — accumulate into current comment
+      if (conn.currentCommentId) {
+        const existing = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId) as any;
+        if (existing) {
+          const newContent = existing.content + content;
+          db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+            .run(newContent, conn.currentCommentId);
+          const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
+          broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
           return;
         }
-
-        db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-          .run(newContent, conn.currentCommentId);
-        const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
-        broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
-        return;
       }
+      // No current comment — create one and start accumulating
+      const commentId = uuidv4();
+      db.prepare(`INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
+        VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
+        .run(commentId, conn.currentTaskId, conn.agentId, content);
+      conn.currentCommentId = commentId;
+      const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
+      broadcastSse({ type: 'comment.added', data: { ...comment, humanRequested: false, author: agentAuthor } });
+    } else {
+      // Complete text message — each one is its own comment
+      conn.currentCommentId = null;
+      const commentId = uuidv4();
+      db.prepare(`INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
+        VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
+        .run(commentId, conn.currentTaskId, conn.agentId, content.trim());
+      conn.currentCommentId = commentId;
+      const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
+      broadcastSse({ type: 'comment.added', data: { ...comment, humanRequested: false, author: agentAuthor } });
     }
-
-    // Skip whitespace-only chunks that would create empty comments
-    if (!content.trim()) return;
-
-    const commentId = uuidv4();
-    db.prepare(`
-      INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
-      VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-    `).run(commentId, conn.currentTaskId, conn.agentId, content);
-
-    conn.currentCommentId = commentId;
-    const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
-    broadcastSse({ type: 'comment.added', data: { ...comment, humanRequested: false, author: agentAuthor } });
   }
 
   // ─── Request primitive ────────────────────────────────────────────────────
