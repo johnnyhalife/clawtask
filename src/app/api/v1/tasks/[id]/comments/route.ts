@@ -45,24 +45,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
 
   const body = await req.json();
-  const id = uuidv4();
+  const rawContent: string = body.content || '';
+  const commentType: string = body.type || 'message';
 
-  db.prepare(`
-    INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-  `).run(
-    id,
-    taskId,
-    actorId,
-    actorType,
-    body.type || 'message',
-    body.content || '',
-    body.humanRequested ? 1 : 0
-  );
+  // For agent message-type comments, split on double newlines into separate records
+  const segments: string[] = actorType === 'agent' && commentType === 'message'
+    ? rawContent.split(/\n{2,}/).map((s: string) => s.trim()).filter((s: string) => s.length > 0)
+    : [rawContent];
 
-  const comment = enrichComment(db, db.prepare('SELECT * FROM comments WHERE id = ?').get(id));
+  let lastComment: any = null;
+  for (const segment of segments) {
+    const id = uuidv4();
+    db.prepare(`
+      INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    `).run(id, taskId, actorId, actorType, commentType, segment, body.humanRequested ? 1 : 0);
+    lastComment = enrichComment(db, db.prepare('SELECT * FROM comments WHERE id = ?').get(id));
+    broadcastSse({ type: 'comment.added', data: lastComment });
+  }
+
+  const comment = lastComment;
   logActivity(db, { taskId, actorId, actorType, verb: 'commented', humanRequested: body.humanRequested });
-  broadcastSse({ type: 'comment.added', data: comment });
 
   // If human posted a comment and task is assigned to an agent, notify adapter
   if (actorType === 'human' && task.assigneeId && task.assigneeType === 'agent') {
