@@ -7,6 +7,7 @@ import { useSse } from '@/hooks/useSse';
 import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useTheme } from '@/components/ui/ThemeProvider';
 
 type SettingsTab = 'general' | 'adapter' | 'agents';
 
@@ -16,6 +17,8 @@ function GeneralSettings() {
   const [form, setForm] = useState({ appName: '', issuePrefix: '', humanName: '', humanDisplayName: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (config) {
@@ -25,6 +28,7 @@ function GeneralSettings() {
         humanName: config.humanName || 'human',
         humanDisplayName: config.humanDisplayName || 'You',
       });
+      setLogoPreview(config.workspaceLogo || null);
     }
   }, [config]);
 
@@ -41,33 +45,100 @@ function GeneralSettings() {
     }
   };
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/v1/config/logo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.ok) {
+        setLogoPreview(data.data.logoUrl + '?t=' + Date.now());
+        reload();
+      }
+    } finally {
+      setLogoUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    await fetch('/api/v1/config/logo', { method: 'DELETE' });
+    setLogoPreview(null);
+    reload();
+  };
+
   return (
     <form onSubmit={handleSave} className="max-w-md space-y-6">
+      {/* Workspace Logo */}
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1">App Name</label>
+        <label className="block text-sm font-medium style-base-800 mb-2">Workspace Logo</label>
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+            style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)' }}
+          >
+            {logoPreview ? (
+              <img src={logoPreview} alt="logo" className="w-full h-full object-cover rounded-lg" />
+            ) : (
+              <span className="style-base-500 text-xs">None</span>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium"
+              style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)' }}
+            >
+              {logoUploading ? 'Uploading...' : '↑ Upload image'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                className="hidden"
+                onChange={handleLogoChange}
+                disabled={logoUploading}
+              />
+            </label>
+            {logoPreview && (
+              <button
+                type="button"
+                onClick={handleLogoRemove}
+                className="text-xs style-base-600 hover:text-red-400 text-left transition-colors"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="text-xs style-base-500 mt-1.5">JPEG, PNG, WebP, SVG · max 2MB</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium style-base-800 mb-1">Workspace Name</label>
         <Input
           value={form.appName}
           onChange={(e) => setForm({ ...form, appName: e.target.value })}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1">Issue Prefix</label>
+        <label className="block text-sm font-medium style-base-800 mb-1">Issue Prefix</label>
         <Input
           value={form.issuePrefix}
           onChange={(e) => setForm({ ...form, issuePrefix: e.target.value.toUpperCase() })}
           maxLength={10}
         />
-        <p className="text-xs text-zinc-600 mt-1">Issues will be numbered like {form.issuePrefix || 'CWT'}-001</p>
+        <p className="text-xs style-base-500 mt-1">Issues will be numbered like {form.issuePrefix || 'CWT'}-001</p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1">Human Name</label>
+        <label className="block text-sm font-medium style-base-800 mb-1">Human Name</label>
         <Input
           value={form.humanName}
           onChange={(e) => setForm({ ...form, humanName: e.target.value })}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1">Human Display Name</label>
+        <label className="block text-sm font-medium style-base-800 mb-1">Human Display Name</label>
         <Input
           value={form.humanDisplayName}
           onChange={(e) => setForm({ ...form, humanDisplayName: e.target.value })}
@@ -107,18 +178,18 @@ function AdapterSettings() {
   return (
     <form onSubmit={handleSave} className="max-w-md space-y-6">
       <div>
-        <label className="block text-sm font-medium text-zinc-300 mb-1">Gateway URL</label>
+        <label className="block text-sm font-medium style-base-800 mb-1">Gateway URL</label>
         <Input
           value={gatewayUrl}
           onChange={(e) => setGatewayUrl(e.target.value)}
           placeholder="ws://localhost:2222"
         />
-        <p className="text-xs text-zinc-600 mt-1">OpenClaw gateway WebSocket URL used for all agent connections</p>
+        <p className="text-xs style-base-500 mt-1">OpenClaw gateway WebSocket URL used for all agent connections</p>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-zinc-600" />
-        <span className="text-xs text-zinc-500">Connection status shown per agent in the Agents tab</span>
+        <div className="w-2 h-2 rounded-full bg-[var(--color-base-500)]" />
+        <span className="text-xs style-base-600">Connection status shown per agent in the Agents tab</span>
       </div>
 
       <Button type="submit" variant="primary" disabled={saving}>
@@ -162,7 +233,7 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
   };
 
   const probeDot = {
-    pending: 'bg-zinc-500',
+    pending: 'bg-[var(--color-base-500)]',
     ok: 'bg-green-500',
     error: 'bg-red-500',
   }[agent.probeStatus];
@@ -170,8 +241,8 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
   const isReady = agent.probeStatus === 'ok';
 
   return (
-    <tr className="border-b border-zinc-800">
-      <td className="py-3 px-4 text-sm font-mono text-zinc-400">{agent.openclawAgentId}</td>
+    <tr className="border-b border-[var(--color-base-300)]">
+      <td className="py-3 px-4 text-sm font-mono style-base-600">{agent.openclawAgentId}</td>
       <td className="py-3 px-4">
         {editing ? (
           <Input
@@ -181,13 +252,13 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
         ) : (
-          <span className="text-sm text-zinc-200">{agent.displayName}</span>
+          <span className="text-sm style-base-800">{agent.displayName}</span>
         )}
       </td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${probeDot}`} />
-          <span className="text-xs text-zinc-500">{agent.probeStatus}</span>
+          <span className="text-xs style-base-600">{agent.probeStatus}</span>
         </div>
       </td>
       <td className="py-3 px-4">
@@ -252,7 +323,7 @@ function AgentsSettings() {
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 max-w-lg">
           <div className="text-sm font-medium text-amber-400 mb-2">⚠️ Save this API key — shown once!</div>
           <div className="flex items-center gap-2 mb-3">
-            <code className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs font-mono text-zinc-200 break-all">
+            <code className="flex-1 bg-[var(--color-base-150)] border border-[var(--color-base-300)] rounded px-3 py-2 text-xs font-mono style-base-800 break-all">
               {newKey}
             </code>
             <Button size="sm" variant="secondary" onClick={handleCopy}>
@@ -267,11 +338,11 @@ function AgentsSettings() {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-zinc-800">
-              <th className="py-2 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">OpenClaw Agent ID</th>
-              <th className="py-2 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Display Name</th>
-              <th className="py-2 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
-              <th className="py-2 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
+            <tr className="border-b border-[var(--color-base-300)]">
+              <th className="py-2 px-4 text-xs font-medium style-base-600 uppercase tracking-wider">OpenClaw Agent ID</th>
+              <th className="py-2 px-4 text-xs font-medium style-base-600 uppercase tracking-wider">Display Name</th>
+              <th className="py-2 px-4 text-xs font-medium style-base-600 uppercase tracking-wider">Status</th>
+              <th className="py-2 px-4 text-xs font-medium style-base-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -285,7 +356,7 @@ function AgentsSettings() {
             ))}
             {(!agents || agents.length === 0) && (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-sm text-zinc-600">
+                <td colSpan={4} className="py-8 text-center text-sm style-base-500">
                   No agents registered yet
                 </td>
               </tr>
@@ -295,11 +366,11 @@ function AgentsSettings() {
       </div>
 
       {/* Add Agent */}
-      <div className="border-t border-zinc-800 pt-6">
-        <h3 className="text-sm font-semibold text-zinc-300 mb-3">Register New Agent</h3>
+      <div className="border-t border-[var(--color-base-300)] pt-6">
+        <h3 className="text-sm font-semibold style-base-800 mb-3">Register New Agent</h3>
         <form onSubmit={handleAdd} className="flex items-end gap-3 flex-wrap">
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">OpenClaw Agent ID</label>
+            <label className="block text-xs style-base-600 mb-1">OpenClaw Agent ID</label>
             <Input
               value={newAgent.openclawAgentId}
               onChange={(e) => setNewAgent({ ...newAgent, openclawAgentId: e.target.value })}
@@ -308,7 +379,7 @@ function AgentsSettings() {
             />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Display Name</label>
+            <label className="block text-xs style-base-600 mb-1">Display Name</label>
             <Input
               value={newAgent.displayName}
               onChange={(e) => setNewAgent({ ...newAgent, displayName: e.target.value })}
@@ -328,6 +399,8 @@ function AgentsSettings() {
 // ----- Main Settings Page -----
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const { data: config } = useApi<Record<string, string>>('/api/v1/config');
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'general', label: 'General' },
@@ -336,41 +409,83 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#0A0A0B] overflow-hidden">
-      {/* Simple sidebar for settings */}
-      <aside className="w-60 flex-shrink-0 bg-[#131316] border-r border-zinc-800 flex flex-col h-full">
-        <div className="px-4 py-4 border-b border-zinc-800">
-          <Link href="/" className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300">
-            ← Back
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="flex-shrink-0 flex items-center px-6" style={{ height: 48, background: 'var(--color-base)', borderBottom: '1px solid var(--color-base-300)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-base-500)', fontSize: '0.82rem', textDecoration: 'none', fontFamily: "'Instrument Sans', sans-serif" }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-800)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back
           </Link>
+          <span style={{ margin: '0 10px', color: 'var(--color-base-300)' }}>/</span>
+          <span style={{ color: 'var(--color-base-700)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 600 }}>Settings</span>
+          <div className="ml-auto">
+            <button
+              type="button"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              onClick={toggleTheme}
+              style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}
+            >
+              {theme === 'dark' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5"/>
+                  <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
-        <div className="p-4">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">Settings</h2>
-          <nav className="space-y-0.5">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                  activeTab === tab.key
-                    ? 'bg-blue-600/20 text-blue-400'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </aside>
 
-      <div className="flex-1 overflow-y-auto p-8">
-        <h1 className="text-lg font-semibold text-zinc-100 mb-6">
-          {tabs.find((t) => t.key === activeTab)?.label}
-        </h1>
-        {activeTab === 'general' && <GeneralSettings />}
-        {activeTab === 'adapter' && <AdapterSettings />}
-        {activeTab === 'agents' && <AgentsSettings />}
+        {/* Content */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Settings sub-nav */}
+          <div className="flex-shrink-0 w-44 overflow-y-auto py-4 px-2" style={{ borderRight: '1px solid var(--color-base-300)', background: 'var(--color-base)' }}>
+            <div className="px-2 mb-2">
+              <span className="section-label">Settings</span>
+            </div>
+            <nav className="space-y-px">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm transition-colors"
+                  style={{
+                    background: activeTab === tab.key ? 'rgba(128,128,128,0.1)' : 'transparent',
+                    color: activeTab === tab.key ? 'var(--color-base-900)' : 'var(--color-base-600)',
+                    fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem',
+                    border: 'none', cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { if (activeTab !== tab.key) { (e.currentTarget as HTMLElement).style.background = 'rgba(128,128,128,0.06)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)'; } }}
+                  onMouseLeave={e => { if (activeTab !== tab.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-600)'; } }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto p-8" style={{ background: 'var(--color-base)' }}>
+            <h1 className="text-lg font-semibold mb-6" style={{ color: 'var(--color-base-900)', fontFamily: "'Darker Grotesque', sans-serif" }}>
+              {tabs.find((t) => t.key === activeTab)?.label}
+            </h1>
+            {activeTab === 'general' && <GeneralSettings />}
+            {activeTab === 'adapter' && <AdapterSettings />}
+            {activeTab === 'agents' && <AgentsSettings />}
+          </div>
+        </div>
       </div>
     </div>
   );

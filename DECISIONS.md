@@ -133,4 +133,4 @@ All responses:
 - **Email/external notifications:** Explicitly out of scope.
 - **Authentication UI:** Not needed (no auth by design).
 - **Pagination UI:** API supports pagination (`page`, `limit`). UI currently loads up to 100 tasks per view. Pagination controls are a future enhancement.
-- **Inline tag creation in task form:** Tags must be created via the API or Settings before they appear in the task form. Inline creation (type name + enter) is not yet implemented in the create modal.
+- **Inline tag creation in task form:** Not yet implemented — type name + enter in the create modal is planned but not built yet. This is in scope.

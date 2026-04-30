@@ -43,8 +43,22 @@ export function enrichTask(db: Database.Database, row: TaskRow) {
   return { ...row, tags, project, assignee };
 }
 
+/**
+ * Resolve a task by UUID or issueId slug (case-insensitive).
+ * e.g. "cwt-012" resolves the same as "CWT-012" or the full UUID.
+ */
+export function resolveTaskId(db: Database.Database, idOrSlug: string): string | undefined {
+  return resolveTask(db, idOrSlug)?.id;
+}
+
+export function resolveTask(db: Database.Database, idOrSlug: string): TaskRow | undefined {
+  const byId = db.prepare('SELECT * FROM tasks WHERE id = ?').get(idOrSlug) as TaskRow | undefined;
+  if (byId) return byId;
+  return db.prepare('SELECT * FROM tasks WHERE UPPER(issueId) = UPPER(?)').get(idOrSlug) as TaskRow | undefined;
+}
+
 export function getTaskWithDetails(db: Database.Database, taskId: string) {
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRow | undefined;
+  const task = resolveTask(db, taskId);
   if (!task) return null;
 
   const enriched = enrichTask(db, task);

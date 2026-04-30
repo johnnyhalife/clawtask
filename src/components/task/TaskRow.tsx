@@ -1,71 +1,112 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Task } from '@/types';
-import { PriorityBadge, StatusBadge, TagBadge } from '@/components/ui/Badge';
 
 interface TaskRowProps {
   task: Task;
+  selected?: boolean;
   onClick?: () => void;
 }
 
-function formatDate(d: string | null) {
-  if (!d) return null;
+const statusDotColor: Record<string, string> = {
+  todo: 'var(--color-base-650)',
+  in_progress: '#3189FF',
+  blocked: '#F87171',
+  done: '#22C55E',
+  archived: 'var(--color-base-500)',
+};
+
+function relativeTime(d: string | null): string {
+  if (!d) return '';
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function TaskRow({ task, onClick }: TaskRowProps) {
-  const assigneeEmoji = task.assigneeType === 'agent' ? '🤖' : task.assigneeType === 'human' ? '👤' : null;
-  const assigneeName = (task.assignee as any)?.displayName || null;
+export function TaskRow({ task, selected, onClick }: TaskRowProps) {
+  const router = useRouter();
+  const dotColor = statusDotColor[task.status] || 'var(--color-base-650)';
+
+  const handleClick = () => {
+    onClick?.();
+    router.push(`/issues/${task.issueId.toLowerCase()}`);
+  };
 
   return (
-    <tr
-      className="border-b border-zinc-800 hover:bg-zinc-900/50 cursor-pointer transition-colors"
-      onClick={onClick}
+    <div
+      className="flex items-center gap-3 cursor-pointer transition-colors select-none"
+      style={{
+        height: '36px',
+        padding: '0 12px',
+        background: selected ? 'rgba(255,255,255,0.07)' : undefined,
+        borderBottom: '1px solid var(--color-base-300)',
+      }}
+      onClick={handleClick}
+      onMouseEnter={(e) => {
+        if (!selected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) (e.currentTarget as HTMLElement).style.background = '';
+      }}
     >
-      <td className="py-2.5 px-4 whitespace-nowrap">
-        <span className="text-xs font-mono text-zinc-500">{task.issueId}</span>
-      </td>
-      <td className="py-2.5 px-4">
-        <span className="text-sm text-zinc-200 line-clamp-1">{task.title}</span>
-      </td>
-      <td className="py-2.5 px-4 whitespace-nowrap">
-        <PriorityBadge priority={task.priority} />
-      </td>
-      <td className="py-2.5 px-4 whitespace-nowrap">
-        <StatusBadge status={task.status} />
-      </td>
-      <td className="py-2.5 px-4 whitespace-nowrap">
-        {assigneeName ? (
-          <span className="text-xs text-zinc-400">
-            {assigneeEmoji} {assigneeName}
-          </span>
-        ) : (
-          <span className="text-xs text-zinc-600">—</span>
-        )}
-      </td>
-      <td className="py-2.5 px-4 whitespace-nowrap">
-        {task.project ? (
-          <span className="flex items-center gap-1.5 text-xs text-zinc-400">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: task.project.color }}
-            />
-            {task.project.name}
-          </span>
-        ) : (
-          <span className="text-xs text-zinc-600">—</span>
-        )}
-      </td>
-      <td className="py-2.5 px-4">
-        <div className="flex flex-wrap gap-1">
-          {(task.tags || []).slice(0, 3).map((tag) => (
-            <TagBadge key={tag.id} name={tag.name} color={tag.color} />
-          ))}
-        </div>
-      </td>
-      <td className="py-2.5 px-4 whitespace-nowrap text-xs text-zinc-500">
-        {formatDate(task.updatedAt)}
-      </td>
-    </tr>
+      {/* Status dot */}
+      <span
+        className="flex-shrink-0 rounded-full"
+        style={{ width: '8px', height: '8px', background: dotColor }}
+      />
+
+      {/* Issue ID */}
+      <span
+        className="flex-shrink-0 font-mono-id"
+        style={{ minWidth: '64px' }}
+      >
+        {task.issueId}
+      </span>
+
+      {/* Title */}
+      <span
+        className="flex-1 truncate text-sm"
+        style={{
+          color: 'var(--color-base-800)',
+          fontFamily: "'Instrument Sans', sans-serif",
+          fontWeight: 500,
+          fontSize: '0.8125rem',
+        }}
+      >
+        {task.title}
+      </span>
+
+      {/* Assignee (if any) */}
+      {task.assignee && (
+        <span
+          className="flex-shrink-0 text-xs"
+          style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}
+        >
+          {task.assigneeType === 'agent' ? '⬡' : '○'}{' '}
+          {(task.assignee as any).displayName?.split(' ')[0]}
+        </span>
+      )}
+
+      {/* Relative timestamp */}
+      <span
+        className="flex-shrink-0"
+        style={{
+          fontFamily: "'Roboto Mono', monospace",
+          fontSize: '0.7rem',
+          color: 'var(--color-base-500)',
+          minWidth: '52px',
+          textAlign: 'right',
+        }}
+      >
+        {relativeTime(task.updatedAt)}
+      </span>
+    </div>
   );
 }

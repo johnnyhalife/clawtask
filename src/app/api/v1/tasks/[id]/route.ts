@@ -16,6 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
+  let assigneeChanged = false;
   if (!task) return err('NOT_FOUND', 'Task not found', 404);
 
   const agent = await authenticateAgent(req);
@@ -42,6 +43,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (field === 'priority' && body[field] !== task.priority) {
         logActivity(db, { taskId: params.id, actorId, actorType, verb: 'priority_changed', meta: { from: task.priority, to: body[field] } });
       }
+      if (field === 'assigneeId' && body[field] !== task.assigneeId) {
+        assigneeChanged = true;
+      }
     }
   }
 
@@ -62,6 +66,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any);
   logActivity(db, { taskId: params.id, actorId, actorType, verb: 'updated' });
   broadcastSse({ type: 'task.updated', data: updated });
+
+  // If assignee changed to an agent, trigger dispatch
+  if (assigneeChanged && updated.assigneeType === 'agent' && updated.assigneeId) {
+    const { getAdapterService } = await import('@/lib/adapter');
+    getAdapterService().assignTaskToAgent(updated, updated.assigneeId).catch(() => {});
+  }
 
   return ok(updated);
 }

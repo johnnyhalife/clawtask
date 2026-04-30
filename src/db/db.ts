@@ -2,18 +2,23 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import crypto from 'crypto';
 
 const DB_DIR = path.join(os.homedir(), '.clawtask');
 const DB_PATH = path.join(DB_DIR, 'clawtask.db');
 
-let _db: Database.Database | null = null;
+declare global {
+  // eslint-disable-next-line no-var
+  var __clawtask_db: Database.Database | undefined;
+}
 
 export function getDb(): Database.Database {
-  if (_db) return _db;
+  if (globalThis.__clawtask_db) return globalThis.__clawtask_db;
 
   fs.mkdirSync(DB_DIR, { recursive: true });
 
-  _db = new Database(DB_PATH);
+  const _db = new Database(DB_PATH);
+  globalThis.__clawtask_db = _db;
   _db.pragma('journal_mode = WAL');
   _db.pragma('foreign_keys = ON');
 
@@ -24,10 +29,65 @@ export function getDb(): Database.Database {
     _db.exec(schema);
   }
 
+  // Migrations
+  runMigrations(_db);
+
   // Seed defaults
   seedDefaults(_db);
 
   return _db;
+}
+
+function runMigrations(db: Database.Database) {
+  // M002: add 'archived' to tasks.status CHECK constraint
+  const taskSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as any)?.sql ?? '';
+  if (taskSchema && !taskSchema.includes("'archived'")) {
+    db.pragma('foreign_keys = OFF');
+    db.transaction(() => {
+      db.exec(`CREATE TABLE tasks_new (
+        id TEXT PRIMARY KEY,
+        issueId TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo','in_progress','blocked','done','archived')),
+        priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
+        assigneeId TEXT,
+        assigneeType TEXT CHECK (assigneeType IN ('agent','human',NULL)),
+        projectId TEXT REFERENCES projects(id) ON DELETE SET NULL,
+        parentTaskId TEXT,
+        dueDate TEXT,
+        startDate TEXT,
+        createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        updatedAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      )`);
+      db.exec('INSERT INTO tasks_new SELECT * FROM tasks');
+      db.exec('DROP TABLE tasks');
+      db.exec('ALTER TABLE tasks_new RENAME TO tasks');
+    })();
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assigneeId)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(projectId)');
+    db.pragma('foreign_keys = ON');
+  }
+
+  // M001: add plaintext apiKey column to agents
+  const cols = (db.pragma('table_info(agents)') as Array<{ name: string }>).map((c) => c.name);
+  if (!cols.includes('apiKey')) {
+    db.exec(`ALTER TABLE agents ADD COLUMN apiKey TEXT NOT NULL DEFAULT ''`);
+  }
+  // Backfill: any agent with empty apiKey gets a fresh key+hash pair (sync both)
+  const stale = db
+    .prepare(`SELECT id FROM agents WHERE apiKey = '' OR apiKey IS NULL`)
+    .all() as Array<{ id: string }>;
+  if (stale.length > 0) {
+    // bcryptjs is async; use sync variant for migration
+    const bcrypt = require('bcryptjs') as typeof import('bcryptjs');
+    for (const { id } of stale) {
+      const freshKey = crypto.randomBytes(32).toString('hex');
+      const freshHash = bcrypt.hashSync(freshKey, 10);
+      db.prepare(`UPDATE agents SET apiKey = ?, apiKeyHash = ? WHERE id = ?`).run(freshKey, freshHash, id);
+    }
+  }
 }
 
 function seedDefaults(db: Database.Database) {

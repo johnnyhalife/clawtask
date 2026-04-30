@@ -17,15 +17,29 @@ export async function GET(req: NextRequest) {
   const assigneeId = searchParams.get('assigneeId');
   const tagId = searchParams.get('tagId');
   const parentTaskId = searchParams.get('parentTaskId');
+  // mineFilter: 'assigned' | 'created' | 'activity'
+  const mineFilter = searchParams.get('mineFilter');
   const sort = searchParams.get('sort') || 'updatedAt';
   const order = searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '50', 10);
   const offset = (page - 1) * limit;
 
+  // Resolve human id for mineFilter queries
+  const humanRow = mineFilter
+    ? (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)
+    : undefined;
+  const humanId = humanRow?.id;
+
+  const needsTagJoin = !!tagId;
+  const needsActivityJoin = mineFilter === 'activity';
+  const needsCreatedJoin = mineFilter === 'created';
+
   let query = `
     SELECT DISTINCT t.* FROM tasks t
-    ${tagId ? 'JOIN task_tags tt ON tt.taskId = t.id' : ''}
+    ${needsTagJoin ? 'JOIN task_tags tt ON tt.taskId = t.id' : ''}
+    ${needsActivityJoin ? 'JOIN activity a ON a.taskId = t.id' : ''}
+    ${needsCreatedJoin ? 'JOIN activity ac ON ac.taskId = t.id' : ''}
     WHERE t.parentTaskId IS NULL
   `;
   const params: (string | number)[] = [];
@@ -35,6 +49,16 @@ export async function GET(req: NextRequest) {
   if (projectId) { query += ' AND t.projectId = ?'; params.push(projectId); }
   if (assigneeId) { query += ' AND t.assigneeId = ?'; params.push(assigneeId); }
   if (tagId) { query += ' AND tt.tagId = ?'; params.push(tagId); }
+  if (mineFilter === 'assigned' && humanId) {
+    query += ' AND t.assigneeId = ? AND t.assigneeType = \'human\'';
+    params.push(humanId);
+  } else if (mineFilter === 'created' && humanId) {
+    query += ' AND ac.actorId = ? AND ac.actorType = \'human\' AND ac.verb = \'created\'';
+    params.push(humanId);
+  } else if (mineFilter === 'activity' && humanId) {
+    query += ' AND a.actorId = ? AND a.actorType = \'human\'';
+    params.push(humanId);
+  }
   if (parentTaskId === 'none') {
     // already filtered above
   }
@@ -73,7 +97,7 @@ export async function POST(req: NextRequest) {
   const issueId = nextIssueId(db);
 
   db.prepare(`
-    INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, endDate, createdAt, updatedAt)
+    INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, dueDate, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   `).run(
     id,
@@ -87,7 +111,7 @@ export async function POST(req: NextRequest) {
     body.assigneeId || null,
     body.assigneeType || null,
     body.startDate || null,
-    body.endDate || null
+    body.dueDate || null
   );
 
   // Tags
@@ -101,6 +125,12 @@ export async function POST(req: NextRequest) {
 
   logActivity(db, { taskId: id, actorId, actorType, verb: 'created' });
   broadcastSse({ type: 'task.created', data: task });
+
+  // Notify adapter if task was created with an agent assignee
+  if (body.assigneeType === 'agent' && body.assigneeId) {
+    const { getAdapterService } = await import('@/lib/adapter');
+    getAdapterService().assignTaskToAgent(task, body.assigneeId).catch(() => {});
+  }
 
   return ok(task, 201);
 }

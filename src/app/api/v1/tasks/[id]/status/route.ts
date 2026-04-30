@@ -5,13 +5,16 @@ import { enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
+import { getAdapterService } from '@/lib/adapter';
+import { resolveTaskId } from '@/lib/tasks';
 
-const VALID_STATUSES = ['todo', 'in_progress', 'blocked', 'done'];
+const VALID_STATUSES = ['todo', 'in_progress', 'blocked', 'done', 'archived'];
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
-  if (!task) return err('NOT_FOUND', 'Task not found', 404);
+  const taskId = resolveTaskId(db, params.id);
+  if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
 
   const agent = await authenticateAgent(req);
   const actorId = agent
@@ -26,11 +29,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   db.prepare("UPDATE tasks SET status = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-    .run(body.status, params.id);
+    .run(body.status, taskId);
 
-  const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any);
-  logActivity(db, { taskId: params.id, actorId, actorType, verb: 'status_changed', meta: { from: task.status, to: body.status } });
+  const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any);
+  // Don't log pulse activity for archiving — it's a housekeeping action, not progress
+  if (body.status !== 'archived') {
+    logActivity(db, { taskId, actorId, actorType, verb: 'status_changed', meta: { from: task.status, to: body.status } });
+  }
   broadcastSse({ type: 'task.updated', data: updated });
+
+  // If transitioning to in_progress with an agent assignee, wake the adapter
+  if (body.status === 'in_progress' && updated.assigneeId && updated.assigneeType === 'agent') {
+    const adapter = getAdapterService();
+    adapter.assignTaskToAgent(updated, updated.assigneeId).catch(() => {});
+  }
 
   return ok(updated);
 }

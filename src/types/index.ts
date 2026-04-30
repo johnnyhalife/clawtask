@@ -104,6 +104,7 @@ export interface Config {
   humanName: string;
   humanDisplayName: string;
   gatewayUrl: string;
+  workspaceLogo?: string;
 }
 
 // API response envelopes

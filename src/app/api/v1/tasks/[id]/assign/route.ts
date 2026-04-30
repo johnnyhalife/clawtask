@@ -6,11 +6,12 @@ import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
+import { resolveTaskId } from '@/lib/tasks';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
-  if (!task) return err('NOT_FOUND', 'Task not found', 404);
+  const taskId = resolveTaskId(db, params.id);
+  if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
 
   const agent = await authenticateAgent(req);
   const actorId = agent
@@ -23,10 +24,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!body.assigneeId || !body.assigneeType) return err('MISSING_FIELDS', 'assigneeId and assigneeType required', 400);
 
   db.prepare("UPDATE tasks SET assigneeId = ?, assigneeType = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-    .run(body.assigneeId, body.assigneeType, params.id);
+    .run(body.assigneeId, body.assigneeType, taskId);
 
-  const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any);
-  logActivity(db, { taskId: params.id, actorId, actorType, verb: 'assigned', meta: { assigneeId: body.assigneeId, assigneeType: body.assigneeType } });
+  const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any);
+  logActivity(db, { taskId, actorId, actorType, verb: 'assigned', meta: { assigneeId: body.assigneeId, assigneeType: body.assigneeType } });
   broadcastSse({ type: 'task.updated', data: updated });
 
   // Notify adapter if assigned to agent

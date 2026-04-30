@@ -2,11 +2,26 @@
 
 import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef } from 'react';
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  background: 'var(--color-base-150)',
+  border: '1px solid var(--color-base-300)',
+  borderRadius: 6,
+  fontSize: '0.875rem',
+  color: 'var(--color-base-800)',
+  fontFamily: "'Instrument Sans', sans-serif",
+  outline: 'none',
+  transition: 'border-color 0.15s',
+};
+
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  ({ className = '', ...props }, ref) => (
+  ({ style, ...props }, ref) => (
     <input
       ref={ref}
-      className={`w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors ${className}`}
+      style={{ ...inputStyle, ...style }}
+      onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+      onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
       {...props}
     />
   )
@@ -14,10 +29,12 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 Input.displayName = 'Input';
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  ({ className = '', ...props }, ref) => (
+  ({ style, ...props }, ref) => (
     <textarea
       ref={ref}
-      className={`w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors resize-none ${className}`}
+      style={{ ...inputStyle, resize: 'none', ...style }}
+      onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+      onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
       {...props}
     />
   )
@@ -25,10 +42,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 Textarea.displayName = 'Textarea';
 
 export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
-  ({ className = '', children, ...props }, ref) => (
+  ({ style, children, ...props }, ref) => (
     <select
       ref={ref}
-      className={`w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-zinc-200 focus:outline-none focus:border-blue-500 transition-colors ${className}`}
+      style={{ ...inputStyle, ...style }}
+      onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+      onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
       {...props}
     >
       {children}

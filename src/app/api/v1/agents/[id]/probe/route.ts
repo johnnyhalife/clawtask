@@ -21,7 +21,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const { apiKeyHash, ...rest } = updated;
     broadcastSse({ type: 'agent.probe', data: { ...rest, apiKey: '••••••' } });
 
-    return ok({ ...rest, apiKey: '••••••' });
+    return ok({ ...rest, apiKey: '••••••', ...(result.error ? { probeError: result.error } : {}) });
   } catch (e: any) {
     db.prepare("UPDATE agents SET probeStatus = 'error', probeLastAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
       .run(params.id);

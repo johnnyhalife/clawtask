@@ -51,13 +51,32 @@ export function enrichActivity(db: Database.Database, row: ActivityRow) {
       : db.prepare('SELECT id, name, displayName FROM humans WHERE id = ?').get(row.actorId);
 
   const task = row.taskId
-    ? db.prepare('SELECT id, issueId, title FROM tasks WHERE id = ?').get(row.taskId)
+    ? db.prepare('SELECT id, issueId, title, status, priority FROM tasks WHERE id = ?').get(row.taskId)
     : null;
+
+  const parsedMeta = JSON.parse(row.meta || '{}');
+
+  // For commented verb, attach a snippet of the comment content
+  if (row.verb === 'commented' && row.taskId) {
+    const latestComment = db
+      .prepare("SELECT content FROM comments WHERE taskId = ? AND type = 'message' ORDER BY createdAt DESC LIMIT 1")
+      .get(row.taskId) as { content: string } | undefined;
+    if (latestComment) parsedMeta.snippet = latestComment.content.slice(0, 120);
+  }
+
+  // For assigned verb, resolve the assignee display name
+  if (row.verb === 'assigned' && parsedMeta.assigneeId) {
+    const assignee =
+      parsedMeta.assigneeType === 'agent'
+        ? db.prepare('SELECT displayName FROM agents WHERE id = ?').get(parsedMeta.assigneeId) as { displayName: string } | undefined
+        : db.prepare('SELECT displayName FROM humans WHERE id = ?').get(parsedMeta.assigneeId) as { displayName: string } | undefined;
+    if (assignee) parsedMeta.assigneeName = assignee.displayName;
+  }
 
   return {
     ...row,
     humanRequested: row.humanRequested === 1,
-    meta: JSON.parse(row.meta || '{}'),
+    meta: parsedMeta,
     actor,
     task,
   };

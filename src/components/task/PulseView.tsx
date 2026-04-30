@@ -1,166 +1,460 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Task, Activity, Comment } from '@/types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { Activity, Comment, Task } from '@/types';
 import { useSse } from '@/hooks/useSse';
-import { StatusBadge, PriorityBadge } from '@/components/ui/Badge';
 import { TaskDrawer } from './TaskDrawer';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
+import { useTheme } from '@/components/ui/ThemeProvider';
 
-interface ActiveAgentRun {
-  task: Task;
-  latestComment: Comment | null;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function isoDate(d: Date) { return d.toISOString().slice(0, 10); }
+
+function intensityColor(n: number, dark = true): string {
+  if (n === 0) return 'var(--color-base-250, var(--color-base-200))';
+  if (dark) {
+    if (n <= 1) return '#0e4429';
+    if (n <= 3) return '#006d32';
+    if (n <= 6) return '#26a641';
+    return '#39d353';
+  }
+  // Light mode: visible greens on white
+  if (n <= 1) return '#bbf7d0';
+  if (n <= 3) return '#4ade80';
+  if (n <= 6) return '#16a34a';
+  return '#166534';
 }
 
-export function PulseView() {
-  const [activeRuns, setActiveRuns] = useState<ActiveAgentRun[]>([]);
-  const [recentTasks, setRecentTasks] = useState<Task[]>([]);
-  const [activity, setActivity] = useState<Activity[]>([]);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+function verbLabel(verb: string) {
+  const m: Record<string, string> = {
+    created: 'created issue', updated: 'updated', status_changed: 'changed status',
+    priority_changed: 'changed priority', commented: 'commented', assigned: 'assigned',
+    unassigned: 'unassigned', closed: 'closed', reopened: 'reopened',
+    tagged: 'added tag', untagged: 'removed tag',
+  };
+  return m[verb] ?? verb.replace(/_/g, ' ');
+}
 
-  const loadData = useCallback(async () => {
-    // Active agent runs (in_progress + assigned to agent)
-    const runsRes = await fetch('/api/v1/tasks?status=in_progress&limit=10').then((r) => r.json());
-    if (runsRes.ok) {
-      const agentTasks = (runsRes.data.tasks as Task[]).filter(
-        (t) => t.assigneeType === 'agent'
-      );
-      const runs: ActiveAgentRun[] = await Promise.all(
-        agentTasks.map(async (task) => {
-          const commentsRes = await fetch(`/api/v1/tasks/${task.id}/comments`).then((r) => r.json());
-          const comments: Comment[] = commentsRes.ok ? commentsRes.data : [];
-          const latestComment = comments.filter((c) => c.type === 'message').slice(-1)[0] || null;
-          return { task, latestComment };
-        })
-      );
-      setActiveRuns(runs);
-    }
+function verbIcon(verb: string) {
+  switch (verb) {
+    case 'created':          return <circle cx="12" cy="12" r="4" fill="currentColor" />;
+    case 'status_changed':   return <><circle cx="12" cy="12" r="9" /><polyline points="12 8 12 12 14 14" /></>;
+    case 'commented':        return <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />;
+    case 'assigned':         return <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>;
+    default:                 return <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>;
+  }
+}
 
-    // Recent tasks (updated last hour)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const recentRes = await fetch('/api/v1/tasks?sort=updatedAt&order=desc&limit=10').then((r) => r.json());
-    if (recentRes.ok) {
-      const recent = (recentRes.data.tasks as Task[]).filter(
-        (t) => new Date(t.updatedAt) > new Date(oneHourAgo)
-      );
-      setRecentTasks(recent);
-    }
+const STATUS_COLOR: Record<string, string> = {
+  todo: 'var(--color-base-650)', in_progress: '#3189FF', blocked: '#F87171', done: '#22C55E',
+};
 
-    // Activity feed
-    const actRes = await fetch('/api/v1/activity?limit=20').then((r) => r.json());
-    if (actRes.ok) setActivity(actRes.data.activity);
-  }, []);
+// ─── Contribution grid helpers ─────────────────────────────────────────────────
+// Build day buckets from startDate (inclusive) to endDate (inclusive)
+function buildGrid(startDate: Date, endDate: Date, activity: Activity[]) {
+  // Expand to Monday of the start week
+  const start = new Date(startDate);
+  const dayOfWeek = start.getDay(); // 0=Sun
+  const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
+  start.setDate(start.getDate() + mondayOffset);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const buckets = new Map<string, number>();
+  const cur = new Date(start);
+  while (cur <= endDate) {
+    buckets.set(isoDate(cur), 0);
+    cur.setDate(cur.getDate() + 1);
+  }
 
-  useSse((event) => {
-    if (['task.created', 'task.updated', 'comment.added', 'comment.updated', 'activity.added'].includes(event.type)) {
-      loadData();
-    }
+  for (const a of activity) {
+    const key = new Date(a.createdAt).toISOString().slice(0, 10);
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+
+  // Build weeks (columns), each a 7-element array Sun-Sat → Mon-Sun
+  const days = Array.from(buckets.entries()).map(([date, count]) => ({ date, count }));
+  const weeks: { date: string; count: number; inRange: boolean }[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7).map(d => ({
+      ...d,
+      inRange: d.date >= isoDate(startDate) && d.date <= isoDate(endDate),
+    })));
+  }
+  return weeks;
+}
+
+function buildMonthLabels(weeks: { date: string }[][]) {
+  const labels: { label: string; col: number }[] = [];
+  let last = '';
+  weeks.forEach((week, wi) => {
+    const m = MONTH_SHORT[new Date(week[0].date).getMonth()];
+    if (m !== last) { labels.push({ label: m, col: wi }); last = m; }
   });
+  return labels;
+}
+
+// ─── Activity grouping ─────────────────────────────────────────────────────────
+interface IssueGroup {
+  taskId: string;
+  issueId: string;
+  title: string;
+  items: Activity[];
+  latestAt: string;
+}
+interface MonthGroup {
+  key: string;   // YYYY-MM
+  label: string; // "April 2026"
+  issues: IssueGroup[];
+}
+
+function groupActivity(activity: Activity[]): MonthGroup[] {
+  const byMonth = new Map<string, Map<string, IssueGroup>>();
+
+  for (const a of activity) {
+    const d = new Date(a.createdAt);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const taskId = a.taskId ?? '__no_task__';
+    const issueId = (a.task as any)?.issueId ?? '';
+    const title = (a.task as any)?.title ?? '(no issue)';
+
+    if (!byMonth.has(monthKey)) byMonth.set(monthKey, new Map());
+    const m = byMonth.get(monthKey)!;
+    if (!m.has(taskId)) m.set(taskId, { taskId, issueId, title, items: [], latestAt: a.createdAt });
+    const g = m.get(taskId)!;
+    g.items.push(a);
+    if (a.createdAt > g.latestAt) g.latestAt = a.createdAt;
+  }
+
+  return Array.from(byMonth.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, issueMap]) => {
+      const [year, month] = key.split('-');
+      const label = `${MONTH_SHORT[parseInt(month, 10) - 1]} ${year}`;
+      const issues = Array.from(issueMap.values()).sort((a, b) => b.latestAt.localeCompare(a.latestAt));
+      return { key, label, issues };
+    });
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
+function VerbIcon({ verb }: { verb: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {verbIcon(verb)}
+    </svg>
+  );
+}
+
+function ActivityRow({ a }: { a: Activity }) {
+  const meta = a.meta as Record<string, any>;
+  const isAgent = a.actorType === 'agent';
+  const actorName = (a.actor as any)?.displayName ?? a.actorId;
+  const d = new Date(a.createdAt);
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Active Agent Runs */}
-      {activeRuns.length > 0 && (
-        <section>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-            🤖 Active Agent Runs
-          </h2>
-          <div className="space-y-3">
-            {activeRuns.map(({ task, latestComment }) => (
-              <div
-                key={task.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 cursor-pointer hover:border-zinc-700 transition-colors"
-                onClick={() => setSelectedTaskId(task.id)}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-xs font-mono text-zinc-500">{task.issueId}</span>
-                  <StatusBadge status={task.status} />
-                  <PriorityBadge priority={task.priority} />
-                  <span className="text-xs text-zinc-500 ml-auto">
-                    🤖 {(task.assignee as any)?.displayName}
-                  </span>
-                </div>
-                <div className="text-sm font-medium text-zinc-200 mb-2">{task.title}</div>
-                {latestComment && (
-                  <div className="text-xs text-zinc-500 bg-zinc-800/50 rounded p-2 border border-zinc-700/50 line-clamp-2">
-                    {latestComment.content}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+    <div className="flex items-center gap-3 py-2 pl-4 pr-3" style={{ borderTop: '1px solid var(--color-base-200)' }}>
+      <ActorAvatar name={actorName} isAgent={isAgent} size={20} />
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        <span style={{ color: isAgent ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem', fontWeight: 600, flexShrink: 0 }}>
+          {actorLabel(actorName, isAgent)}
+        </span>
+        <span style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem' }}>
+          {verbLabel(a.verb)}
+        </span>
+        {a.verb === 'status_changed' && meta.from && meta.to && (
+          <span className="flex items-center gap-1" style={{ fontSize: '0.72rem' }}>
+            <span style={{ color: STATUS_COLOR[meta.from] ?? 'var(--color-base-650)' }}>{meta.from?.replace('_', ' ')}</span>
+            <span style={{ color: 'var(--color-base-400)' }}>→</span>
+            <span style={{ color: STATUS_COLOR[meta.to] ?? 'var(--color-base-650)', fontWeight: 600 }}>{meta.to?.replace('_', ' ')}</span>
+          </span>
+        )}
+      </div>
+      <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', flexShrink: 0 }}>{time}</span>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Recent Changes */}
-        <section>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-            🕐 Changed Last Hour
+function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (id: string, issueId?: string) => void }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const count = group.items.length;
+  const primaryVerb = group.items[0]?.verb ?? 'updated';
+
+  return (
+    <div className="mb-3">
+      {/* Group header */}
+      <button
+        type="button"
+        className="flex items-center gap-3 w-full py-2.5 text-left group"
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+        onClick={() => setCollapsed(v => !v)}
+      >
+        {/* Icon */}
+        <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
+          style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-650)' }}>
+          <VerbIcon verb={primaryVerb} />
+        </div>
+        {/* Label */}
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>
+            {count} {count === 1 ? 'activity' : 'activities'}
+          </span>
+          {' '}
+          <span className="text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>on</span>
+          {' '}
+          <button
+            type="button"
+            className="text-sm font-medium"
+            style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}
+            onClick={e => { e.stopPropagation(); if (group.taskId !== '__no_task__') onOpenTask(group.taskId, group.issueId); }}
+          >
+            {group.issueId && <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 4 }}>{group.issueId}</span>}
+            {group.title}
+          </button>
+        </div>
+        {/* Collapse icon */}
+        <div style={{ color: 'var(--color-base-400)', flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Activity items */}
+      {!collapsed && (
+        <div className="rounded-lg overflow-hidden ml-11" style={{ border: '1px solid var(--color-base-200)', background: 'var(--color-base-100)' }}>
+          {group.items.map(a => <ActivityRow key={a.id} a={a} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main PulseView ───────────────────────────────────────────────────────────
+export function PulseView() {
+  const { theme } = useTheme(); // subscribe so cells re-render on theme change
+  const router = useRouter();
+  const [allActivity, setAllActivity] = useState<Activity[]>([]);
+  const [activeRuns, setActiveRuns] = useState<Task[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | 'T12'>('T12');
+
+  const loadData = useCallback(async () => {
+    const [actRes, runsRes] = await Promise.all([
+      fetch('/api/v1/activity?limit=1000').then(r => r.json()),
+      fetch('/api/v1/tasks?status=in_progress&limit=20').then(r => r.json()),
+    ]);
+    if (actRes.ok) setAllActivity(actRes.data.activity ?? []);
+    if (runsRes.ok) setActiveRuns((runsRes.data.tasks as Task[]).filter(t => t.assigneeType === 'agent'));
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+  useSse(event => {
+    if (['task.created', 'task.updated', 'comment.added', 'activity.added'].includes(event.type)) loadData();
+  });
+
+  // ── Available years ──
+  const availableYears = useMemo(() => {
+    const cur = new Date().getFullYear();
+    const fromData = new Set(allActivity.map(a => new Date(a.createdAt).getFullYear()));
+    fromData.add(cur);
+    return Array.from(fromData).sort((a, b) => b - a);
+  }, [allActivity]);
+
+  // ── Date range for selected period ──
+  const { startDate, endDate } = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (selectedYear === 'T12') {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 364);
+      start.setHours(0, 0, 0, 0);
+      return { startDate: start, endDate: today };
+    }
+    const start = new Date(selectedYear, 0, 1);
+    const end = new Date(Math.min(new Date(selectedYear, 11, 31, 23, 59, 59, 999).getTime(), today.getTime()));
+    return { startDate: start, endDate: end };
+  }, [selectedYear]);
+
+  // ── Filter activity to period ──
+  const periodActivity = useMemo(() =>
+    allActivity.filter(a => {
+      const d = new Date(a.createdAt);
+      return d >= startDate && d <= endDate;
+    }), [allActivity, startDate, endDate]);
+
+  // ── Contribution grid ──
+  const weeks = useMemo(() => buildGrid(startDate, endDate, periodActivity), [startDate, endDate, periodActivity]);
+  const monthLabels = useMemo(() => buildMonthLabels(weeks), [weeks]);
+  const totalCount = periodActivity.length;
+
+  // ── Activity groups ──
+  const monthGroups = useMemo(() => groupActivity(periodActivity), [periodActivity]);
+
+  const periodLabel = selectedYear === 'T12' ? 'the last year' : String(selectedYear);
+
+  return (
+    <div className="flex gap-8 min-h-0">
+      {/* ── Main column ── */}
+      <div className="flex-1 min-w-0 flex flex-col gap-8 pb-16">
+
+        {/* Header */}
+        <div>
+          <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--color-base-900)', fontFamily: "'Instrument Sans', sans-serif" }}>
+            {totalCount} {totalCount === 1 ? 'activity' : 'activities'} in {periodLabel}
           </h2>
-          {recentTasks.length === 0 ? (
-            <div className="text-sm text-zinc-600">No recent changes</div>
-          ) : (
+
+          {/* Contribution graph */}
+          <div className="rounded-xl p-4" style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)' }}>
+            {/* Month labels row */}
+            <div className="flex" style={{ marginBottom: 4, paddingLeft: 28 }}>
+              {weeks.map((week, wi) => {
+                const found = monthLabels.find(m => m.col === wi);
+                return (
+                  <div key={wi} style={{ width: 13, flexShrink: 0, fontSize: '0.68rem', color: found ? 'var(--color-base-650)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", userSelect: 'none' }}>
+                    {found?.label ?? 'x'}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Grid with day labels */}
+            <div className="flex items-start gap-0">
+              {/* Day labels */}
+              <div className="flex flex-col mr-1" style={{ gap: 3, paddingTop: 1 }}>
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+                  <div key={d} style={{ height: 13, width: 24, fontSize: '0.62rem', color: (i === 0 || i === 2 || i === 4) ? 'var(--color-base-500)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", display: 'flex', alignItems: 'center', userSelect: 'none' }}>
+                    {(i === 0 || i === 2 || i === 4) ? d : ''}
+                  </div>
+                ))}
+              </div>
+
+              {/* Cells */}
+              <div className="flex" style={{ gap: 3 }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} className="flex flex-col" style={{ gap: 3 }}>
+                    {week.map(({ date, count, inRange }) => (
+                      <div
+                        key={date}
+                        title={`${date}: ${count} event${count !== 1 ? 's' : ''}`}
+                        style={{ width: 13, height: 13, borderRadius: 3, background: inRange ? intensityColor(count, theme === 'dark') : 'var(--color-base-150)', flexShrink: 0 }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-1.5 mt-3 justify-end">
+              <span style={{ fontSize: '0.68rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>Less</span>
+              {[0, 1, 3, 6, 9].map(n => (
+                <div key={n} style={{ width: 13, height: 13, borderRadius: 3, background: intensityColor(n, theme === 'dark') }} />
+              ))}
+              <span style={{ fontSize: '0.68rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>More</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Active runs */}
+        {activeRuns.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-base-900)', fontFamily: "'Instrument Sans', sans-serif" }}>
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#3189FF', boxShadow: '0 0 6px #3189FF' }} />
+              Active now
+            </h3>
             <div className="space-y-2">
-              {recentTasks.map((task) => (
-                <div
+              {activeRuns.map(task => (
+                <button
                   key={task.id}
-                  className="flex items-center gap-3 py-2 cursor-pointer hover:bg-zinc-900 rounded px-2 transition-colors"
-                  onClick={() => setSelectedTaskId(task.id)}
+                  type="button"
+                  className="w-full text-left rounded-lg px-4 py-3 transition-colors"
+                  style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', cursor: 'pointer' }}
+                  onClick={() => router.push(`/issues/${task.issueId.toLowerCase()}`)}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-base-400)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
                 >
-                  <span className="text-xs font-mono text-zinc-600 w-20 flex-shrink-0">{task.issueId}</span>
-                  <span className="text-sm text-zinc-300 flex-1 truncate">{task.title}</span>
-                  <StatusBadge status={task.status} />
+                  <div className="flex items-center gap-2 mb-1">
+                    <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', color: 'var(--color-base-500)' }}>{task.issueId}</span>
+                    <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: '#3189FF22', color: '#3189FF', border: '1px solid #3189FF44', fontFamily: "'Instrument Sans', sans-serif" }}>in progress</span>
+                    <span className="ml-auto text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>{(task.assignee as any)?.displayName}</span>
+                  </div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{task.title}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Activity feed */}
+        <section>
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-base-900)', fontFamily: "'Instrument Sans', sans-serif" }}>
+            Activity
+          </h3>
+
+          {monthGroups.length === 0 ? (
+            <div style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.85rem' }}>No activity in this period.</div>
+          ) : (
+            <div>
+              {monthGroups.map(mg => (
+                <div key={mg.key} className="mb-6">
+                  {/* Month header */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-sm font-bold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                      {mg.label.split(' ')[0]}
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                      {mg.label.split(' ')[1]}
+                    </span>
+                    <div className="flex-1" style={{ height: 1, background: 'var(--color-base-200)' }} />
+                  </div>
+
+                  {/* Issue groups */}
+                  {mg.issues.map(group => (
+                    <IssueGroupRow
+                      key={group.taskId}
+                      group={group}
+                      onOpenTask={(id, issueId) => router.push(`/issues/${(issueId ?? id).toLowerCase()}`)}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
           )}
         </section>
-
-        {/* Activity Feed */}
-        <section>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-            📋 Recent Activity
-          </h2>
-          {activity.length === 0 ? (
-            <div className="text-sm text-zinc-600">No activity yet</div>
-          ) : (
-            <div className="space-y-1">
-              {activity.slice(0, 15).map((a) => {
-                const actorEmoji = a.actorType === 'agent' ? '🤖' : '👤';
-                const actorName = (a.actor as any)?.displayName || a.actorId;
-                const taskName = (a.task as any)?.issueId || '';
-                return (
-                  <div
-                    key={a.id}
-                    className="flex items-start gap-2 py-1.5 text-xs text-zinc-500 cursor-pointer hover:text-zinc-400 transition-colors"
-                    onClick={() => a.taskId && setSelectedTaskId(a.taskId)}
-                  >
-                    <span>{actorEmoji}</span>
-                    <span className="flex-1">
-                      <span className="text-zinc-400">{actorName}</span>{' '}
-                      {a.verb.replace(/_/g, ' ')}{' '}
-                      {taskName && <span className="font-mono text-zinc-600">{taskName}</span>}
-                    </span>
-                    <span className="text-zinc-700 flex-shrink-0">
-                      {new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
       </div>
 
-      {selectedTaskId && (
-        <TaskDrawer taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
-      )}
+      {/* ── Year rail — aligned with graph, not title ── */}
+      <div className="flex-shrink-0 flex flex-col gap-1" style={{ width: 52, marginTop: '2.5rem' }}>
+        {[...availableYears].map(year => {
+          const isT12 = year === new Date().getFullYear();
+          const active = isT12 ? selectedYear === 'T12' : selectedYear === year;
+          return (
+            <button
+              key={year}
+              type="button"
+              className="px-2 py-1 text-sm text-right transition-colors"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: "'Instrument Sans', sans-serif",
+                fontWeight: active ? 700 : 400,
+                color: active ? 'var(--color-base-900)' : 'var(--color-base-400)',
+                textDecoration: active ? 'underline' : 'none',
+                textUnderlineOffset: 3,
+              }}
+              onClick={() => setSelectedYear(isT12 ? 'T12' : year)}
+              onMouseEnter={e => { if (!active) (e.currentTarget.style.color = 'var(--color-base-650)'); }}
+              onMouseLeave={e => { if (!active) (e.currentTarget.style.color = 'var(--color-base-400)'); }}
+            >
+              {year}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

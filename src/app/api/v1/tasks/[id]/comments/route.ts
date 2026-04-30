@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
+import { resolveTaskId } from '@/lib/tasks';
 
 function enrichComment(db: ReturnType<typeof getDb>, row: any) {
   const author =
@@ -17,16 +18,19 @@ function enrichComment(db: ReturnType<typeof getDb>, row: any) {
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
+  const taskId = resolveTaskId(db, params.id);
+  if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
   const rows = db
     .prepare('SELECT * FROM comments WHERE taskId = ? ORDER BY createdAt ASC')
-    .all(params.id) as any[];
+    .all(taskId) as any[];
   return ok(rows.map((r) => enrichComment(db, r)));
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
-  if (!task) return err('NOT_FOUND', 'Task not found', 404);
+  const taskId = resolveTaskId(db, params.id);
+  if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
 
   const agent = await authenticateAgent(req);
   const human = db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined;
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   `).run(
     id,
-    params.id,
+    taskId,
     actorId,
     actorType,
     body.type || 'message',
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   );
 
   const comment = enrichComment(db, db.prepare('SELECT * FROM comments WHERE id = ?').get(id));
-  logActivity(db, { taskId: params.id, actorId, actorType, verb: 'commented', humanRequested: body.humanRequested });
+  logActivity(db, { taskId, actorId, actorType, verb: 'commented', humanRequested: body.humanRequested });
   broadcastSse({ type: 'comment.added', data: comment });
 
   // If human posted a comment and task is assigned to an agent, notify adapter

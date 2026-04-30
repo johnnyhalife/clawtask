@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
   const id = uuidv4();
 
   db.prepare(`
-    INSERT INTO agents (id, openclawAgentId, displayName, apiKeyHash, probeStatus)
-    VALUES (?, ?, ?, ?, 'pending')
-  `).run(id, body.openclawAgentId, body.displayName, apiKeyHash);
+    INSERT INTO agents (id, openclawAgentId, displayName, apiKeyHash, apiKey, probeStatus)
+    VALUES (?, ?, ?, ?, ?, 'pending')
+  `).run(id, body.openclawAgentId, body.displayName, apiKeyHash, apiKey);
 
   const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
   const { apiKeyHash: _, ...rest } = agent;
