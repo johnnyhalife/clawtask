@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   FilterState, SortField,
   StatusValue, PriorityValue, AssigneeFilter, GroupByField,
@@ -296,8 +297,11 @@ type Panel = 'filter' | 'sort' | 'group' | null;
 export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hideToolbar, totalCount }, searchRef) {
   const [query, setQuery] = useState('');
   const [openPanel, setOpenPanel] = useState<Panel>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const filterRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -325,6 +329,105 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
     e.preventDefault();
     if (query.trim()) router.push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
   };
+
+  // Mobile search expand effect
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      setTimeout(() => mobileSearchRef.current?.focus(), 50);
+    }
+  }, [mobileSearchOpen]);
+
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <div className="flex-shrink-0" style={{ background: 'var(--color-base)', borderBottom: '1px solid var(--color-base-300)' }}>
+        {/* Main row */}
+        <div className="flex items-center gap-2 px-3" style={{ height: '44px', minHeight: '44px' }}>
+          {onNewTask && (
+            <button
+              onClick={onNewTask}
+              className="flex items-center justify-center rounded-md flex-shrink-0 transition-opacity hover:opacity-80"
+              style={{
+                width: 32, height: 32,
+                background: 'var(--color-base-200)', color: 'var(--color-base-800)', border: '1px solid var(--color-base-350)',
+              }}
+              aria-label="New Issue"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          )}
+
+          {/* Title / search input */}
+          <div className="flex-1" style={{ overflow: 'hidden' }}>
+            {mobileSearchOpen ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (query.trim()) {
+                    router.push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+                    setMobileSearchOpen(false);
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <input
+                  ref={mobileSearchRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setMobileSearchOpen(false); setQuery(''); } }}
+                  placeholder="Search issues…"
+                  className="flex-1 text-xs rounded-md outline-none"
+                  style={{
+                    padding: '6px 10px',
+                    background: 'var(--color-base-150)', border: '1px solid #3189FF',
+                    color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { setMobileSearchOpen(false); setQuery(''); }}
+                  style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', padding: '4px 6px' }}
+                >
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <span
+                style={{
+                  color: 'var(--color-base-700)',
+                  fontFamily: "'Darker Grotesque', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Issues
+              </span>
+            )}
+          </div>
+
+          {!mobileSearchOpen && (
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(true)}
+              className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
+              style={{ background: 'transparent', color: 'var(--color-base-500)', border: 'none', cursor: 'pointer' }}
+              aria-label="Search"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-shrink-0" style={{ background: 'var(--color-base)', borderBottom: '1px solid var(--color-base-300)' }}>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
@@ -62,6 +63,10 @@ export function Sidebar({ appName, workspaceLogo }: { appName: string; workspace
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = searchParams.get('tab') || 'pulse';
+  const isMobile = useIsMobile();
+
+  // On mobile, sidebar is hidden — BottomNav takes over
+  if (isMobile) return null;
 
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: tags, reload: reloadTags } = useApi<Tag[]>('/api/v1/tags');

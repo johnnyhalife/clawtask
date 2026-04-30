@@ -10,9 +10,11 @@ import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { ChipSelect, ChipSelectHandle, STATUS_OPTIONS, PRIORITY_OPTIONS } from '@/components/task/ChipSelect';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { BottomNav } from '@/components/layout/BottomNav';
 import { Tag, Project } from '@/types';
 import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function relativeTime(date: string) {
@@ -348,6 +350,151 @@ export default function IssuePage() {
   const statusCfg = STATUS_OPTIONS.find(o => o.value === task?.status) ?? STATUS_OPTIONS[0];
   const priorityCfg = PRIORITY_OPTIONS.find(o => o.value === task?.priority) ?? PRIORITY_OPTIONS[2];
   const appName = config?.appName ?? 'Clawtask';
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col overflow-hidden" style={{ background: 'var(--color-base)', height: '100dvh' }}>
+        {/* Mobile: top nav bar */}
+        <div
+          className="flex items-center gap-2 px-4 flex-shrink-0"
+          style={{ height: 44, borderBottom: '1px solid var(--color-base-200)', background: 'var(--color-base)' }}
+        >
+          <Link href="/" style={{ color: 'var(--color-base-500)', display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </Link>
+          <span className="flex-1 truncate text-sm" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 600 }}>
+            {task?.issueId ?? '…'}
+          </span>
+        </div>
+
+        {/* Properties: horizontal scrollable chip row */}
+        <div
+          className="flex-shrink-0 px-4 py-2"
+          style={{ borderBottom: '1px solid var(--color-base-200)', overflowX: 'auto', whiteSpace: 'nowrap' }}
+        >
+          {task ? (
+            <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+              <ChipSelect ref={statusRef} label={statusCfg.label} color={statusCfg.color} options={STATUS_OPTIONS} onChange={handleStatusChange} />
+              <ChipSelect ref={priorityRef} label={priorityCfg.label} color={priorityCfg.color} options={PRIORITY_OPTIONS} onChange={handlePriorityChange} />
+              {task.assignee && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border"
+                  style={{ borderColor: '#7E67F750', background: '#7E67F720', color: '#7E67F7', fontFamily: "'Instrument Sans', sans-serif", whiteSpace: 'nowrap' }}
+                >
+                  <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={14} />
+                  {task.assigneeType === 'human' ? 'You' : (task.assignee as any).displayName}
+                </span>
+              )}
+              {task.project && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border"
+                  style={{ borderColor: task.project.color + '50', background: task.project.color + '20', color: task.project.color, fontFamily: "'Instrument Sans', sans-serif", whiteSpace: 'nowrap' }}
+                >
+                  <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                  {task.project.name}
+                </span>
+              )}
+              {task.tags?.map(tag => (
+                <span
+                  key={tag.id}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border"
+                  style={{ borderColor: tag.color + '50', background: tag.color + '20', color: tag.color, fontFamily: "'Instrument Sans', sans-serif", whiteSpace: 'nowrap' }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Issue header */}
+        <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+          <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? 8 : 0 }}>
+            {task?.title}
+          </h1>
+          {task?.description && (
+            <div className="prose-clawtask" style={{ color: 'var(--color-base-600)', fontSize: '0.875rem' }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{task.description}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center px-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+          {(['chat', 'activity'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
+              style={{
+                color: activeTab === tab ? 'var(--color-base-900)' : 'var(--color-base-500)',
+                borderBottom: activeTab === tab ? '2px solid var(--color-base-900)' : '2px solid transparent',
+                marginBottom: '-1px',
+                fontFamily: "'Instrument Sans', sans-serif",
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* Timeline */}
+        <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom))' }}>
+          {timeline.map(item => <TimelineEntry key={item.id} item={item} />)}
+          {timeline.length === 0 && (
+            <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
+              {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Reply box — pinned above bottom nav */}
+        <form
+          onSubmit={handleComment}
+          className="flex-shrink-0 px-4 py-3"
+          style={{
+            borderTop: '1px solid var(--color-base-200)',
+            background: 'var(--color-base)',
+            position: 'sticky',
+            bottom: 'calc(56px + env(safe-area-inset-bottom))',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <textarea
+              value={newComment}
+              onChange={e => setNewComment(e.target.value)}
+              placeholder="Reply"
+              rows={2}
+              className="flex-1 px-3 py-2 text-sm rounded-xl resize-none"
+              style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", outline: 'none' }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-base-500)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
+            />
+            <button
+              type="submit"
+              disabled={submitting || !newComment.trim()}
+              className="flex-shrink-0 px-3 py-2 rounded-lg text-sm font-semibold"
+              style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none', minHeight: '44px' }}
+            >
+              {submitting ? '…' : 'Send'}
+            </button>
+          </div>
+        </form>
+
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>

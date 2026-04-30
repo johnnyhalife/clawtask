@@ -8,6 +8,8 @@ import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { BottomNav } from '@/components/layout/BottomNav';
 
 type SettingsTab = 'general' | 'adapter' | 'agents' | 'projects';
 
@@ -510,6 +512,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
   const { theme, toggle: toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
 
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'general', label: 'General' },
@@ -517,6 +520,92 @@ export default function SettingsPage() {
     { key: 'agents', label: 'Agents' },
     { key: 'projects', label: 'Projects' },
   ];
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col overflow-hidden" style={{ background: 'var(--color-base)', height: '100dvh' }}>
+        {/* Top bar */}
+        <div className="flex-shrink-0 flex items-center px-4" style={{ height: 44, background: 'var(--color-base)', borderBottom: '1px solid var(--color-base-300)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', color: 'var(--color-base-500)', textDecoration: 'none' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          </Link>
+          <span style={{ color: 'var(--color-base-700)', fontSize: '0.9rem', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 600, marginLeft: 8, flex: 1 }}>Settings</span>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Horizontal scrollable tab pills */}
+        <div
+          className="flex-shrink-0"
+          style={{
+            overflowX: 'auto',
+            borderBottom: '1px solid var(--color-base-300)',
+            background: 'var(--color-base)',
+            padding: '8px 12px',
+            display: 'flex',
+            gap: 8,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 999,
+                background: activeTab === tab.key ? 'rgba(128,128,128,0.15)' : 'transparent',
+                color: activeTab === tab.key ? 'var(--color-base-900)' : 'var(--color-base-600)',
+                fontFamily: "'Instrument Sans', sans-serif",
+                fontWeight: activeTab === tab.key ? 600 : 500,
+                fontSize: '0.8125rem',
+                border: activeTab === tab.key ? '1px solid var(--color-base-350)' : '1px solid transparent',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div
+          className="flex-1 overflow-y-auto p-5"
+          style={{
+            background: 'var(--color-base)',
+            paddingBottom: 'calc(56px + env(safe-area-inset-bottom) + 24px)',
+          }}
+        >
+          <h1 className="text-base font-semibold mb-5" style={{ color: 'var(--color-base-900)', fontFamily: "'Darker Grotesque', sans-serif" }}>
+            {tabs.find((t) => t.key === activeTab)?.label}
+          </h1>
+          {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'adapter' && <AdapterSettings />}
+          {activeTab === 'agents' && <AgentsSettings />}
+          {activeTab === 'projects' && <ProjectsSettings />}
+        </div>
+
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>

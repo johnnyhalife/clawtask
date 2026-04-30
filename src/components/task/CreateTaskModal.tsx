@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Project, Tag, Agent } from '@/types';
 import { apiPost, useApi } from '@/hooks/useApi';
 import { TypeaheadChipSelect, STATUS_OPTIONS, PRIORITY_OPTIONS, AGENT_COLOR } from './ChipSelect';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface CreateTaskModalProps {
   onClose: () => void;
@@ -343,6 +344,139 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
+
+  const isMobile = useIsMobile();
+
+  // Mobile: full-screen modal
+  if (isMobile) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+        style={{ background: 'var(--color-base)' }}
+      >
+        {/* Mobile header */}
+        <div
+          className="flex items-center gap-2 px-4 flex-shrink-0"
+          style={{ height: 48, borderBottom: '1px solid var(--color-base-200)' }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <span style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.9rem', fontWeight: 600, flex: 1 }}>
+            New Issue
+          </span>
+        </div>
+
+        {/* Title + meta */}
+        <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            ref={titleRef}
+            placeholder="Issue title"
+            autoFocus
+            className="w-full bg-transparent outline-none"
+            style={{
+              color: 'var(--color-base-900)',
+              fontFamily: "'Instrument Sans', sans-serif",
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              marginBottom: 14,
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
+            }}
+          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px' }}>For</span>
+            <TypeaheadChipSelect
+              label={assigneeLabel}
+              color={assigneeColor}
+              placeholder="Assignee…"
+              options={assigneeOptions}
+              onChange={v => {
+                if (!v) { setAssigneeId(''); setAssigneeType(''); }
+                else { const [type, ...rest] = v.split(':'); setAssigneeType(type as 'agent' | 'human'); setAssigneeId(rest.join(':')); }
+              }}
+            />
+            <span style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px' }}>in</span>
+            <TypeaheadChipSelect
+              label={projectLabel}
+              color={projectColor}
+              placeholder="Project…"
+              options={projectOptions}
+              onChange={v => setProjectId(v)}
+            />
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          <textarea
+            ref={descriptionRef}
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Add description…"
+            className="w-full h-full bg-transparent outline-none resize-none"
+            style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.875rem', minHeight: '120px' }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); }
+            }}
+          />
+        </div>
+
+        {/* Bottom toolbar + submit */}
+        <div
+          style={{
+            borderTop: '1px solid var(--color-base-200)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <div className="flex items-center gap-2 px-4 py-2" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+            <ToolbarDropdown icon={statusIcon} options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            <ToolbarDropdown icon={priorityIcon} options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            <TagsToolbarPill
+              localTags={localTags}
+              selectedTags={selectedTags}
+              onToggle={toggleTag}
+              onCreate={handleCreateTag}
+              creating={creatingTag}
+            />
+          </div>
+          <div className="px-4 py-3">
+            {error && (
+              <p style={{ color: '#F87171', fontFamily: "'Instrument Sans', sans-serif", fontSize: '12px', marginBottom: 8 }}>{error}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || !title.trim()}
+              className="w-full py-3 rounded-lg text-sm font-semibold"
+              style={{
+                background: 'var(--color-base-900)',
+                color: 'var(--color-base)',
+                fontFamily: "'Instrument Sans', sans-serif",
+                fontWeight: 700,
+                opacity: submitting || !title.trim() ? 0.4 : 1,
+                cursor: submitting || !title.trim() ? 'not-allowed' : 'pointer',
+                border: 'none',
+                minHeight: '44px',
+              }}
+            >
+              {submitting ? 'Creating…' : 'Create Issue'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

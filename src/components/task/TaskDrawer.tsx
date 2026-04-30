@@ -8,6 +8,7 @@ import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { ChipSelect, STATUS_OPTIONS, PRIORITY_OPTIONS, AGENT_COLOR } from './ChipSelect';
 import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface TaskDrawerProps {
   taskId: string;
@@ -142,6 +143,7 @@ function CommentBubble({ item }: { item: Comment | (Activity & { _type: 'activit
 }
 
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
+  const isMobile = useIsMobile();
   const { data: task, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskId}`);
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -259,6 +261,173 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const shownTimeline = activeTab === 'chat' ? chatTimeline : allTimeline;
+
+  // Mobile: full-screen slide-up sheet
+  if (isMobile) {
+    return (
+      <>
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          style={{ zIndex: 40 }}
+          onClick={onClose}
+        />
+
+        {/* Sheet */}
+        <div
+          className="fixed flex flex-col z-50 shadow-2xl overflow-hidden"
+          style={{
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: '10%',
+            background: 'var(--color-base-100)',
+            borderTopLeftRadius: '16px',
+            borderTopRightRadius: '16px',
+            borderTop: '1px solid #27272B',
+            zIndex: 50,
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          {/* Drag handle */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-base-300)' }} />
+          </div>
+
+          {/* Header: close + issue ID */}
+          <div
+            className="flex items-center justify-between px-5 py-2 flex-shrink-0"
+            style={{ borderBottom: '1px solid #27272B' }}
+          >
+            <span className="font-mono-id" style={{ fontSize: '0.72rem' }}>{task?.issueId}</span>
+            <button
+              onClick={onClose}
+              className="p-1 rounded transition-colors"
+              style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          {task ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Title + pills */}
+              <div className="px-5 pt-3 pb-3 flex-shrink-0">
+                <h2
+                  style={{
+                    fontFamily: "'Darker Grotesque', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '1.1rem',
+                    color: 'var(--color-base-900)',
+                    lineHeight: 1.3,
+                    marginBottom: 8,
+                  }}
+                >
+                  {task.title}
+                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <StatusPill status={task.status} onChange={handleStatusChange} />
+                  <PriorityPill priority={task.priority} onChange={handlePriorityChange} />
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div
+                className="flex items-center gap-0 px-5 flex-shrink-0"
+                style={{ borderBottom: '1px solid #27272B', borderTop: '1px solid #27272B' }}
+              >
+                {(['activity', 'chat'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className="px-4 py-2.5 text-xs font-medium transition-colors capitalize"
+                    style={{
+                      color: activeTab === tab ? 'var(--color-base-900)' : 'var(--color-base-500)',
+                      borderBottom: activeTab === tab ? '2px solid #3189FF' : '2px solid transparent',
+                      marginBottom: '-1px',
+                      fontFamily: "'Instrument Sans', sans-serif",
+                      fontWeight: 600,
+                      letterSpacing: '0.02em',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {tab === 'activity' ? 'Activity' : 'Chat'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Timeline */}
+              <div className="flex-1 overflow-y-auto px-5 py-2">
+                {shownTimeline.map((item) => (
+                  <CommentBubble key={item.id} item={item as any} />
+                ))}
+                {shownTimeline.length === 0 && (
+                  <div className="py-8 text-center text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                    {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
+                  </div>
+                )}
+                <div ref={timelineEndRef} />
+              </div>
+
+              {/* Comment input — pinned above safe area */}
+              <form
+                onSubmit={handleComment}
+                className="flex-shrink-0 px-4 py-3"
+                style={{ borderTop: '1px solid #27272B' }}
+              >
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment…"
+                    rows={2}
+                    className="flex-1 px-3 py-2 text-sm rounded-lg resize-none"
+                    style={{
+                      background: 'var(--color-base-150)',
+                      border: '1px solid var(--color-base-300)',
+                      color: 'var(--color-base-800)',
+                      fontFamily: "'Instrument Sans', sans-serif",
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#3189FF'; }}
+                    onBlur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-base-300)'; }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any);
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !newComment.trim()}
+                    className="flex-shrink-0 px-3 py-2 rounded-md text-xs font-semibold"
+                    style={{
+                      background: '#3189FF',
+                      color: 'var(--color-base)',
+                      fontFamily: "'Instrument Sans', sans-serif",
+                      opacity: submitting || !newComment.trim() ? 0.4 : 1,
+                      cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer',
+                      border: 'none',
+                      minHeight: '44px',
+                    }}
+                  >
+                    {submitting ? '…' : 'Send'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
+              Loading…
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

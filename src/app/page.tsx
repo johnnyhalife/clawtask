@@ -6,11 +6,13 @@ import { Task, Config } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { BottomNav } from '@/components/layout/BottomNav';
 import { TopBar } from '@/components/layout/TopBar';
 import { TaskList } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
 import { FilterState, DEFAULT_FILTERS } from '@/components/task/TaskFilters';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -116,13 +118,14 @@ function HomeContent() {
     return tasks;
   };
 
+  const isMobile = useIsMobile();
   const isPulse = activeTab === 'pulse';
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
       <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 0 }}>
         <TopBar ref={searchRef}
           onNewTask={() => setShowCreate(true)}
           filters={filters}
@@ -174,6 +177,8 @@ function HomeContent() {
           defaultProjectId={projectId}
         />
       )}
+
+      {isMobile && <BottomNav />}
     </div>
   );
 }
