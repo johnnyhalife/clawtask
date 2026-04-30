@@ -264,7 +264,7 @@ function ActiveRunCard({ task, onClick }: { task: Task; onClick: () => void }) {
   const [latestComment, setLatestComment] = useState<Comment | null>(null);
 
   const loadLatest = useCallback(() => {
-    fetch(`/api/v1/tasks/${task.id}/comments?limit=1&order=desc`)
+    fetch(`/api/v1/tasks/${task.id}/comments?limit=1&order=desc&authorType=agent`)
       .then(r => r.json())
       .then(d => {
         if (d.ok && d.data?.length) {

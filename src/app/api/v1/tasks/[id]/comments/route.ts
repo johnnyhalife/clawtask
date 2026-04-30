@@ -23,9 +23,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const url = new URL(req.url);
   const order = url.searchParams.get('order') === 'desc' ? 'DESC' : 'ASC';
   const limit = parseInt(url.searchParams.get('limit') ?? '0', 10);
+  const authorType = url.searchParams.get('authorType');
   const limitClause = limit > 0 ? ` LIMIT ${limit}` : '';
+  const authorClause = authorType ? ` AND authorType = '${authorType === 'agent' ? 'agent' : 'human'}'` : '';
   const rows = db
-    .prepare(`SELECT * FROM comments WHERE taskId = ? AND content != '' ORDER BY createdAt ${order}${limitClause}`)
+    .prepare(`SELECT * FROM comments WHERE taskId = ? AND content != ''${authorClause} ORDER BY createdAt ${order}${limitClause}`)
     .all(taskId) as any[];
   return ok(rows.map((r) => enrichComment(db, r)));
 }
