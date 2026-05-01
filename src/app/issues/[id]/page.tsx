@@ -895,10 +895,20 @@ export default function IssuePage() {
                 <div style={{ height: 1, background: 'var(--color-base-200)', margin: '8px 0' }} />
 
                 <PropRow label="Created by">
-                  <span className="flex items-center gap-1.5">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#71717A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                    <span style={{ color: 'var(--color-base-800)' }}>You</span>
-                  </span>
+                  {(() => {
+                    const createdAct = activities.find(a => a.verb === 'created');
+                    const ct = createdAct?.actorType;
+                    const actor = createdAct?.actor as any;
+                    const name = actor?.displayName ?? actor?.name ?? 'You';
+                    return (
+                      <span className="flex items-center gap-1.5">
+                        <ActorAvatar name={name} isAgent={ct === 'agent'} isExternal={ct === 'external'} size={16} />
+                        <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>
+                          {ct === 'agent' || ct === 'external' ? name : 'You'}
+                        </span>
+                      </span>
+                    );
+                  })()}
                 </PropRow>
                 {task.startDate && <PropRow label="Started"><span style={{ color: 'var(--color-base-800)' }}>{fmtDate(task.startDate)}</span></PropRow>}
                 {task.status === 'done' && <PropRow label="Completed"><span style={{ color: '#22C55E' }}>{fmtDate(task.updatedAt)}</span></PropRow>}
