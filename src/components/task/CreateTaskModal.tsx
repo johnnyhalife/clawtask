@@ -374,7 +374,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
         </div>
 
         {/* Title + meta */}
-        <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
+        <div className="flex-shrink-0 px-4 pt-5 pb-4" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
           <input
             type="text"
             value={title}
@@ -424,7 +424,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Add description…"
-            className="w-full h-full bg-transparent outline-none resize-none"
+            className="w-full bg-transparent outline-none resize-none"
             style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.875rem', minHeight: '120px' }}
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); }
@@ -434,6 +434,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
 
         {/* Bottom toolbar + submit */}
         <div
+          className="flex-shrink-0"
           style={{
             borderTop: '1px solid var(--color-base-200)',
             paddingBottom: 'env(safe-area-inset-bottom)',

@@ -253,8 +253,8 @@ export default function IssuePage() {
         router.push('/?tab=all');
         return;
       }
-      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); return; }
       if (isEditing) return;
+      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); return; }
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
