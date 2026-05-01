@@ -133,6 +133,12 @@ function runMigrations(db: Database.Database) {
     db.pragma('foreign_keys = ON');
   }
 
+  // M006: rename dueDate → endDate if still present
+  const taskCols = (db.pragma('table_info(tasks)') as Array<{ name: string }>).map((c) => c.name);
+  if (taskCols.includes('dueDate') && !taskCols.includes('endDate')) {
+    db.exec('ALTER TABLE tasks RENAME COLUMN dueDate TO endDate');
+  }
+
   // Backfill: any agent with empty apiKey gets a fresh key+hash pair (sync both)
   const stale = db
     .prepare(`SELECT id FROM agents WHERE apiKey = '' OR apiKey IS NULL`)
