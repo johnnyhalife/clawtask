@@ -446,7 +446,7 @@ export function PulseView() {
             {/* Grid with day labels */}
             <div className="flex items-start gap-0">
               {/* Day labels */}
-              <div className="flex flex-col mr-1" style={{ gap: 3, paddingTop: 1 }}>
+              <div className="flex flex-col mr-1" style={{ gap: 3 }}>
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
                   <div key={d} style={{ height: 13, width: 24, fontSize: '0.62rem', color: (i === 0 || i === 2 || i === 4) ? 'var(--color-base-500)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", display: 'flex', alignItems: 'center', userSelect: 'none' }}>
                     {(i === 0 || i === 2 || i === 4) ? d : ''}
@@ -457,14 +457,16 @@ export function PulseView() {
               {/* Cells */}
               <div className="flex" style={{ gap: 3 }}>
                 {weeks.map((week, wi) => (
-                  <div key={wi} className="flex flex-col" style={{ gap: 3 }}>
-                    {week.map(({ date, count, inRange }) => (
-                      <div
-                        key={date}
-                        title={`${date}: ${count} event${count !== 1 ? 's' : ''}`}
-                        style={{ width: 13, height: 13, borderRadius: 3, background: inRange ? intensityColor(count, theme === 'dark') : 'transparent', flexShrink: 0 }}
-                      />
-                    ))}
+                  <div key={wi} style={{ display: 'grid', gridTemplateRows: 'repeat(7, 13px)', gap: 3 }}>
+                    {week.map(({ date, count, inRange }, di) =>
+                      inRange ? (
+                        <div
+                          key={date}
+                          title={`${date}: ${count} event${count !== 1 ? 's' : ''}`}
+                          style={{ width: 13, height: 13, borderRadius: 3, background: intensityColor(count, theme === 'dark'), gridRow: di + 1 }}
+                        />
+                      ) : null
+                    )}
                   </div>
                 ))}
               </div>
