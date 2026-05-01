@@ -23,7 +23,7 @@ Browser  ──SSE──▶  Next.js App Router  ──SQLite──  ~/.clawtask
                                 │
                                 └── WebSocket  ──▶  OpenClaw Gateway
                                                         │
-                                                        └── Agent (e.g. main/clawdio)
+                                                        └── Agent (e.g. main)
 ```
 
 - **UI**: Dark-theme React app inspired by Linear. Real-time updates via SSE.
@@ -74,7 +74,7 @@ The adapter listens for `stream: "assistant"` frames on the gateway WS. Chunks a
 ### Install & Run
 
 ```bash
-git clone https://github.com/johnnyhalife/clawtask
+git clone https://github.com/your-org/clawtask
 cd clawtask
 npm install
 npm run dev

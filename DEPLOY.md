@@ -1,7 +1,7 @@
 # Clawtask — Production Deployment
 
 Self-hosted task tracker for AI agent workflows.
-Target: `clawtask.swrks.sh` · container-hosted · Tailscale-accessible.
+Target: `clawtask.example.com` · container-hosted · Tailscale-accessible (or any private network).
 
 ---
 
@@ -14,7 +14,7 @@ Tailscale / nginx (TLS termination)
                     │
                     ├── SQLite  (/data/clawtask.db — mounted volume)
                     ├── SSE     (real-time UI updates, in-process)
-                    └── WebSocket outbound  ──▶  OpenClaw gateway (ws://mac-mini:2222)
+                    └── WebSocket outbound  ──▶  OpenClaw gateway (ws://your-host:2222)
 ```
 
 No external database. No Redis. Single container.
@@ -25,7 +25,7 @@ No external database. No Redis. Single container.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `CLAWTASK_PUBLIC_URL` | **Yes in prod** | `http://localhost:3333` | Public-facing base URL. Injected into agent wake prompts so agents can call back. Set to `https://clawtask.swrks.sh`. |
+| `CLAWTASK_PUBLIC_URL` | **Yes in prod** | `http://localhost:3333` | Public-facing base URL. Injected into agent wake prompts so agents can call back. Set to `https://clawtask.example.com`. |
 | `NODE_ENV` | Yes | `development` | Set to `production` for the built image. |
 | `PORT` | No | `3000` | Port Next.js listens on inside the container. |
 | `HOME` | No | `/root` | Controls where the device keypair is stored (`$HOME/.clawtask/gateway-device-key.pem`). Override if running as non-root. |
@@ -111,7 +111,7 @@ services:
       - "3000:3000"          # expose to nginx/Tailscale only; do not bind to 0.0.0.0 publicly
     environment:
       NODE_ENV: production
-      CLAWTASK_PUBLIC_URL: https://clawtask.swrks.sh
+      CLAWTASK_PUBLIC_URL: https://clawtask.example.com
       HOME: /data
       PORT: "3000"
     volumes:
@@ -136,11 +136,11 @@ Clawtask uses **SSE** for real-time updates. nginx must be configured to disable
 ```nginx
 server {
     listen 443 ssl;
-    server_name clawtask.swrks.sh;
+    server_name clawtask.example.com;
 
     # TLS — handled by Tailscale cert or Let's Encrypt
-    ssl_certificate     /etc/ssl/clawtask.swrks.sh.crt;
-    ssl_certificate_key /etc/ssl/clawtask.swrks.sh.key;
+    ssl_certificate     /etc/ssl/clawtask.example.com.crt;
+    ssl_certificate_key /etc/ssl/clawtask.example.com.key;
 
     # SSE — must disable buffering
     location /api/v1/sse {
@@ -171,7 +171,7 @@ server {
 # Redirect HTTP → HTTPS
 server {
     listen 80;
-    server_name clawtask.swrks.sh;
+    server_name clawtask.example.com;
     return 301 https://$host$request_uri;
 }
 ```
@@ -190,9 +190,9 @@ tailscale up --advertise-routes=<container-subnet-if-needed>
 # listen <tailscale-ip>:443 ssl;
 ```
 
-The OpenClaw gateway on the Mac Mini is already on Tailnet at `mac-mini.tail-xxxx.ts.net`. Set the gateway URL in Settings → OpenClaw Adapter to:
+The OpenClaw gateway should be accessible over your Tailnet. Set the gateway URL in Settings → OpenClaw Adapter to:
 ```
-ws://mac-mini.tail-xxxx.ts.net:2222
+ws://your-host.tail-xxxx.ts.net:2222
 ```
 
 ---
@@ -200,10 +200,10 @@ ws://mac-mini.tail-xxxx.ts.net:2222
 ## First-Run Checklist
 
 1. **Build and start** the container.
-2. Open `https://clawtask.swrks.sh` in browser.
+2. Open `https://clawtask.example.com` in browser.
 3. Go to **Settings → General** — set App Name, your display name.
 4. Go to **Settings → OpenClaw Adapter** — set the gateway URL to your Mac Mini's Tailscale address.
-5. Go to **Settings → Agents** — register each OpenClaw agent (e.g. `main` → `clawdio`). Copy the API key once.
+5. Go to **Settings → Agents** — register each OpenClaw agent (e.g. `main`). Copy the API key once.
 6. *(Optional)* Go to **Settings → External Systems** — register any external callers (e.g. Temporal, cron webhooks).
 7. Create a test task, assign to an agent, verify it picks up and posts comments.
 
