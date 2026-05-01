@@ -183,7 +183,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
 export default function IssuePage() {
   const params = useParams();
   const router = useRouter();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const taskSlug = params.id as string; // may be slug (cwt-012) or UUID
 
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
@@ -218,6 +218,7 @@ export default function IssuePage() {
   const projectTriggerRef = useRef<HTMLButtonElement>(null);
   const assigneeTriggerRef = useRef<HTMLButtonElement>(null);
   const [projectOpen, setProjectOpen] = useState(false);
+  const [projectHighlight, setProjectHighlight] = useState(0);
   const [tagsOpen, setTagsOpen] = useState(false);
 
   const loadTimeline = useCallback(async () => {
@@ -242,16 +243,28 @@ export default function IssuePage() {
         router.push('/');
         return;
       }
-      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); }
+      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); return; }
       if (isEditing) return;
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
-      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); setProjectOpen(true); projectTriggerRef.current?.focus(); }
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); setProjectHighlight(0); setProjectOpen(true); }
+      // Arrow nav inside project picker
+      if (projectOpen) {
+        const opts = [null, ...(allProjects ?? [])];
+        if (e.key === 'ArrowDown') { e.preventDefault(); setProjectHighlight(i => Math.min(i + 1, opts.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setProjectHighlight(i => Math.max(i - 1, 0)); }
+        else if (e.key === 'Enter') {
+          e.preventDefault();
+          const sel = opts[projectHighlight];
+          handleProjectChange(sel ? (sel as any).id : null);
+          setProjectOpen(false);
+        }
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [router, assigneeOpen, editingTask, projectOpen]);
+  }, [router, assigneeOpen, editingTask, projectOpen, projectHighlight, allProjects]);
 
   useSse(event => {
     if (event.type === 'comment.added') {
@@ -688,28 +701,23 @@ export default function IssuePage() {
           {/* Properties header — aligned with breadcrumb topbar */}
           <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-base-200)', height: 48 }}>
             <span style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Darker Grotesque', sans-serif", fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Properties</span>
-            <button
-              type="button"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              onClick={toggleTheme}
-              style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}
-            >
-              {theme === 'dark' ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5"/>
-                  <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                  <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-              )}
-            </button>
+            <div className="flex items-center" style={{ background: 'var(--color-base-150)', borderRadius: 20, padding: 2, gap: 0, border: '1px solid var(--color-base-250)' }}>
+              {([
+                { value: 'system', title: 'System', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> },
+                { value: 'light', title: 'Light', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> },
+                { value: 'dark', title: 'Night', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> },
+              ] as { value: import('@/components/ui/ThemeProvider').Theme; title: string; icon: React.ReactNode }[]).map(opt => (
+                <button key={opt.value} type="button" title={opt.title} onClick={() => setTheme(opt.value)}
+                  style={{
+                    background: theme === opt.value ? 'var(--color-base)' : 'none',
+                    border: 'none', borderRadius: 16, padding: '3px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    color: theme === opt.value ? 'var(--color-base-800)' : 'var(--color-base-450)',
+                    boxShadow: theme === opt.value ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.12s',
+                  }}
+                >{opt.icon}</button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-1">
@@ -863,19 +871,15 @@ export default function IssuePage() {
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
                         <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
-                          <button onClick={() => handleProjectChange(null)}
+                          <button onClick={() => handleProjectChange(null)} onMouseEnter={() => setProjectHighlight(0)}
                             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
-                            style={{ background: !task.projectId ? 'var(--color-base-200)' : 'transparent', color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = !task.projectId ? 'var(--color-base-200)' : 'transparent')}>
+                            style={{ background: projectHighlight === 0 || !task.projectId ? 'var(--color-base-200)' : 'transparent', color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
                           </button>
-                          {(allProjects ?? []).map(p => (
-                            <button key={p.id} onClick={() => handleProjectChange(p.id)}
+                          {(allProjects ?? []).map((p, pi) => (
+                            <button key={p.id} onClick={() => handleProjectChange(p.id)} onMouseEnter={() => setProjectHighlight(pi + 1)}
                               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
-                              style={{ background: task.projectId === p.id ? 'var(--color-base-200)' : 'transparent', color: task.projectId === p.id ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = task.projectId === p.id ? 'var(--color-base-200)' : 'transparent')}>
+                              style={{ background: projectHighlight === pi + 1 || task.projectId === p.id ? 'var(--color-base-200)' : 'transparent', color: task.projectId === p.id ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
                             </button>
                           ))}

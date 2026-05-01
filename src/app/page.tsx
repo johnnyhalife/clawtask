@@ -130,17 +130,33 @@ function HomeContent() {
     if (isPulse) return;
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
+      const isSearchFocused = document.activeElement === searchRef.current;
+
+      // When search is focused: Esc blurs it, everything else falls through
+      if (isSearchFocused) {
+        if (e.key === 'Escape') { e.preventDefault(); searchRef.current?.blur(); setSelectedIdx(-1); }
+        return;
+      }
+
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+
       const tasks = getFilteredTasks();
       if (e.key === 'j' || e.key === 'J') {
         e.preventDefault();
-        setSelectedIdx(i => Math.min(i + 1, tasks.length - 1));
+        setSelectedIdx(i => {
+          if (i < 0) return 0;
+          return Math.min(i + 1, tasks.length - 1);
+        });
       } else if (e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        setSelectedIdx(i => Math.max(i - 1, 0));
+      } else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
         setSelectedIdx(-1);
         searchRef.current?.focus();
       } else if (e.key === 'Enter') {
         if (selectedIdx >= 0 && tasks[selectedIdx]) {
+          setSelectedIdx(-1);
           router.push(`/issues/${tasks[selectedIdx].issueId.toLowerCase()}`);
         }
       } else if (e.key === 'Escape') {
