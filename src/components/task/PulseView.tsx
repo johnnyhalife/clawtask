@@ -420,7 +420,7 @@ export function PulseView() {
   return (
     <div className="flex gap-8 min-h-0">
       {/* ── Main column ── */}
-      <div className="flex-1 min-w-0 flex flex-col gap-8 pb-16">
+      <div className="flex-1 min-w-0 flex flex-col gap-8 pb-16" style={{ maxWidth: 860 }}>
 
         {/* Header */}
         <div>
