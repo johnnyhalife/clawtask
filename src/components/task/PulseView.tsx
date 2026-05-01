@@ -541,35 +541,7 @@ export function PulseView() {
         </section>
       </div>
 
-      {/* ── Year rail — hidden on mobile ── */}
-      {!isMobile && <div className="flex-shrink-0 flex flex-col gap-1" style={{ width: 52, marginTop: '2.5rem' }}>
-        {[...availableYears].map(year => {
-          const isT12 = year === new Date().getFullYear();
-          const active = isT12 ? selectedYear === 'T12' : selectedYear === year;
-          return (
-            <button
-              key={year}
-              type="button"
-              className="px-2 py-1 text-sm text-right transition-colors"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: "'Instrument Sans', sans-serif",
-                fontWeight: active ? 700 : 400,
-                color: active ? 'var(--color-base-900)' : 'var(--color-base-400)',
-                textDecoration: active ? 'underline' : 'none',
-                textUnderlineOffset: 3,
-              }}
-              onClick={() => setSelectedYear(isT12 ? 'T12' : year)}
-              onMouseEnter={e => { if (!active) (e.currentTarget.style.color = 'var(--color-base-650)'); }}
-              onMouseLeave={e => { if (!active) (e.currentTarget.style.color = 'var(--color-base-400)'); }}
-            >
-              {year}
-            </button>
-          );
-        })}
-      </div>}
+
     </div>
   );
 }
