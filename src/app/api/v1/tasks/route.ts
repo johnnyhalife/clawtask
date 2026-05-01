@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   const issueId = nextIssueId(db);
 
   db.prepare(`
-    INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, dueDate, createdAt, updatedAt)
+    INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, endDate, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   `).run(
     id,
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     body.assigneeId || null,
     body.assigneeType || null,
     body.startDate || null,
-    body.dueDate || null
+    body.endDate || null
   );
 
   // Tags

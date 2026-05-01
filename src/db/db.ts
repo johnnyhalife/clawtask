@@ -55,7 +55,7 @@ function runMigrations(db: Database.Database) {
         assigneeType TEXT CHECK (assigneeType IN ('agent','human',NULL)),
         projectId TEXT REFERENCES projects(id) ON DELETE SET NULL,
         parentTaskId TEXT,
-        dueDate TEXT,
+        endDate TEXT,
         startDate TEXT,
         createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
         updatedAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
