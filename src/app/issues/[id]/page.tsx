@@ -161,9 +161,7 @@ function AgentMessageGroup({ items, author, authorId }: { items: Comment[]; auth
 
 // ─── Timeline entry ───────────────────────────────────────────────────────────
 function TimelineEntry({ item }: { item: (Comment | Activity) & { _timelineType: string } }) {
-  // Agent messages default to collapsed if long; thinking/tool default expanded
-  const isAgentMsg = item._timelineType === 'comment' && (item as Comment).authorType === 'agent' && (item as Comment).type === 'message';
-  const [collapsed, setCollapsed] = useState(isAgentMsg);
+  const [collapsed, setCollapsed] = useState(false);
 
   if (item._timelineType === 'activity') {
     const a = item as Activity;
@@ -240,34 +238,16 @@ function TimelineEntry({ item }: { item: (Comment | Activity) & { _timelineType:
     );
   }
 
-  // Message comment — collapse long agent messages
-  const COLLAPSE_THRESHOLD = 8; // lines
-  const lines = c.content.split('\n');
-  const isLong = isAgent && lines.length > COLLAPSE_THRESHOLD;
-  const displayContent = isLong && collapsed ? lines.slice(0, COLLAPSE_THRESHOLD).join('\n') + '…' : c.content;
-
   return (
     <div className="py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-      {/* Header row */}
       <div className="flex items-center gap-3 mb-2">
         <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
         <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
         <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
       </div>
-      {/* Content */}
       <div className="pl-10 prose-clawtask text-sm" style={{ color: 'var(--color-base-800)' }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{displayContent || ' '}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{c.content || ' '}</ReactMarkdown>
       </div>
-      {isLong && (
-        <button
-          onClick={() => setCollapsed(v => !v)}
-          className="pl-10"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", padding: '2px 0 0 40px' }}
-        >
-          {collapsed ? `Show more ↓` : `Show less ↑`}
-        </button>
-      )}
-      {/* Actions */}
       <div className="pl-10">
         <MsgActions date={c.createdAt} />
       </div>
@@ -689,10 +669,7 @@ export default function IssuePage() {
                 </button>
               </div>
             )}
-            {timeline.map(item => item._timelineType === 'comment-group'
-            ? <AgentMessageGroup key={item.id} items={(item as any).items} author={(item as any).author} authorId={(item as any).authorId} />
-            : <TimelineEntry key={item.id} item={item as any} />
-          )}
+            {timeline.map(item => <TimelineEntry key={item.id} item={item as any} />)}
             {timeline.length === 0 && (
               <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
                 {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
