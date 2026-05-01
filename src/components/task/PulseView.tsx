@@ -152,7 +152,7 @@ function VerbIcon({ verb }: { verb: string }) {
   );
 }
 
-function ActivityRow({ a }: { a: Activity }) {
+function ActivityRow({ a, extraCount = 0 }: { a: Activity; extraCount?: number }) {
   const meta = a.meta as Record<string, any>;
   const isAgent = a.actorType === 'agent';
   const actorName = (a.actor as any)?.displayName ?? a.actorId;
@@ -167,7 +167,7 @@ function ActivityRow({ a }: { a: Activity }) {
           {actorLabel(actorName, isAgent)}
         </span>
         <span style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem' }}>
-          {verbLabel(a.verb)}
+          {verbLabel(a.verb)}{extraCount > 0 && <span style={{ color: 'var(--color-base-400)', fontStyle: 'italic', marginLeft: 4 }}>(+{extraCount} more)</span>}
         </span>
         {a.verb === 'status_changed' && meta.from && meta.to && (
           <span className="flex items-center gap-1" style={{ fontSize: '0.72rem' }}>
@@ -274,16 +274,7 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
       {!collapsed && (
         <div className="rounded-lg overflow-hidden ml-11" style={{ border: '1px solid var(--color-base-200)', background: 'var(--color-base-100)' }}>
           {displayItems.map(di => (
-            <div key={di.key}>
-              <ActivityRow a={di.items[0]} />
-              {di.collapsed > 0 && (
-                <div className="flex items-center gap-2 pl-4 py-1.5" style={{ borderTop: '1px solid var(--color-base-200)' }}>
-                  <span style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.72rem', fontStyle: 'italic' }}>
-                    + {di.collapsed} more comment{di.collapsed > 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-            </div>
+            <ActivityRow key={di.key} a={di.items[0]} extraCount={di.collapsed} />
           ))}
         </div>
       )}
