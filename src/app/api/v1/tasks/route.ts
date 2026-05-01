@@ -101,6 +101,36 @@ export async function POST(req: NextRequest) {
   if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
   if (!body.title) return err('MISSING_TITLE', 'title is required', 400);
 
+  // --- Name resolution ---
+  // projectName → projectId
+  if (!body.projectId && body.projectName) {
+    const row = db.prepare('SELECT id FROM projects WHERE lower(name) = lower(?)').get(body.projectName) as { id: string } | undefined;
+    if (row) body.projectId = row.id;
+  }
+
+  // assigneeName → assigneeId + assigneeType (checks agents first, then humans)
+  if (!body.assigneeId && body.assigneeName) {
+    const agent = db.prepare('SELECT id FROM agents WHERE lower(displayName) = lower(?) OR lower(openclawAgentId) = lower(?)').get(body.assigneeName, body.assigneeName) as { id: string } | undefined;
+    if (agent) {
+      body.assigneeId = agent.id;
+      body.assigneeType = 'agent';
+    } else {
+      const human = db.prepare('SELECT id FROM humans WHERE lower(name) = lower(?) OR lower(displayName) = lower(?)').get(body.assigneeName, body.assigneeName) as { id: string } | undefined;
+      if (human) {
+        body.assigneeId = human.id;
+        body.assigneeType = 'human';
+      }
+    }
+  }
+
+  // tagNames → tag ids (resolve existing; skip unknown)
+  if (!body.tags && body.tagNames && Array.isArray(body.tagNames)) {
+    body.tags = (body.tagNames as string[])
+      .map((name: string) => (db.prepare('SELECT id FROM tags WHERE lower(name) = lower(?)').get(name) as { id: string } | undefined)?.id)
+      .filter(Boolean);
+  }
+  // --- end name resolution ---
+
   const id = uuidv4();
   const issueId = nextIssueId(db);
 
