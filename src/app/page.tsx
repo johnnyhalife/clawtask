@@ -26,6 +26,7 @@ function HomeContent() {
   const [showCreate, setShowCreate] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [selectedIdx, setSelectedIdx] = useState<number>(-1);
 
   // Reset filters when tab changes
   useEffect(() => {
@@ -53,6 +54,9 @@ function HomeContent() {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [activeTab, router]);
+
+  // Reset J/K selection when tab changes
+  useEffect(() => { setSelectedIdx(-1); }, [activeTab]);
 
   const buildTaskUrl = useCallback(() => {
     const params = new URLSearchParams({ sort: 'updatedAt', order: 'desc', limit: '500' });
@@ -121,6 +125,32 @@ function HomeContent() {
   const isMobile = useIsMobile();
   const isPulse = activeTab === 'pulse';
 
+  // J/K navigation on issue list
+  useEffect(() => {
+    if (isPulse) return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      const tasks = getFilteredTasks();
+      if (e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        setSelectedIdx(i => Math.min(i + 1, tasks.length - 1));
+      } else if (e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        setSelectedIdx(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        if (selectedIdx >= 0 && tasks[selectedIdx]) {
+          router.push(`/issues/${tasks[selectedIdx].issueId.toLowerCase()}`);
+        }
+      } else if (e.key === 'Escape') {
+        setSelectedIdx(-1);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPulse, selectedIdx, router, filters, taskData]);
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
       <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} />
@@ -157,6 +187,8 @@ function HomeContent() {
               )}
               <TaskList
                 tasks={getFilteredTasks()}
+                selectedIdx={selectedIdx}
+                onSelectIdx={setSelectedIdx}
                 groupBy={filters.groupBy}
                 onNewTask={() => setShowCreate(true)}
                 emptyMessage="No tasks found."

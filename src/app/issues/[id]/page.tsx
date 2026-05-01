@@ -215,6 +215,7 @@ export default function IssuePage() {
   const [assigneeHighlight, setAssigneeHighlight] = useState(0);
   const statusRef = useRef<ChipSelectHandle>(null);
   const priorityRef = useRef<ChipSelectHandle>(null);
+  const projectTriggerRef = useRef<HTMLButtonElement>(null);
   const assigneeTriggerRef = useRef<HTMLButtonElement>(null);
   const [projectOpen, setProjectOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -236,6 +237,7 @@ export default function IssuePage() {
       const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
+        if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
         router.push('/');
         return;
@@ -245,10 +247,11 @@ export default function IssuePage() {
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); setProjectOpen(true); projectTriggerRef.current?.focus(); }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [router, assigneeOpen, editingTask]);
+  }, [router, assigneeOpen, editingTask, projectOpen]);
 
   useSse(event => {
     if (event.type === 'comment.added') {
@@ -845,9 +848,9 @@ export default function IssuePage() {
                 </PropRow>
 
                 {/* Project */}
-                <PropRow label="Project">
+                <PropRow label="Project" kbd="J">
                   <div style={{ position: 'relative' }}>
-                    <button onClick={() => setProjectOpen(v => !v)}
+                    <button ref={projectTriggerRef} onClick={() => setProjectOpen(v => !v)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {task.project ? (
                         <>

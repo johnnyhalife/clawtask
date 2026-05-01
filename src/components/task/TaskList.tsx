@@ -11,6 +11,8 @@ interface TaskListProps {
   emptyMessage?: string;
   onTaskUpdated?: () => void;
   onNewTask?: () => void;
+  selectedIdx?: number;
+  onSelectIdx?: (idx: number) => void;
 }
 
 // ─── Order / label maps ───────────────────────────────────────────────────────
@@ -179,6 +181,8 @@ export function TaskList({
   emptyMessage = 'No tasks found.',
   onTaskUpdated,
   onNewTask,
+  selectedIdx = -1,
+  onSelectIdx,
 }: TaskListProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(
     groupBy === 'status' ? new Set(STATUS_DEFAULT_COLLAPSED) : new Set()
@@ -210,6 +214,12 @@ export function TaskList({
       return next;
     });
   };
+
+  // Build flat index for J/K navigation
+  const flatTasks: Task[] = [];
+  for (const key of keys) {
+    for (const task of (groups[key] ?? [])) flatTasks.push(task);
+  }
 
   return (
     <>
@@ -263,14 +273,18 @@ export function TaskList({
                 </button>
               )}
 
-              {!isCollapsed && groupTasks.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  selected={false}
-                  onClick={undefined}
-                />
-              ))}
+              {!isCollapsed && groupTasks.map(task => {
+                const flatIdx = flatTasks.indexOf(task);
+                const isSelected = flatIdx === selectedIdx;
+                return (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    selected={isSelected}
+                    onClick={() => onSelectIdx?.(flatIdx)}
+                  />
+                );
+              })}
             </div>
           );
         })}
