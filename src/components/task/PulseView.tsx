@@ -94,12 +94,12 @@ function buildGrid(startDate: Date, endDate: Date, activity: Activity[]) {
 function buildMonthLabels(weeks: { date: string }[][]) {
   const labels: { label: string; col: number }[] = [];
   let last = '';
-  let lastCol = -4; // minimum 4 columns apart before showing a label
+  let lastCol = -3; // minimum 3 columns apart before showing a label
   weeks.forEach((week, wi) => {
     const m = MONTH_SHORT[new Date(week[0].date).getMonth()];
     if (m !== last) {
       last = m;
-      if (wi - lastCol >= 4) { labels.push({ label: m, col: wi }); lastCol = wi; }
+      if (wi - lastCol >= 3) { labels.push({ label: m, col: wi }); lastCol = wi; }
     }
   });
   return labels;
@@ -462,7 +462,7 @@ export function PulseView() {
                       <div
                         key={date}
                         title={`${date}: ${count} event${count !== 1 ? 's' : ''}`}
-                        style={{ width: 13, height: 13, borderRadius: 3, background: inRange ? intensityColor(count, theme === 'dark') : 'var(--color-base-150)', flexShrink: 0 }}
+                        style={{ width: 13, height: 13, borderRadius: 3, background: inRange ? intensityColor(count, theme === 'dark') : 'transparent', flexShrink: 0 }}
                       />
                     ))}
                   </div>
