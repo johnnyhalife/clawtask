@@ -73,7 +73,7 @@ export interface Comment {
   id: string;
   taskId: string;
   authorId: string;
-  authorType: 'agent' | 'human';
+  authorType: 'agent' | 'human' | 'external';
   type: CommentType;
   content: string;
   humanRequested: boolean;

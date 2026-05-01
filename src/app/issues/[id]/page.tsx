@@ -91,14 +91,15 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
     const a = item as Activity;
     const actorName = (a.actor as any)?.displayName || a.actorId;
     const isAgent = a.actorType === 'agent';
-    const actorDisplay = actorLabel(actorName, isAgent);
+    const isExternal = a.actorType === 'external';
+    const actorDisplay = actorLabel(actorName, isAgent, isExternal);
 
     if (a.verb === 'status_changed' && a.meta) {
       const from = (a.meta as any).from as string;
       const to = (a.meta as any).to as string;
       return (
         <div className="flex items-start gap-3 py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-          <ActorAvatar name={actorName} isAgent={isAgent} size={28} />
+          <ActorAvatar name={actorName} isAgent={isAgent} isExternal={isExternal} size={28} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{actorDisplay}</span>
@@ -119,7 +120,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
     // Generic activity
     return (
       <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-        <ActorAvatar name={actorName} isAgent={isAgent} size={28} />
+        <ActorAvatar name={actorName} isAgent={isAgent} isExternal={isExternal} size={28} />
         <span className="text-sm flex-1" style={{ fontFamily: "'Instrument Sans', sans-serif" }}>
           <span style={{ color: 'var(--color-base-800)', fontWeight: 600 }}>{actorDisplay}</span>
           {' '}<span style={{ color: 'var(--color-base-500)' }}>{a.verb.replace(/_/g, ' ')} this issue</span>
@@ -132,13 +133,14 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
   const c = item as Comment;
   const authorName = (c.author as any)?.displayName || c.authorId;
   const isAgent = c.authorType === 'agent';
-  const authorDisplay = actorLabel(authorName, isAgent);
+  const isExternal = c.authorType === 'external';
+  const authorDisplay = actorLabel(authorName, isAgent, isExternal);
 
   // Thinking / tool — collapsible header row
   if (c.type === 'thinking' || c.type === 'tool') {
     return (
       <div className="flex items-start gap-3 py-2.5" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-        <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
+        <ActorAvatar name={authorName} isAgent={isAgent} isExternal={isExternal} size={28} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
@@ -166,7 +168,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
     <div className={showHeader ? "py-3" : "pt-1 pb-2"} style={{ borderBottom: showBorder ? '1px solid var(--color-base-200)' : 'none' }}>
       {showHeader ? (
         <div className="flex items-center gap-3 mb-2">
-          <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
+          <ActorAvatar name={authorName} isAgent={isAgent} isExternal={isExternal} size={28} />
           <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
           <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(groupLastTime ?? c.createdAt)}</span>
         </div>
