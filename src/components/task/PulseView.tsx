@@ -448,8 +448,8 @@ export function PulseView() {
               {/* Day labels */}
               <div className="flex flex-col mr-1" style={{ gap: 3 }}>
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
-                  <div key={d} style={{ height: 13, width: 24, fontSize: '0.62rem', color: (i === 0 || i === 2 || i === 4) ? 'var(--color-base-500)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", display: 'flex', alignItems: 'center', userSelect: 'none' }}>
-                    {(i === 0 || i === 2 || i === 4) ? d : ''}
+                  <div key={d} style={{ height: 13, width: 24, fontSize: '0.62rem', color: (i === 0 || i === 2 || i === 4 || i === 6) ? 'var(--color-base-500)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", display: 'flex', alignItems: 'center', userSelect: 'none' }}>
+                    {(i === 0 || i === 2 || i === 4 || i === 6) ? d : ''}
                   </div>
                 ))}
               </div>
