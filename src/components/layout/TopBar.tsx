@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   FilterState, SortField,
@@ -300,7 +301,7 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const isMobile = useIsMobile();
 
   const filterRef = useRef<HTMLDivElement>(null);
@@ -536,30 +537,8 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
 
           <div style={{ width: 1, height: 16, background: 'var(--color-base-300)', margin: '0 4px 0 8px' }} />
 
-          {/* Theme toggle */}
-          <button
-            type="button"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            onClick={toggleTheme}
-            className="flex items-center justify-center w-7 h-7 rounded transition-colors"
-            style={{ background: 'transparent', border: '1px solid transparent', color: 'var(--color-base-500)' }}
-            onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-base-700)'); (e.currentTarget.style.borderColor = '#2A2A2E'); }}
-            onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-base-500)'); (e.currentTarget.style.borderColor = 'transparent'); }}
-          >
-            {theme === 'dark' ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            )}
-          </button>
+          {/* Theme control */}
+          <ThemeSegmentedControl />
         </div>
       </div>
     </div>

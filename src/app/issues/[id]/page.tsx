@@ -14,6 +14,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { Tag, Project } from '@/types';
 import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -185,7 +186,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
 export default function IssuePage() {
   const params = useParams();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const taskSlug = params.id as string; // may be slug (cwt-012) or UUID
 
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
@@ -703,23 +704,7 @@ export default function IssuePage() {
           {/* Properties header — aligned with breadcrumb topbar */}
           <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-base-200)', height: 48 }}>
             <span style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Darker Grotesque', sans-serif", fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Properties</span>
-            <div className="flex items-center" style={{ background: 'var(--color-base-150)', borderRadius: 20, padding: 2, gap: 0, border: '1px solid var(--color-base-250)' }}>
-              {([
-                { value: 'system', title: 'System', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> },
-                { value: 'light', title: 'Light', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> },
-                { value: 'dark', title: 'Night', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> },
-              ] as { value: import('@/components/ui/ThemeProvider').Theme; title: string; icon: React.ReactNode }[]).map(opt => (
-                <button key={opt.value} type="button" title={opt.title} onClick={() => setTheme(opt.value)}
-                  style={{
-                    background: theme === opt.value ? 'var(--color-base)' : 'none',
-                    border: 'none', borderRadius: 16, padding: '3px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    color: theme === opt.value ? 'var(--color-base-800)' : 'var(--color-base-450)',
-                    boxShadow: theme === opt.value ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
-                    transition: 'all 0.12s',
-                  }}
-                >{opt.icon}</button>
-              ))}
-            </div>
+            <ThemeSegmentedControl />
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-1">
