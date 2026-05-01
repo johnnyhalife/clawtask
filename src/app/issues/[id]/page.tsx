@@ -193,6 +193,13 @@ export default function IssuePage() {
   const { data: task, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
   // Real UUID — used for SSE matching and sub-resource calls once task loads
   const taskId = task?.id ?? taskSlug;
+
+  // Page title
+  useEffect(() => {
+    const workspace = config?.appName || 'Clawtask';
+    const page = task ? `${task.issueId} · ${task.title}` : 'Issue';
+    document.title = `clawtask | ${workspace} | ${page}`;
+  }, [config, task]);
   const { data: allTags } = useApi<Tag[]>('/api/v1/tags');
   const { data: allProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: allAgents } = useApi<{ id: string; displayName: string }[]>('/api/v1/agents');

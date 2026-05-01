@@ -13,6 +13,7 @@ import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
 import { FilterState, DEFAULT_FILTERS } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -124,6 +125,7 @@ function HomeContent() {
 
   const isMobile = useIsMobile();
   const isPulse = activeTab === 'pulse';
+  usePageTitle(isPulse ? 'Pulse' : 'Issues');
 
   // J/K navigation on issue list
   useEffect(() => {

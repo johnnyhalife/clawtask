@@ -8,6 +8,7 @@ import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -601,6 +602,7 @@ export default function SettingsPage() {
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
   const { theme } = useTheme();
   const isMobile = useIsMobile();
+  usePageTitle('Settings');
 
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'general', label: 'General' },
