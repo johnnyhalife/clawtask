@@ -772,9 +772,14 @@ export default function IssuePage() {
                       <span style={{ color: 'var(--color-base-700)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif", opacity: 0.6 }}>{(task.assignee as any)?.displayName}</span>
                       <button
                         onClick={async () => { await apiPost(`/api/v1/tasks/${taskId}/cancel`, {}); reloadTask(); }}
-                        className="text-xs px-2 py-0.5 rounded transition-opacity hover:opacity-80"
-                        style={{ color: '#F87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', fontFamily: "'Instrument Sans', sans-serif", cursor: 'pointer' }}
-                      >cancel</button>
+                        title="Cancel assignment"
+                        className="transition-opacity hover:opacity-80"
+                        style={{ color: '#F87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, padding: 0, flexShrink: 0 }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
                     </span>
                   ) : (
                     <div style={{ position: 'relative' }}>

@@ -236,6 +236,10 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
   const count = displayItems.length;
   const primaryVerb = group.items[0]?.verb ?? 'updated';
 
+  // Determine if the task's latest known status is 'done'
+  const latestStatusChange = [...group.items].reverse().find(a => a.verb === 'status_changed');
+  const isDone = (latestStatusChange?.meta as Record<string, any>)?.to === 'done';
+
   return (
     <div className="mb-3">
       {/* Group header */}
@@ -247,8 +251,14 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
       >
         {/* Icon */}
         <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
-          style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-650)' }}>
-          <VerbIcon verb={primaryVerb} />
+          style={{ background: isDone ? 'rgba(34,197,94,0.1)' : 'var(--color-base-150)', border: `1px solid ${isDone ? 'rgba(34,197,94,0.35)' : 'var(--color-base-300)'}`, color: isDone ? '#22C55E' : 'var(--color-base-650)' }}>
+          {isDone ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <VerbIcon verb={primaryVerb} />
+          )}
         </div>
         {/* Label — single line with ellipsis */}
         <div className="flex-1 min-w-0" style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
