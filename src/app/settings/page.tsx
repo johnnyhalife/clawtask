@@ -11,7 +11,7 @@ import { useTheme } from '@/components/ui/ThemeProvider';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { BottomNav } from '@/components/layout/BottomNav';
 
-type SettingsTab = 'general' | 'adapter' | 'agents' | 'projects';
+type SettingsTab = 'general' | 'adapter' | 'agents' | 'projects' | 'external';
 
 // ----- General Tab -----
 function GeneralSettings() {
@@ -398,6 +398,91 @@ function AgentsSettings() {
   );
 }
 
+// ----- External Systems Tab -----
+function ExternalSystemsSettings() {
+  const { data: systems, reload } = useApi<{ id: string; name: string; createdAt: string }[]>('/api/v1/external-systems');
+  const [name, setName] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [newKey, setNewKey] = useState<string | null>(null);
+  const [newName, setNewName] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setAdding(true);
+    try {
+      const result = await apiPost<{ id: string; name: string; apiKey: string }>('/api/v1/external-systems', { name: name.trim() });
+      setNewKey((result as any).apiKey);
+      setNewName((result as any).name);
+      setName('');
+      reload();
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/v1/external-systems/${id}`, { method: 'DELETE' });
+    reload();
+  };
+
+  return (
+    <div className="space-y-6">
+      {newKey && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 max-w-lg">
+          <div className="text-sm font-medium text-amber-400 mb-1">⚠️ Save this API key for <strong>{newName}</strong> — shown once!</div>
+          <div className="flex items-center gap-2 mb-3">
+            <code className="flex-1 bg-[var(--color-base-150)] border border-[var(--color-base-300)] rounded px-3 py-2 text-xs font-mono break-all">{newKey}</code>
+            <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard.writeText(newKey!); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>{copied ? '✓' : 'Copy'}</Button>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => setNewKey(null)}>Dismiss</Button>
+        </div>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-[var(--color-base-300)]">
+              <th className="py-2 px-4 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-base-500)' }}>Name</th>
+              <th className="py-2 px-4 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-base-500)' }}>Created</th>
+              <th className="py-2 px-4 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-base-500)' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(systems || []).map(sys => (
+              <tr key={sys.id} className="border-b border-[var(--color-base-200)]">
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-base-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+                    <span style={{ color: 'var(--color-base-800)', fontSize: '0.85rem', fontFamily: "'Instrument Sans', sans-serif" }}>{sys.name}</span>
+                  </div>
+                </td>
+                <td className="py-3 px-4" style={{ color: 'var(--color-base-500)', fontSize: '0.8rem', fontFamily: "'Roboto Mono', monospace" }}>{new Date(sys.createdAt).toLocaleDateString()}</td>
+                <td className="py-3 px-4">
+                  <Button size="sm" variant="ghost" onClick={() => handleDelete(sys.id)}>Delete</Button>
+                </td>
+              </tr>
+            ))}
+            {(!systems || systems.length === 0) && (
+              <tr><td colSpan={3} className="py-8 text-center text-sm" style={{ color: 'var(--color-base-500)' }}>No external systems yet</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-[var(--color-base-300)] pt-6">
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-base-800)' }}>Add External System</h3>
+        <form onSubmit={handleAdd} className="flex items-end gap-3">
+          <div>
+            <label className="block text-xs mb-1" style={{ color: 'var(--color-base-600)' }}>System Name</label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Temporal" className="w-48" />
+          </div>
+          <Button type="submit" variant="primary" disabled={adding || !name.trim()}>{adding ? 'Adding...' : '+ Add System'}</Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ----- Projects Tab -----
 const PRESET_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#EF4444','#06B6D4','#F97316'];
 
@@ -520,6 +605,7 @@ export default function SettingsPage() {
     { key: 'general', label: 'General' },
     { key: 'adapter', label: 'OpenClaw Adapter' },
     { key: 'agents', label: 'Agents' },
+    { key: 'external', label: 'External Systems' },
     { key: 'projects', label: 'Projects' },
   ];
 
@@ -601,6 +687,7 @@ export default function SettingsPage() {
           {activeTab === 'general' && <GeneralSettings />}
           {activeTab === 'adapter' && <AdapterSettings />}
           {activeTab === 'agents' && <AgentsSettings />}
+          {activeTab === 'external' && <ExternalSystemsSettings />}
           {activeTab === 'projects' && <ProjectsSettings />}
         </div>
 
@@ -685,6 +772,7 @@ export default function SettingsPage() {
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'adapter' && <AdapterSettings />}
             {activeTab === 'agents' && <AgentsSettings />}
+          {activeTab === 'external' && <ExternalSystemsSettings />}
             {activeTab === 'projects' && <ProjectsSettings />}
           </div>
         </div>

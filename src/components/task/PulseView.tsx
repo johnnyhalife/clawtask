@@ -155,16 +155,17 @@ function VerbIcon({ verb }: { verb: string }) {
 function ActivityRow({ a, extraCount = 0 }: { a: Activity; extraCount?: number }) {
   const meta = a.meta as Record<string, any>;
   const isAgent = a.actorType === 'agent';
+  const isExternal = a.actorType === 'external';
   const actorName = (a.actor as any)?.displayName ?? a.actorId;
   const d = new Date(a.createdAt);
   const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="flex items-center gap-3 py-2 pl-4 pr-3" style={{ borderTop: '1px solid var(--color-base-200)' }}>
-      <ActorAvatar name={actorName} isAgent={isAgent} size={20} />
+      <ActorAvatar name={actorName} isAgent={isAgent} isExternal={isExternal} size={20} />
       <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        <span style={{ color: isAgent ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem', fontWeight: 600, flexShrink: 0 }}>
-          {actorLabel(actorName, isAgent)}
+        <span style={{ color: isExternal ? '#10B981' : isAgent ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem', fontWeight: 600, flexShrink: 0 }}>
+          {actorLabel(actorName, isAgent, isExternal)}
         </span>
         <span style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem' }}>
           {verbLabel(a.verb)}{extraCount > 0 && <span style={{ color: 'var(--color-base-400)', fontStyle: 'italic', marginLeft: 4 }}>(+{extraCount} more)</span>}

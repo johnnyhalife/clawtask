@@ -5,19 +5,31 @@ import React from 'react';
 // ─── Shared actor display helpers ─────────────────────────────────────────────
 // Any actor/author with type 'human' is always shown as "You" with the person icon.
 
-export function actorLabel(name: string, isAgent: boolean): string {
+export function actorLabel(name: string, isAgent: boolean, isExternal?: boolean): string {
+  if (isExternal) return name;
   return isAgent ? name : 'You';
 }
 
 interface ActorAvatarProps {
   name: string;
   isAgent: boolean;
+  isExternal?: boolean;
   size?: number;
 }
 
-export function ActorAvatar({ name, isAgent, size = 28 }: ActorAvatarProps) {
+export function ActorAvatar({ name, isAgent, isExternal, size = 28 }: ActorAvatarProps) {
   const s = size;
   const iconSize = Math.max(10, Math.round(s * 0.55));
+
+  if (isExternal) {
+    return (
+      <div style={{ width: s, height: s, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
+        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/>
+        </svg>
+      </div>
+    );
+  }
 
   if (isAgent) {
     return (

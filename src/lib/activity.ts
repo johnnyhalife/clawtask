@@ -7,7 +7,7 @@ export function logActivity(
   opts: {
     taskId?: string;
     actorId: string;
-    actorType: 'agent' | 'human';
+    actorType: 'agent' | 'human' | 'external';
     verb: string;
     humanRequested?: boolean;
     meta?: Record<string, unknown>;
@@ -45,10 +45,15 @@ interface ActivityRow {
 }
 
 export function enrichActivity(db: Database.Database, row: ActivityRow) {
-  const actor =
-    row.actorType === 'agent'
-      ? db.prepare('SELECT id, openclawAgentId, displayName, probeStatus FROM agents WHERE id = ?').get(row.actorId)
-      : db.prepare('SELECT id, name, displayName FROM humans WHERE id = ?').get(row.actorId);
+  let actor: unknown;
+  if (row.actorType === 'agent') {
+    actor = db.prepare('SELECT id, openclawAgentId, displayName FROM agents WHERE id = ?').get(row.actorId);
+  } else if (row.actorType === 'external') {
+    const sys = db.prepare('SELECT id, name FROM external_systems WHERE id = ?').get(row.actorId) as { id: string; name: string } | undefined;
+    actor = sys ? { ...sys, displayName: sys.name } : null;
+  } else {
+    actor = db.prepare('SELECT id, name, displayName FROM humans WHERE id = ?').get(row.actorId);
+  }
 
   const task = row.taskId
     ? db.prepare('SELECT id, issueId, title, status, priority FROM tasks WHERE id = ?').get(row.taskId)

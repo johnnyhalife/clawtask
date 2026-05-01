@@ -34,6 +34,15 @@ CREATE TABLE IF NOT EXISTS humans (
   createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+-- External Systems
+CREATE TABLE IF NOT EXISTS external_systems (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  apiKeyHash TEXT NOT NULL,
+  apiKey TEXT NOT NULL DEFAULT '',
+  createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 -- Agents
 CREATE TABLE IF NOT EXISTS agents (
   id TEXT PRIMARY KEY,

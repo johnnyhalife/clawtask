@@ -87,7 +87,7 @@ export interface Activity {
   id: string;
   taskId: string | null;
   actorId: string;
-  actorType: 'agent' | 'human';
+  actorType: 'agent' | 'human' | 'external';
   verb: string;
   humanRequested: boolean;
   meta: Record<string, unknown>;

@@ -75,6 +75,64 @@ function runMigrations(db: Database.Database) {
   if (!cols.includes('apiKey')) {
     db.exec(`ALTER TABLE agents ADD COLUMN apiKey TEXT NOT NULL DEFAULT ''`);
   }
+  // M003: create external_systems table if missing
+  const extTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='external_systems'").get();
+  if (!extTables) {
+    db.exec(`CREATE TABLE IF NOT EXISTS external_systems (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      apiKeyHash TEXT NOT NULL,
+      apiKey TEXT NOT NULL DEFAULT '',
+      createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    )`);
+  }
+
+  // M004: loosen authorType CHECK to include 'external'
+  const commentSchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='comments'").get() as any)?.sql ?? '';
+  if (commentSchema && !commentSchema.includes("'external'")) {
+    db.pragma('foreign_keys = OFF');
+    db.transaction(() => {
+      db.exec(`CREATE TABLE comments_new (
+        id TEXT PRIMARY KEY,
+        taskId TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        authorId TEXT NOT NULL,
+        authorType TEXT NOT NULL CHECK (authorType IN ('agent', 'human', 'external')),
+        type TEXT NOT NULL DEFAULT 'message' CHECK (type IN ('message', 'thinking', 'tool')),
+        content TEXT NOT NULL DEFAULT '',
+        humanRequested INTEGER NOT NULL DEFAULT 0,
+        createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updatedAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      )`);
+      db.exec('INSERT INTO comments_new SELECT * FROM comments');
+      db.exec('DROP TABLE comments');
+      db.exec('ALTER TABLE comments_new RENAME TO comments');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_comments_taskId ON comments(taskId)');
+    })();
+    db.pragma('foreign_keys = ON');
+  }
+  const activitySchema = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='activity'").get() as any)?.sql ?? '';
+  if (activitySchema && !activitySchema.includes("'external'")) {
+    db.pragma('foreign_keys = OFF');
+    db.transaction(() => {
+      db.exec(`CREATE TABLE activity_new (
+        id TEXT PRIMARY KEY,
+        taskId TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+        actorId TEXT NOT NULL,
+        actorType TEXT NOT NULL CHECK (actorType IN ('agent', 'human', 'external')),
+        verb TEXT NOT NULL,
+        humanRequested INTEGER NOT NULL DEFAULT 0,
+        meta TEXT NOT NULL DEFAULT '{}',
+        createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      )`);
+      db.exec('INSERT INTO activity_new SELECT * FROM activity');
+      db.exec('DROP TABLE activity');
+      db.exec('ALTER TABLE activity_new RENAME TO activity');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_activity_taskId ON activity(taskId)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_activity_createdAt ON activity(createdAt)');
+    })();
+    db.pragma('foreign_keys = ON');
+  }
+
   // Backfill: any agent with empty apiKey gets a fresh key+hash pair (sync both)
   const stale = db
     .prepare(`SELECT id FROM agents WHERE apiKey = '' OR apiKey IS NULL`)
