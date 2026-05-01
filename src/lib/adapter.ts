@@ -26,6 +26,10 @@ import { v4 as uuidv4 } from 'uuid';
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 const DEVICE_KEY_PATH = path.join(process.env.HOME || '~', '.clawtask', 'gateway-device-key.pem');
 
+// Self-URL used in agent wake prompts. Set CLAWTASK_PUBLIC_URL in production.
+// Defaults to localhost:3333 for local dev.
+const CLAWTASK_SELF_URL = (process.env.CLAWTASK_PUBLIC_URL || '${CLAWTASK_SELF_URL}').replace(/\/$/, '');
+
 function base64UrlEncode(buf: Buffer): string {
   return buf.toString('base64').replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '');
 }
@@ -650,14 +654,14 @@ class AdapterService {
     const message = `You have been assigned task ${task.issueId} in Clawtask.
 
 Your Clawtask API key: ${apiKey}
-Use it as Bearer token on ALL requests to http://localhost:3333/api/v1/
+Use it as Bearer token on ALL requests to ${CLAWTASK_SELF_URL}/api/v1/
 
 Instructions:
-1. Set status to in_progress: POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "in_progress" }
-2. Fetch full task details: GET http://localhost:3333/api/v1/tasks/${slug}
+1. Set status to in_progress: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "in_progress" }
+2. Fetch full task details: GET ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}
 3. Do the work.
 4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
-5. When done, mark it: POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "done" }`;
+5. When done, mark it: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }`;
     const idempotencyKey = uuidv4();
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
 
@@ -841,9 +845,9 @@ Instructions:
 
 Human comment: "${comment.content}"
 
-This is a follow-up to your existing work — do NOT restart or re-execute the task from scratch. Fetch the current task state from http://localhost:3333/api/v1/tasks/${slug} for full context, then respond directly to the comment by posting a reply via POST http://localhost:3333/api/v1/tasks/${slug}/comments. When you are done responding, mark the task done again via POST http://localhost:3333/api/v1/tasks/${slug}/status with body { "status": "done" }.
+This is a follow-up to your existing work — do NOT restart or re-execute the task from scratch. Fetch the current task state from ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug} for full context, then respond directly to the comment by posting a reply via POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/comments. When you are done responding, mark the task done again via POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }.
 
-Your Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to http://localhost:3333/api/v1/`;
+Your Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to ${CLAWTASK_SELF_URL}/api/v1/`;
     const idempotencyKey = uuidv4();
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
 

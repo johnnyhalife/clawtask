@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  clawtask:
+    image: clawtask:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clawtask
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      CLAWTASK_PUBLIC_URL: https://clawtask.swrks.sh
+      HOME: /data
+      PORT: "3000"
+    volumes:
+      - clawtask_data:/data
+
+volumes:
+  clawtask_data:

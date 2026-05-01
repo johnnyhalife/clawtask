@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+*.db
+*.db-shm
+*.db-wal
+.env*
+clawtask.backup.db
