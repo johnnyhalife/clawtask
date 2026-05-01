@@ -231,7 +231,7 @@ function collapseComments(items: Activity[]): DisplayItem[] {
 }
 
 function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (id: string, issueId?: string) => void }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const displayItems = collapseComments(group.items);
   const count = displayItems.length;
   const primaryVerb = group.items[0]?.verb ?? 'updated';
