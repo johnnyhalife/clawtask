@@ -215,10 +215,10 @@ export function TaskList({
     });
   };
 
-  // Build flat index for J/K navigation
-  const flatTasks: Task[] = [];
+  // Build flat index for J/K navigation — use task id for stable matching
+  const flatTaskIds: string[] = [];
   for (const key of keys) {
-    for (const task of (groups[key] ?? [])) flatTasks.push(task);
+    for (const task of (groups[key] ?? [])) flatTaskIds.push(task.id);
   }
 
   return (
@@ -274,7 +274,7 @@ export function TaskList({
               )}
 
               {!isCollapsed && groupTasks.map(task => {
-                const flatIdx = flatTasks.indexOf(task);
+                const flatIdx = flatTaskIds.indexOf(task.id);
                 const isSelected = flatIdx === selectedIdx;
                 return (
                   <TaskRow

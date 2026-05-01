@@ -240,7 +240,7 @@ export default function IssuePage() {
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
         if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
-        router.push('/');
+        router.push('/?tab=all');
         return;
       }
       if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); return; }

@@ -56,8 +56,10 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
         style={{
           minHeight: '44px',
           padding: '8px 12px',
-          background: selected ? 'rgba(255,255,255,0.07)' : undefined,
+          background: selected ? 'var(--color-base-200)' : undefined,
           borderBottom: '1px solid var(--color-base-300)',
+          outline: selected ? '2px solid #3189FF' : 'none',
+          outlineOffset: '-2px',
         }}
         onClick={handleClick}
         onMouseEnter={(e) => {
@@ -124,7 +126,9 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
       style={{
         height: '36px',
         padding: '0 12px',
-        background: selected ? 'rgba(255,255,255,0.07)' : undefined,
+        background: selected ? 'var(--color-base-200)' : undefined,
+          outline: selected ? '2px solid #3189FF' : 'none',
+          outlineOffset: '-2px',
         borderBottom: '1px solid var(--color-base-300)',
       }}
       onClick={handleClick}
