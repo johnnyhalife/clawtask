@@ -204,9 +204,31 @@ function ActivityRow({ a }: { a: Activity }) {
   );
 }
 
+// Collapse consecutive same-actor 'commented' activities within 5 min into a single display row
+type DisplayItem = { key: string; items: Activity[]; collapsed: number };
+function collapseComments(items: Activity[]): DisplayItem[] {
+  const FIVE = 5 * 60 * 1000;
+  const result: DisplayItem[] = [];
+  for (const a of items) {
+    const last = result[result.length - 1];
+    if (
+      last && last.items[0].verb === 'commented' && a.verb === 'commented' &&
+      last.items[0].actorId === a.actorId &&
+      Math.abs(new Date(a.createdAt).getTime() - new Date(last.items[last.items.length - 1].createdAt).getTime()) < FIVE
+    ) {
+      last.items.push(a);
+      last.collapsed = last.items.length - 1;
+    } else {
+      result.push({ key: a.id, items: [a], collapsed: 0 });
+    }
+  }
+  return result;
+}
+
 function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (id: string, issueId?: string) => void }) {
   const [collapsed, setCollapsed] = useState(false);
-  const count = group.items.length;
+  const displayItems = collapseComments(group.items);
+  const count = displayItems.length;
   const primaryVerb = group.items[0]?.verb ?? 'updated';
 
   return (
@@ -251,7 +273,18 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
       {/* Activity items */}
       {!collapsed && (
         <div className="rounded-lg overflow-hidden ml-11" style={{ border: '1px solid var(--color-base-200)', background: 'var(--color-base-100)' }}>
-          {group.items.map(a => <ActivityRow key={a.id} a={a} />)}
+          {displayItems.map(di => (
+            <div key={di.key}>
+              <ActivityRow a={di.items[0]} />
+              {di.collapsed > 0 && (
+                <div className="flex items-center gap-2 pl-4 py-1.5" style={{ borderTop: '1px solid var(--color-base-200)' }}>
+                  <span style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.72rem', fontStyle: 'italic' }}>
+                    + {di.collapsed} more comment{di.collapsed > 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

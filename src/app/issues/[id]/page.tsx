@@ -83,34 +83,8 @@ function PropRow({ label, kbd, children }: { label: string; kbd?: string; childr
 
 // Avatar is now ActorAvatar from shared component
 
-// ─── Message action bar ───────────────────────────────────────────────────────
-function MsgActions({ date }: { date: string }) {
-  return (
-    <div className="flex items-center gap-3 mt-2">
-      {[
-        <svg key="copy" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>,
-        <svg key="up" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" /><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" /></svg>,
-        <svg key="down" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z" /><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" /></svg>,
-      ].map((icon, i) => (
-        <button key={i} type="button" style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-650)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}>
-          {icon}
-        </button>
-      ))}
-      <span style={{ fontSize: '0.68rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(date)}</span>
-      <button type="button" style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer' }}
-        onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-650)')}
-        onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></svg>
-      </button>
-    </div>
-  );
-}
-
-
 // ─── Timeline entry ───────────────────────────────────────────────────────────
-function TimelineEntry({ item }: { item: (Comment | Activity) & { _timelineType: string } }) {
+function TimelineEntry({ item, showHeader = true, showBorder = true }: { item: (Comment | Activity) & { _timelineType: string }; showHeader?: boolean; showBorder?: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
 
   if (item._timelineType === 'activity') {
@@ -189,18 +163,22 @@ function TimelineEntry({ item }: { item: (Comment | Activity) & { _timelineType:
   }
 
   return (
-    <div className="py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-      <div className="flex items-center gap-3 mb-2">
-        <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
-        <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
-        <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
-      </div>
+    <div className={showHeader ? "py-3" : "pt-1 pb-2"} style={{ borderBottom: showBorder ? '1px solid var(--color-base-200)' : 'none' }}>
+      {showHeader ? (
+        <div className="flex items-center gap-3 mb-2">
+          <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
+          <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
+          <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
+        </div>
+      ) : null}
       <div className="pl-10 prose-clawtask text-sm" style={{ color: 'var(--color-base-800)' }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{c.content || ' '}</ReactMarkdown>
       </div>
-      <div className="pl-10">
-        <MsgActions date={c.createdAt} />
-      </div>
+      {!showHeader && showBorder && (
+        <div className="pl-10 mt-0.5">
+          <span className="text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -223,6 +201,15 @@ export default function IssuePage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'activity'>('chat');
+  const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  // Populate edit fields when opening editor
+  useEffect(() => {
+    if (editingTask && task) { setEditTitle(task.title ?? ''); setEditDescription(task.description ?? ''); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingTask]);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -342,7 +329,16 @@ export default function IssuePage() {
     .filter(c => c.type === 'message')
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const chatTimeline = rawChat.map(c => ({ ...c, _timelineType: 'comment' as const }));
+  const FIVE_MIN_MS = 5 * 60 * 1000;
+  const chatTimeline = rawChat.map((c, i) => {
+    const prev = rawChat[i - 1];
+    const next = rawChat[i + 1];
+    const samePrev = prev && prev.authorId === c.authorId &&
+      Math.abs(new Date(c.createdAt).getTime() - new Date(prev.createdAt).getTime()) < FIVE_MIN_MS;
+    const sameNext = next && next.authorId === c.authorId &&
+      Math.abs(new Date(next.createdAt).getTime() - new Date(c.createdAt).getTime()) < FIVE_MIN_MS;
+    return { ...c, _timelineType: 'comment' as const, _showHeader: !samePrev, _showBorder: !sameNext };
+  });
 
   const timeline = activeTab === 'chat' ? chatTimeline : allTimeline;
 
@@ -447,7 +443,10 @@ export default function IssuePage() {
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom))' }}>
-          {timeline.map(item => <TimelineEntry key={item.id} item={item as any} />)}
+          {timeline.map(item => {
+            const ext = item as any;
+            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} />;
+          })}
           {timeline.length === 0 && (
             <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
               {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
@@ -537,30 +536,61 @@ export default function IssuePage() {
                   </span>
                 </>
               )}
-              <div className="ml-auto flex items-center gap-1.5">
-                <button title="Copy link" style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-650)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                </button>
-                <button title="More" style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
+              <div className="ml-auto flex items-center gap-1.5" style={{ position: 'relative' }}>
+                <button title="More" onClick={() => setEditMenuOpen(v => !v)}
+                  style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-650)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></svg>
                 </button>
+                {editMenuOpen && (
+                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-base)', border: '1px solid var(--color-base-300)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 120 }}>
+                    <button type="button"
+                      onClick={() => { setEditMenuOpen(false); setEditingTask(true); }}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    >Edit</button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Title */}
-            <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? '10px' : 0 }}>
-              {task?.title}
-            </h1>
-
-            {/* Description */}
-            {task?.description && (
-              <div className="prose-clawtask" style={{ color: 'var(--color-base-600)', fontSize: '0.9rem', fontFamily: "'Instrument Sans', sans-serif" }}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{task.description}</ReactMarkdown>
+            {editingTask ? (
+              <div>
+                <input autoFocus value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') setEditingTask(false); }}
+                  style={{ width: '100%', fontSize: '1.5rem', fontWeight: 700, fontFamily: "'Instrument Sans', sans-serif", color: 'var(--color-base-900)', background: 'var(--color-base-100)', border: '1px solid var(--color-base-400)', borderRadius: 6, padding: '4px 8px', marginBottom: 8, boxSizing: 'border-box' }}
+                />
+                <textarea rows={4} value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Description (optional)"
+                  onKeyDown={e => { if (e.key === 'Escape') setEditingTask(false); }}
+                  style={{ width: '100%', fontSize: '0.9rem', fontFamily: "'Instrument Sans', sans-serif", color: 'var(--color-base-700)', background: 'var(--color-base-100)', border: '1px solid var(--color-base-400)', borderRadius: 6, padding: '6px 8px', marginBottom: 8, resize: 'vertical', boxSizing: 'border-box' }}
+                />
+                <div className="flex gap-2">
+                  <button type="button"
+                    onClick={async () => {
+                      await fetch(`/api/v1/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editTitle, description: editDescription }) });
+                      reloadTask();
+                      setEditingTask(false);
+                    }}
+                    style={{ fontSize: '0.8rem', padding: '4px 12px', borderRadius: 6, background: 'var(--color-base-900)', color: 'var(--color-base)', border: 'none', cursor: 'pointer', fontFamily: "'Instrument Sans', sans-serif" }}
+                  >Save</button>
+                  <button type="button" onClick={() => setEditingTask(false)}
+                    style={{ fontSize: '0.8rem', padding: '4px 12px', borderRadius: 6, background: 'none', color: 'var(--color-base-600)', border: '1px solid var(--color-base-300)', cursor: 'pointer', fontFamily: "'Instrument Sans', sans-serif" }}
+                  >Cancel</button>
+                </div>
               </div>
+            ) : (
+              <>
+                <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? '10px' : 0 }}>
+                  {task?.title}
+                </h1>
+                {task?.description && (
+                  <div className="prose-clawtask" style={{ color: 'var(--color-base-600)', fontSize: '0.9rem', fontFamily: "'Instrument Sans', sans-serif" }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{task.description}</ReactMarkdown>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -603,7 +633,10 @@ export default function IssuePage() {
                 </button>
               </div>
             )}
-            {timeline.map(item => <TimelineEntry key={item.id} item={item as any} />)}
+            {timeline.map(item => {
+            const ext = item as any;
+            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} />;
+          })}
             {timeline.length === 0 && (
               <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
                 {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
@@ -862,3 +895,4 @@ export default function IssuePage() {
     </div>
   );
 }
+
