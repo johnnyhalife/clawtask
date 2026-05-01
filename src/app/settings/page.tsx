@@ -159,18 +159,28 @@ function GeneralSettings() {
 function AdapterSettings() {
   const { data: config, reload } = useApi<Record<string, string>>('/api/v1/config');
   const [gatewayUrl, setGatewayUrl] = useState('');
+  const [gatewayAuthToken, setGatewayAuthToken] = useState('');
+  const [tokenPlaceholder, setTokenPlaceholder] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (config) setGatewayUrl(config.gatewayUrl || 'ws://localhost:2222');
+    if (config) {
+      setGatewayUrl(config.gatewayUrl || 'ws://localhost:2222');
+      // If a token is stored, show a masked placeholder; don't populate the field
+      setTokenPlaceholder(config.gatewayAuthToken ? '••••••••••••••••' : '');
+      setGatewayAuthToken('');
+    }
   }, [config]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiPatch('/api/v1/config', { gatewayUrl });
+      const patch: Record<string, string> = { gatewayUrl };
+      // Only send token if the user typed something new
+      if (gatewayAuthToken.trim()) patch.gatewayAuthToken = gatewayAuthToken.trim();
+      await apiPatch('/api/v1/config', patch);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       reload();
@@ -186,9 +196,20 @@ function AdapterSettings() {
         <Input
           value={gatewayUrl}
           onChange={(e) => setGatewayUrl(e.target.value)}
-          placeholder="ws://localhost:2222"
+          placeholder="ws://host.docker.internal:18789/ws"
         />
         <p className="text-xs style-base-500 mt-1">OpenClaw gateway WebSocket URL used for all agent connections</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium style-base-800 mb-1">Auth Token</label>
+        <Input
+          type="password"
+          value={gatewayAuthToken}
+          onChange={(e) => setGatewayAuthToken(e.target.value)}
+          placeholder={tokenPlaceholder || 'Enter token to set or update'}
+        />
+        <p className="text-xs style-base-500 mt-1">Leave blank to keep the existing token unchanged</p>
       </div>
 
       <div className="flex items-center gap-3">
