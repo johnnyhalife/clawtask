@@ -137,7 +137,8 @@ function HomeContent() {
         setSelectedIdx(i => Math.min(i + 1, tasks.length - 1));
       } else if (e.key === 'k' || e.key === 'K') {
         e.preventDefault();
-        setSelectedIdx(i => Math.max(i - 1, 0));
+        setSelectedIdx(-1);
+        searchRef.current?.focus();
       } else if (e.key === 'Enter') {
         if (selectedIdx >= 0 && tasks[selectedIdx]) {
           router.push(`/issues/${tasks[selectedIdx].issueId.toLowerCase()}`);
