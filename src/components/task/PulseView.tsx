@@ -94,9 +94,13 @@ function buildGrid(startDate: Date, endDate: Date, activity: Activity[]) {
 function buildMonthLabels(weeks: { date: string }[][]) {
   const labels: { label: string; col: number }[] = [];
   let last = '';
+  let lastCol = -4; // minimum 4 columns apart before showing a label
   weeks.forEach((week, wi) => {
     const m = MONTH_SHORT[new Date(week[0].date).getMonth()];
-    if (m !== last) { labels.push({ label: m, col: wi }); last = m; }
+    if (m !== last) {
+      last = m;
+      if (wi - lastCol >= 4) { labels.push({ label: m, col: wi }); lastCol = wi; }
+    }
   });
   return labels;
 }
