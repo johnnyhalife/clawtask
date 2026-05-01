@@ -14,6 +14,7 @@ import { CreateTaskModal } from '@/components/task/CreateTaskModal';
 import { FilterState, DEFAULT_FILTERS } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useFavicon } from '@/hooks/useFavicon';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -134,6 +135,7 @@ function HomeContent() {
     : activeTag ? `Issues · ${activeTag.name}`
     : 'Issues';
   usePageTitle(pageLabel);
+  useFavicon(config?.workspaceLogo ?? undefined);
 
   // J/K navigation on issue list
   useEffect(() => {
