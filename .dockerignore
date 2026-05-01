@@ -1,5 +1,7 @@
 node_modules
 .next
+!.next/standalone
+!.next/static
 .git
 *.db
 *.db-shm
