@@ -251,6 +251,7 @@ const GROUP_OPTIONS: { value: GroupByField; label: string }[] = [
   { value: 'status', label: 'Status' },
   { value: 'priority', label: 'Priority' },
   { value: 'assignee', label: 'Assignee' },
+  { value: 'project', label: 'Project' },
   { value: 'none', label: 'None' },
 ];
 

@@ -68,6 +68,7 @@ function getGroupKey(task: Task, groupBy: GroupByField): string {
   if (groupBy === 'status') return task.status || '';
   if (groupBy === 'priority') return task.priority || '';
   if (groupBy === 'assignee') return task.assigneeType || (task.assigneeId ? 'human' : 'unassigned');
+  if (groupBy === 'project') return task.projectId ?? '__none__';
   return 'all';
 }
 
@@ -90,13 +91,24 @@ function sortedGroupKeys(keys: string[], groupBy: GroupByField): string[] {
       ...keys.filter(k => !ASSIGNEE_ORDER.includes(k)),
     ];
   }
+  if (groupBy === 'project') {
+    return [
+      ...keys.filter(k => k !== '__none__').sort(),
+      ...keys.filter(k => k === '__none__'),
+    ];
+  }
   return keys;
 }
+
+// Project name cache populated at render time via task data
+const _projectNameCache: Record<string, string> = {};
+export function cacheProjectName(id: string, name: string) { _projectNameCache[id] = name; }
 
 function groupLabel(key: string, groupBy: GroupByField): string {
   if (groupBy === 'status') return STATUS_LABEL[key] ?? key;
   if (groupBy === 'priority') return PRIORITY_LABEL[key] ?? key;
   if (groupBy === 'assignee') return ASSIGNEE_LABEL[key] ?? key;
+  if (groupBy === 'project') return key === '__none__' ? 'No Project' : (_projectNameCache[key] ?? key);
   return 'All Issues';
 }
 
@@ -104,6 +116,7 @@ function groupColor(key: string, groupBy: GroupByField): string {
   if (groupBy === 'status') return STATUS_COLOR[key] ?? 'var(--color-base-500)';
   if (groupBy === 'priority') return PRIORITY_COLOR[key] ?? 'var(--color-base-500)';
   if (groupBy === 'assignee') return ASSIGNEE_COLOR[key] ?? 'var(--color-base-500)';
+  if (groupBy === 'project') return 'var(--color-base-500)';
   return 'var(--color-base-500)';
 }
 
@@ -202,6 +215,8 @@ export function TaskList({
     const key = getGroupKey(task, groupBy);
     if (!groups[key]) groups[key] = [];
     groups[key].push(task);
+    // Populate project name cache so groupLabel can resolve names
+    if (task.projectId && task.project?.name) cacheProjectName(task.projectId, task.project.name);
   }
 
   const keys = sortedGroupKeys(Object.keys(groups), groupBy);

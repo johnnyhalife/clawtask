@@ -5,7 +5,7 @@ export type SortOrder = 'asc' | 'desc';
 export type StatusValue = 'todo' | 'in_progress' | 'blocked' | 'done';
 export type PriorityValue = 'urgent' | 'high' | 'medium' | 'low';
 export type AssigneeFilter = '' | 'agent' | 'human' | 'unassigned';
-export type GroupByField = 'status' | 'priority' | 'assignee' | 'none';
+export type GroupByField = 'status' | 'priority' | 'assignee' | 'project' | 'none';
 
 // Legacy single-value types (kept for any remaining consumers)
 export type StatusFilter = '' | StatusValue;
