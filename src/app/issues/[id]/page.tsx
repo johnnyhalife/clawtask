@@ -84,7 +84,7 @@ function PropRow({ label, kbd, children }: { label: string; kbd?: string; childr
 // Avatar is now ActorAvatar from shared component
 
 // ─── Timeline entry ───────────────────────────────────────────────────────────
-function TimelineEntry({ item, showHeader = true, showBorder = true }: { item: (Comment | Activity) & { _timelineType: string }; showHeader?: boolean; showBorder?: boolean }) {
+function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTime }: { item: (Comment | Activity) & { _timelineType: string }; showHeader?: boolean; showBorder?: boolean; groupLastTime?: string }) {
   const [collapsed, setCollapsed] = useState(false);
 
   if (item._timelineType === 'activity') {
@@ -168,17 +168,13 @@ function TimelineEntry({ item, showHeader = true, showBorder = true }: { item: (
         <div className="flex items-center gap-3 mb-2">
           <ActorAvatar name={authorName} isAgent={isAgent} size={28} />
           <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{authorDisplay}</span>
-          <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
+          <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(groupLastTime ?? c.createdAt)}</span>
         </div>
       ) : null}
       <div className="pl-10 prose-clawtask text-sm" style={{ color: 'var(--color-base-800)' }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{c.content || ' '}</ReactMarkdown>
       </div>
-      {!showHeader && showBorder && (
-        <div className="pl-10 mt-0.5">
-          <span className="text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(c.createdAt)}</span>
-        </div>
-      )}
+
     </div>
   );
 }
@@ -240,9 +236,11 @@ export default function IssuePage() {
       const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
+        if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
         router.push('/');
         return;
       }
+      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); }
       if (isEditing) return;
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
@@ -250,7 +248,7 @@ export default function IssuePage() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [router, assigneeOpen]);
+  }, [router, assigneeOpen, editingTask]);
 
   useSse(event => {
     if (event.type === 'comment.added') {
@@ -330,6 +328,7 @@ export default function IssuePage() {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const FIVE_MIN_MS = 5 * 60 * 1000;
+  // For each group-start, find the last message in the run to use its timestamp
   const chatTimeline = rawChat.map((c, i) => {
     const prev = rawChat[i - 1];
     const next = rawChat[i + 1];
@@ -337,7 +336,15 @@ export default function IssuePage() {
       Math.abs(new Date(c.createdAt).getTime() - new Date(prev.createdAt).getTime()) < FIVE_MIN_MS;
     const sameNext = next && next.authorId === c.authorId &&
       Math.abs(new Date(next.createdAt).getTime() - new Date(c.createdAt).getTime()) < FIVE_MIN_MS;
-    return { ...c, _timelineType: 'comment' as const, _showHeader: !samePrev, _showBorder: !sameNext };
+    // Find the last message in this run (for group-start header timestamp)
+    let lastInRun = c;
+    if (!samePrev) {
+      let j = i;
+      while (j + 1 < rawChat.length && rawChat[j + 1].authorId === c.authorId &&
+        Math.abs(new Date(rawChat[j + 1].createdAt).getTime() - new Date(rawChat[j].createdAt).getTime()) < FIVE_MIN_MS) j++;
+      lastInRun = rawChat[j];
+    }
+    return { ...c, _timelineType: 'comment' as const, _showHeader: !samePrev, _showBorder: !sameNext, _groupLastTime: lastInRun.createdAt };
   });
 
   const timeline = activeTab === 'chat' ? chatTimeline : allTimeline;
@@ -445,7 +452,7 @@ export default function IssuePage() {
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom))' }}>
           {timeline.map(item => {
             const ext = item as any;
-            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} />;
+            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} groupLastTime={ext._groupLastTime} />;
           })}
           {timeline.length === 0 && (
             <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
@@ -547,10 +554,13 @@ export default function IssuePage() {
                   <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-base)', border: '1px solid var(--color-base-300)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 120 }}>
                     <button type="button"
                       onClick={() => { setEditMenuOpen(false); setEditingTask(true); }}
-                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", gap: 16 }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                    >Edit</button>
+                    >
+                      <span>Edit</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", background: 'var(--color-base-200)', border: '1px solid var(--color-base-300)', borderRadius: 3, padding: '1px 5px' }}>E</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -635,7 +645,7 @@ export default function IssuePage() {
             )}
             {timeline.map(item => {
             const ext = item as any;
-            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} />;
+            return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} groupLastTime={ext._groupLastTime} />;
           })}
             {timeline.length === 0 && (
               <div className="py-12 text-center text-sm" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>
