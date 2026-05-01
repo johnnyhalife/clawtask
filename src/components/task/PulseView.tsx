@@ -428,12 +428,12 @@ export function PulseView() {
           {!isMobile && <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <div className="rounded-xl p-4" style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', minWidth: 600 }}>
             {/* Month labels row */}
-            <div className="flex" style={{ marginBottom: 4, paddingLeft: 28 }}>
+            <div className="flex" style={{ marginBottom: 4, paddingLeft: 28, gap: 3 }}>
               {weeks.map((week, wi) => {
                 const found = monthLabels.find(m => m.col === wi);
                 return (
-                  <div key={wi} style={{ width: 13, flexShrink: 0, fontSize: '0.68rem', color: found ? 'var(--color-base-650)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", userSelect: 'none' }}>
-                    {found?.label ?? 'x'}
+                  <div key={wi} style={{ width: 13, flexShrink: 0, fontSize: '0.68rem', color: found ? 'var(--color-base-650)' : 'transparent', fontFamily: "'Instrument Sans', sans-serif", userSelect: 'none', overflow: 'visible', whiteSpace: 'nowrap' }}>
+                    {found?.label ?? ''}
                   </div>
                 );
               })}
