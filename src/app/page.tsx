@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Task, Config } from '@/types';
+import { Task, Config, Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -24,6 +24,8 @@ function HomeContent() {
   const q = searchParams.get('q') || '';
 
   const { data: config } = useApi<Config>('/api/v1/config');
+  const { data: projects } = useApi<Project[]>('/api/v1/projects');
+  const { data: tags } = useApi<Tag[]>('/api/v1/tags');
   const [showCreate, setShowCreate] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -125,7 +127,13 @@ function HomeContent() {
 
   const isMobile = useIsMobile();
   const isPulse = activeTab === 'pulse';
-  usePageTitle(isPulse ? 'Pulse' : 'Issues');
+  const activeProject = projectId ? projects?.find(p => p.id === projectId) : null;
+  const activeTag = tagId ? tags?.find(t => t.id === tagId) : null;
+  const pageLabel = isPulse ? 'Pulse'
+    : activeProject ? `Issues · ${activeProject.name}`
+    : activeTag ? `Issues · ${activeTag.name}`
+    : 'Issues';
+  usePageTitle(pageLabel);
 
   // J/K navigation on issue list
   useEffect(() => {
