@@ -11,8 +11,8 @@ interface TaskListProps {
   emptyMessage?: string;
   onTaskUpdated?: () => void;
   onNewTask?: () => void;
-  selectedIdx?: number;
-  onSelectIdx?: (idx: number) => void;
+  selectedTaskId?: string | null;
+  onSelectTaskId?: (id: string) => void;
 }
 
 // ─── Order / label maps ───────────────────────────────────────────────────────
@@ -104,6 +104,23 @@ function sortedGroupKeys(keys: string[], groupBy: GroupByField): string[] {
 const _projectNameCache: Record<string, string> = {};
 export function cacheProjectName(id: string, name: string) { _projectNameCache[id] = name; }
 
+// Returns tasks in the same flat order TaskList renders them (respects groupBy)
+export function getFlatOrderedTasks(tasks: Task[], groupBy: GroupByField): Task[] {
+  if (groupBy === 'none') return tasks;
+  const groups: Record<string, Task[]> = {};
+  for (const task of tasks) {
+    const key = getGroupKey(task, groupBy);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(task);
+  }
+  const keys = sortedGroupKeys(Object.keys(groups), groupBy);
+  const result: Task[] = [];
+  for (const key of keys) {
+    for (const task of (groups[key] ?? [])) result.push(task);
+  }
+  return result;
+}
+
 function groupLabel(key: string, groupBy: GroupByField): string {
   if (groupBy === 'status') return STATUS_LABEL[key] ?? key;
   if (groupBy === 'priority') return PRIORITY_LABEL[key] ?? key;
@@ -194,8 +211,8 @@ export function TaskList({
   emptyMessage = 'No tasks found.',
   onTaskUpdated,
   onNewTask,
-  selectedIdx = -1,
-  onSelectIdx,
+  selectedTaskId,
+  onSelectTaskId,
 }: TaskListProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(
     groupBy === 'status' ? new Set(STATUS_DEFAULT_COLLAPSED) : new Set()
@@ -229,12 +246,6 @@ export function TaskList({
       return next;
     });
   };
-
-  // Build flat index for J/K navigation — use task id for stable matching
-  const flatTaskIds: string[] = [];
-  for (const key of keys) {
-    for (const task of (groups[key] ?? [])) flatTaskIds.push(task.id);
-  }
 
   return (
     <>
@@ -288,18 +299,14 @@ export function TaskList({
                 </button>
               )}
 
-              {!isCollapsed && groupTasks.map(task => {
-                const flatIdx = flatTaskIds.indexOf(task.id);
-                const isSelected = flatIdx === selectedIdx;
-                return (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    selected={isSelected}
-                    onClick={() => onSelectIdx?.(flatIdx)}
-                  />
-                );
-              })}
+              {!isCollapsed && groupTasks.map(task => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  selected={task.id === selectedTaskId}
+                  onClick={() => onSelectTaskId?.(task.id)}
+                />
+              ))}
             </div>
           );
         })}

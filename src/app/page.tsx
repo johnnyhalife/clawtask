@@ -8,7 +8,7 @@ import { useSse } from '@/hooks/useSse';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { TopBar } from '@/components/layout/TopBar';
-import { TaskList } from '@/components/task/TaskList';
+import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
 import { FilterState, DEFAULT_FILTERS } from '@/components/task/TaskFilters';
@@ -30,7 +30,7 @@ function HomeContent() {
   const [showCreate, setShowCreate] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [selectedIdx, setSelectedIdx] = useState<number>(-1);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   // Reset filters when tab changes
   useEffect(() => {
@@ -60,7 +60,7 @@ function HomeContent() {
   }, [activeTab, router]);
 
   // Reset J/K selection when tab changes
-  useEffect(() => { setSelectedIdx(-1); }, [activeTab]);
+  useEffect(() => { setSelectedTaskId(null); }, [activeTab]);
 
   const buildTaskUrl = useCallback(() => {
     const params = new URLSearchParams({ sort: 'updatedAt', order: 'desc', limit: '500' });
@@ -146,39 +146,44 @@ function HomeContent() {
 
       // When search is focused: Esc blurs it, everything else falls through
       if (isSearchFocused) {
-        if (e.key === 'Escape') { e.preventDefault(); searchRef.current?.blur(); setSelectedIdx(-1); }
+        if (e.key === 'Escape') { e.preventDefault(); searchRef.current?.blur(); setSelectedTaskId(null); }
         return;
       }
 
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
 
-      const tasks = getFilteredTasks();
+      // Use the same grouped flat order that TaskList renders — fixes index mismatch when groupBy != 'none'
+      const tasks = getFlatOrderedTasks(getFilteredTasks(), filters.groupBy);
       if (e.key === 'j' || e.key === 'J') {
         e.preventDefault();
-        setSelectedIdx(i => {
-          if (i < 0) return 0;
-          return Math.min(i + 1, tasks.length - 1);
-        });
+        const idx = selectedTaskId ? tasks.findIndex(t => t.id === selectedTaskId) : -1;
+        const nextIdx = idx < 0 ? 0 : Math.min(idx + 1, tasks.length - 1);
+        setSelectedTaskId(tasks[nextIdx]?.id ?? null);
       } else if (e.key === 'k' || e.key === 'K') {
         e.preventDefault();
-        setSelectedIdx(i => Math.max(i - 1, 0));
+        const idx = selectedTaskId ? tasks.findIndex(t => t.id === selectedTaskId) : 0;
+        const nextIdx = Math.max(idx - 1, 0);
+        setSelectedTaskId(tasks[nextIdx]?.id ?? null);
       } else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
-        setSelectedIdx(-1);
+        setSelectedTaskId(null);
         searchRef.current?.focus();
       } else if (e.key === 'Enter') {
-        if (selectedIdx >= 0 && tasks[selectedIdx]) {
-          setSelectedIdx(-1);
-          router.push(`/issues/${tasks[selectedIdx].issueId.toLowerCase()}`);
+        if (selectedTaskId) {
+          const task = tasks.find(t => t.id === selectedTaskId);
+          if (task) {
+            setSelectedTaskId(null);
+            router.push(`/issues/${task.issueId.toLowerCase()}`);
+          }
         }
       } else if (e.key === 'Escape') {
-        setSelectedIdx(-1);
+        setSelectedTaskId(null);
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPulse, selectedIdx, router, filters, taskData]);
+  }, [isPulse, selectedTaskId, router, filters, taskData]);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
@@ -216,8 +221,8 @@ function HomeContent() {
               )}
               <TaskList
                 tasks={getFilteredTasks()}
-                selectedIdx={selectedIdx}
-                onSelectIdx={setSelectedIdx}
+                selectedTaskId={selectedTaskId}
+                onSelectTaskId={setSelectedTaskId}
                 groupBy={filters.groupBy}
                 onNewTask={() => setShowCreate(true)}
                 emptyMessage="No tasks found."

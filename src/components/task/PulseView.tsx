@@ -260,17 +260,15 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
             <VerbIcon verb={primaryVerb} />
           )}
         </div>
-        {/* Label — single line with ellipsis */}
-        <div className="flex-1 min-w-0" style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{count} {count === 1 ? 'activity' : 'activities'}</span>
-          {' '}
-          <span className="text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>on</span>
-          {' '}
-          {group.issueId && <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 4 }}>{group.issueId}</span>}
+        {/* Label — prefix is fixed, title truncates with ellipsis showing at least minWidth chars */}
+        <div className="flex-1 min-w-0 flex items-center gap-1" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+          <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{count} {count === 1 ? 'activity' : 'activities'}</span>
+          <span className="text-sm flex-shrink-0" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>on</span>
+          {group.issueId && <span className="flex-shrink-0" style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 2 }}>{group.issueId}</span>}
           <button
             type="button"
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}
+            className="text-sm font-medium min-w-0"
+            style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif", background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: '3rem', flexShrink: 1 }}
             onClick={e => { e.stopPropagation(); if (group.taskId !== '__no_task__') onOpenTask(group.taskId, group.issueId); }}
           >
             {group.title}
