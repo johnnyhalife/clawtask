@@ -188,7 +188,9 @@ This handles the case where the OpenCode session expired between task dispatch a
 ---
 
 ### M8 — Periodic probe + blocked state
-**Blast radius:** Medium. New subsystem, new task state path.
+**Blast radius:** Medium. New subsystem, new automated path into an existing state.
+
+> Note: `blocked` is already a valid `tasks.status` value in the schema. No migration needed. M8 introduces the first programmatic path into it — previously it could only be set manually.
 
 - On `dispatch()` in `OpenCodeAdapter`: schedule probe interval (60s). Store `intervalId` in memory (keyed by `taskId`).
 - Probe: `GET /session/:sessionId`. On death:
