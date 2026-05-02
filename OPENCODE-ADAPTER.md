@@ -142,7 +142,7 @@ blocked     → reopen to in_progress + adapter.dispatch(task, agent, { context:
 
 Implement `OpenCodeAdapter`:
 
-- `dispatch(task, agent)`: `POST <opencodeServerUrl>/run` with task payload. Store returned session ID in `adapter_state`. Fire and forget.
+- `dispatch(task, agent)`: `POST <opencodeServerUrl>/session` to create a session, capture the returned session ID, then `POST <opencodeServerUrl>/session/:sessionId/message` with the wake prompt. Store session ID in `adapter_state`. Fire and forget after the message send.
 - `steer(task, agent, message)`: `POST <opencodeServerUrl>/session/:sessionId/message`.
 - `stop(task, agent)`: `POST <opencodeServerUrl>/session/:sessionId/stop`. Clear `adapter_state` row.
 - `probe(agent)`: `GET <opencodeServerUrl>/health`.
