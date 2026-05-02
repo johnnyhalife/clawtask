@@ -142,10 +142,10 @@ blocked     → reopen to in_progress + adapter.dispatch(task, agent, { context:
 
 Implement `OpenCodeAdapter`:
 
-- `dispatch(task, agent)`: `POST <opencodeServerUrl>/session` to create a session, capture the returned session ID, then `POST <opencodeServerUrl>/session/:sessionId/message` with the wake prompt. Store session ID in `adapter_state`. Fire and forget after the message send.
-- `steer(task, agent, message)`: `POST <opencodeServerUrl>/session/:sessionId/message`.
-- `stop(task, agent)`: `POST <opencodeServerUrl>/session/:sessionId/stop`. Clear `adapter_state` row.
-- `probe(agent)`: `GET <opencodeServerUrl>/health`.
+- `dispatch(task, agent)`: `POST <opencodeServerUrl>/session` to create a session, capture the returned session ID, then `POST <opencodeServerUrl>/session/:sessionId/prompt_async` with the wake prompt (returns 204, true fire-and-forget). Store session ID in `adapter_state`.
+- `steer(task, agent, message)`: `POST <opencodeServerUrl>/session/:sessionId/prompt_async` (async to avoid blocking the adapter on agent think time).
+- `stop(task, agent)`: `POST <opencodeServerUrl>/session/:sessionId/abort`. Clear `adapter_state` row.
+- `probe(agent)`: `GET <opencodeServerUrl>/global/health`.
 - Register in `AdapterService` router: if `agent.adapterType === 'opencode'` → use `OpenCodeAdapter`.
 
 Wake prompt identical to OpenClaw: includes API key, task URL, instructions to post comments via API and call `/status done` when finished.
@@ -178,7 +178,7 @@ Wake prompt identical to OpenClaw: includes API key, task URL, instructions to p
 Before steering an OpenCode agent on an in-flight task:
 1. `GET <opencodeServerUrl>/session/:sessionId`
 2. Alive → steer (`POST /session/:sessionId/message`)
-3. Dead → fall back to respawn: reopen task to `in_progress`, `adapter.dispatch()`
+3. Dead/not found → fall back to respawn: reopen task to `in_progress`, `adapter.dispatch()`
 
 This handles the case where the OpenCode session expired between task dispatch and human comment, without the stuck-task probe having fired yet.
 
