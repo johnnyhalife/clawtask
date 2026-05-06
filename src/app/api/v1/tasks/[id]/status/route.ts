@@ -39,8 +39,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
   broadcastSse({ type: 'task.updated', data: updated });
 
-  // If transitioning to in_progress with an agent assignee, wake the adapter
-  if (body.status === 'in_progress' && updated.assigneeId && updated.assigneeType === 'agent') {
+  // If transitioning to an actionable status with an agent assignee, wake the adapter
+  // (includes todo — tasks moved out of backlog should trigger dispatch immediately)
+  const AGENT_TRIGGER_STATUSES = ['todo', 'in_progress', 'blocked'];
+  if (AGENT_TRIGGER_STATUSES.includes(body.status) && updated.assigneeId && updated.assigneeType === 'agent') {
     const adapter = getAdapterService();
     adapter.assignTaskToAgent(updated, updated.assigneeId).catch(() => {});
   }
