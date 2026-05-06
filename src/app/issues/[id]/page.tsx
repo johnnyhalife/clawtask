@@ -230,6 +230,7 @@ export default function IssuePage() {
   const [projectOpen, setProjectOpen] = useState(false);
   const [projectHighlight, setProjectHighlight] = useState(0);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [propsPaneOpen, setPropsPaneOpen] = useState(true);
 
   const loadTimeline = useCallback(async () => {
     const [cRes, aRes] = await Promise.all([
@@ -707,14 +708,37 @@ export default function IssuePage() {
         </div>
 
         {/* ── Right: properties ── */}
-        <div className="flex-shrink-0 flex flex-col overflow-hidden" style={{ width: 260, background: 'var(--color-base)', borderLeft: '1px solid var(--color-base-200)' }}>
+        <div
+          className="flex-shrink-0 flex flex-col overflow-hidden"
+          style={{
+            width: propsPaneOpen ? 260 : 40,
+            background: 'var(--color-base)',
+            borderLeft: '1px solid var(--color-base-200)',
+            transition: 'width 0.2s ease',
+          }}
+        >
           {/* Properties header — aligned with breadcrumb topbar */}
-          <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--color-base-200)', height: 48 }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Darker Grotesque', sans-serif", fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Properties</span>
-            <ThemeSegmentedControl />
+          <div className="flex items-center flex-shrink-0" style={{ borderBottom: '1px solid var(--color-base-200)', height: 48, justifyContent: propsPaneOpen ? 'space-between' : 'center', padding: propsPaneOpen ? '0 12px 0 20px' : '0' }}>
+            {propsPaneOpen && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Darker Grotesque', sans-serif", fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Properties</span>
+            )}
+            <div className="flex items-center gap-2">
+              {propsPaneOpen && <ThemeSegmentedControl />}
+              <button
+                onClick={() => setPropsPaneOpen(v => !v)}
+                title={propsPaneOpen ? 'Collapse properties' : 'Expand properties'}
+                style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, borderRadius: 4, flexShrink: 0 }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: propsPaneOpen ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s ease' }}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-1">
+          <div className="flex-1 overflow-y-auto px-5 py-1" style={{ display: propsPaneOpen ? undefined : 'none' }}>
             {task ? (
               <>
                 <PropRow label="Status" kbd="S">
