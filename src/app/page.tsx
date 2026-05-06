@@ -11,7 +11,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, DEFAULT_FILTERS } from '@/components/task/TaskFilters';
+import { FilterState, DEFAULT_FILTERS, GroupByField } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
@@ -29,12 +29,33 @@ function HomeContent() {
   const { data: tags } = useApi<Tag[]>('/api/v1/tags');
   const [showCreate, setShowCreate] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const GROUPBY_STORAGE_KEY = 'clawtask:groupBy';
+
+  const getStoredGroupBy = (): GroupByField => {
+    try {
+      const stored = localStorage.getItem(GROUPBY_STORAGE_KEY);
+      const valid: GroupByField[] = ['status', 'priority', 'assignee', 'project', 'none'];
+      if (stored && valid.includes(stored as GroupByField)) return stored as GroupByField;
+    } catch { /* SSR or storage blocked */ }
+    return DEFAULT_FILTERS.groupBy;
+  };
+
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    ...DEFAULT_FILTERS,
+    groupBy: getStoredGroupBy(),
+  }));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Reset filters when tab changes
+  // Persist groupBy to localStorage whenever it changes
   useEffect(() => {
-    setFilters(DEFAULT_FILTERS);
+    try {
+      localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy);
+    } catch { /* storage blocked */ }
+  }, [filters.groupBy]);
+
+  // Reset filters when tab changes, but preserve the persisted groupBy
+  useEffect(() => {
+    setFilters(f => ({ ...DEFAULT_FILTERS, groupBy: f.groupBy }));
   }, [activeTab]);
 
   // "N" opens create modal (skip when typing in an input/textarea)
