@@ -244,7 +244,12 @@ function HomeContent() {
         />
       )}
 
-      {isMobile && <BottomNav />}
+      {isMobile && (
+        <BottomNav
+          groupBy={filters.groupBy}
+          onGroupByChange={(v) => setFilters(f => ({ ...f, groupBy: v }))}
+        />
+      )}
     </div>
   );
 }
