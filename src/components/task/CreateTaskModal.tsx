@@ -351,7 +351,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
   if (isMobile) {
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col"
+        className="fixed inset-0 z-[150] flex flex-col"
         style={{ background: 'var(--color-base)', height: '100dvh', overflowY: 'auto' }}
       >
         {/* Mobile header */}
