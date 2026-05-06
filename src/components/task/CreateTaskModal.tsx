@@ -351,8 +351,8 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
   if (isMobile) {
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col overflow-hidden"
-        style={{ background: 'var(--color-base)' }}
+        className="fixed inset-0 z-50 flex flex-col"
+        style={{ background: 'var(--color-base)', height: '100dvh', overflowY: 'auto' }}
       >
         {/* Mobile header */}
         <div
@@ -418,14 +418,14 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
         </div>
 
         {/* Description */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex-1 px-4 py-3" style={{ minHeight: 0 }}>
           <textarea
             ref={descriptionRef}
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Add description…"
             className="w-full bg-transparent outline-none resize-none"
-            style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.875rem', minHeight: '120px' }}
+            style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.875rem', minHeight: '120px', height: '100%' }}
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); }
             }}
