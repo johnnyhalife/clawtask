@@ -1,5 +1,5 @@
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type AssigneeType = 'agent' | 'human';
 export type CommentType = 'message' | 'thinking' | 'tool';
 export type ProbeStatus = 'pending' | 'ok' | 'error';

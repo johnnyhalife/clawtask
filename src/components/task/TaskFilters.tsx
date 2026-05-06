@@ -2,7 +2,7 @@
 
 export type SortField = 'updatedAt' | 'createdAt' | 'priority' | 'title' | 'issueId';
 export type SortOrder = 'asc' | 'desc';
-export type StatusValue = 'todo' | 'in_progress' | 'blocked' | 'done';
+export type StatusValue = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type PriorityValue = 'urgent' | 'high' | 'medium' | 'low';
 export type AssigneeFilter = '' | 'agent' | 'human' | 'unassigned';
 export type GroupByField = 'status' | 'priority' | 'assignee' | 'project' | 'none';

@@ -623,7 +623,7 @@ class AdapterService {
       const db = getDb();
       const nextTask = db.prepare(`
         SELECT * FROM tasks
-        WHERE assigneeId = ? AND assigneeType = 'agent' AND status NOT IN ('done', 'archived')
+        WHERE assigneeId = ? AND assigneeType = 'agent' AND status NOT IN ('backlog', 'done', 'archived')
         ORDER BY
           CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
           createdAt ASC

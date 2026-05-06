@@ -139,6 +139,42 @@ function runMigrations(db: Database.Database) {
     db.exec('ALTER TABLE tasks RENAME COLUMN dueDate TO endDate');
   }
 
+  // M007: add 'backlog' to tasks.status CHECK constraint and set it as default
+  const taskSchemaCurrent = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").get() as any)?.sql ?? '';
+  if (taskSchemaCurrent && !taskSchemaCurrent.includes("'backlog'")) {
+    db.pragma('foreign_keys = OFF');
+    db.transaction(() => {
+      db.exec(`CREATE TABLE tasks_m007 (
+        id TEXT PRIMARY KEY,
+        issueId TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'backlog' CHECK (status IN ('backlog','todo','in_progress','blocked','done','archived')),
+        priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
+        assigneeId TEXT,
+        assigneeType TEXT CHECK (assigneeType IN ('agent','human',NULL)),
+        projectId TEXT REFERENCES projects(id) ON DELETE SET NULL,
+        parentTaskId TEXT,
+        endDate TEXT,
+        startDate TEXT,
+        createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        updatedAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      )`);
+      db.exec(`INSERT INTO tasks_m007 (id, issueId, title, description, status, priority, assigneeId, assigneeType, projectId, parentTaskId, endDate, startDate, createdAt, updatedAt)
+        SELECT id, issueId, title, description, status, priority, assigneeId, assigneeType, projectId, parentTaskId, endDate, startDate, createdAt, updatedAt FROM tasks`);
+
+      db.exec('DROP TABLE tasks');
+      db.exec('ALTER TABLE tasks_m007 RENAME TO tasks');
+    })();
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_projectId ON tasks(projectId)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_assigneeId ON tasks(assigneeId)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_parentTaskId ON tasks(parentTaskId)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_updatedAt ON tasks(updatedAt)');
+    db.pragma('foreign_keys = ON');
+  }
+
   // Backfill: any agent with empty apiKey gets a fresh key+hash pair (sync both)
   const stale = db
     .prepare(`SELECT id FROM agents WHERE apiKey = '' OR apiKey IS NULL`)

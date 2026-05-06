@@ -55,7 +55,7 @@ function verbIcon(verb: string) {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  todo: 'var(--color-base-650)', in_progress: '#3189FF', blocked: '#F87171', done: '#22C55E',
+  backlog: '#94A3B8', todo: 'var(--color-base-650)', in_progress: '#3189FF', blocked: '#F87171', done: '#22C55E',
 };
 
 // ─── Contribution grid helpers ─────────────────────────────────────────────────

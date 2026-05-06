@@ -8,7 +8,7 @@ import { authenticateAgent } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
 import { resolveTaskId } from '@/lib/tasks';
 
-const VALID_STATUSES = ['todo', 'in_progress', 'blocked', 'done', 'archived'];
+const VALID_STATUSES = ['backlog', 'todo', 'in_progress', 'blocked', 'done', 'archived'];
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();

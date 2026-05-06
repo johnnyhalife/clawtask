@@ -16,8 +16,9 @@ interface TaskListProps {
 }
 
 // ─── Order / label maps ───────────────────────────────────────────────────────
-const STATUS_ORDER = ['in_progress', 'todo', 'blocked', 'done', 'archived'];
+const STATUS_ORDER = ['in_progress', 'todo', 'backlog', 'blocked', 'done', 'archived'];
 const STATUS_LABEL: Record<string, string> = {
+  backlog: 'Backlog',
   in_progress: 'In Progress',
   todo: 'Todo',
   blocked: 'Blocked',
@@ -25,13 +26,14 @@ const STATUS_LABEL: Record<string, string> = {
   archived: 'Archived',
 };
 const STATUS_COLOR: Record<string, string> = {
+  backlog: '#94A3B8',
   in_progress: '#3189FF',
   todo: 'var(--color-base-650)',
   blocked: '#F87171',
   done: '#22C55E',
   archived: 'var(--color-base-500)',
 };
-const STATUS_DEFAULT_COLLAPSED = new Set(['archived']);
+const STATUS_DEFAULT_COLLAPSED = new Set(['backlog', 'archived']);
 
 const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low', ''];
 const PRIORITY_LABEL: Record<string, string> = {

@@ -241,7 +241,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
-  const [status, setStatus] = useState('todo');
+  const [status, setStatus] = useState('backlog');
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [assigneeId, setAssigneeId] = useState('');

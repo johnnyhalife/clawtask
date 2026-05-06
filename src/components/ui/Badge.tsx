@@ -10,6 +10,7 @@ const priorityConfig: Record<Priority, { label: string; color: string }> = {
 };
 
 const statusConfig: Record<TaskStatus, { label: string; color: string; dot: string }> = {
+  backlog:     { label: 'Backlog',     color: 'bg-slate-500/20 text-slate-400 border-slate-500/30', dot: 'bg-slate-500' },
   todo:        { label: 'Todo',        color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',  dot: 'bg-zinc-500' },
   in_progress: { label: 'In Progress', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30',  dot: 'bg-blue-500' },
   blocked:     { label: 'Blocked',     color: 'bg-red-500/20 text-red-400 border-red-500/30',     dot: 'bg-red-500' },

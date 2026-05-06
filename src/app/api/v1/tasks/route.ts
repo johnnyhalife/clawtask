@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     body.title,
     body.description || '',
     body.priority || 'medium',
-    body.status || 'todo',
+    body.status || 'backlog',
     body.projectId || null,
     body.parentTaskId || null,
     body.assigneeId || null,

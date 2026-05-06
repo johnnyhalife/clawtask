@@ -3,6 +3,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 
 export const STATUS_OPTIONS = [
+  { value: 'backlog', label: 'Backlog', color: '#94A3B8' },
   { value: 'todo', label: 'Todo', color: 'var(--color-base-650)' },
   { value: 'in_progress', label: 'In Progress', color: '#3189FF' },
   { value: 'blocked', label: 'Blocked', color: '#F87171' },

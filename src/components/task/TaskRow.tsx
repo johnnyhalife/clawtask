@@ -11,6 +11,7 @@ interface TaskRowProps {
 }
 
 const statusDotColor: Record<string, string> = {
+  backlog: '#94A3B8',
   todo: 'var(--color-base-650)',
   in_progress: '#3189FF',
   blocked: '#F87171',

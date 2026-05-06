@@ -505,7 +505,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
               <div>
                 <div className="section-label mb-1" style={{ fontSize: '10px' }}>Assignee</div>
                 <div style={{ position: 'relative' }}>
-                  {task.status === 'todo' ? (
+                  {(task.status === 'todo' || task.status === 'backlog') ? (
                     <>
                       <button
                         onClick={() => setAssigneeOpen(v => !v)}
@@ -659,7 +659,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                       className="flex items-center gap-2.5 py-1.5 px-3 rounded-md"
                       style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)' }}
                     >
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: sub.status === 'done' ? '#22C55E' : sub.status === 'in_progress' ? '#3189FF' : 'var(--color-base-650)' }} />
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: sub.status === 'done' ? '#22C55E' : sub.status === 'in_progress' ? '#3189FF' : sub.status === 'backlog' ? '#94A3B8' : 'var(--color-base-650)' }} />
                       <span className="font-mono-id">{sub.issueId}</span>
                       <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{sub.title}</span>
                     </div>
