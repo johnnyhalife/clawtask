@@ -231,6 +231,7 @@ export default function IssuePage() {
   const [projectHighlight, setProjectHighlight] = useState(0);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [propsPaneOpen, setPropsPaneOpen] = useState(true);
+  const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
 
   const loadTimeline = useCallback(async () => {
     const [cRes, aRes] = await Promise.all([
@@ -399,7 +400,190 @@ export default function IssuePage() {
           <span className="flex-1 truncate text-sm" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 600 }}>
             {task?.issueId ?? '…'}
           </span>
+          {/* Chevron: open properties pane */}
+          <button
+            onClick={() => setMobilePropsOpen(true)}
+            title="Show properties"
+            style={{ color: 'var(--color-base-400)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, borderRadius: 4, flexShrink: 0 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
         </div>
+
+        {/* Mobile full-screen properties overlay */}
+        {mobilePropsOpen && (
+          <div
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ background: 'var(--color-base)', height: '100dvh' }}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-2 px-4 flex-shrink-0" style={{ height: 44, borderBottom: '1px solid var(--color-base-200)' }}>
+              <button
+                onClick={() => setMobilePropsOpen(false)}
+                style={{ color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, marginRight: 4 }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Darker Grotesque', sans-serif", fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>Properties</span>
+              <div className="flex-1" />
+              <ThemeSegmentedControl />
+            </div>
+
+            {/* Properties content */}
+            <div className="flex-1 overflow-y-auto px-5 py-1">
+              {task ? (
+                <>
+                  <PropRow label="Status">
+                    <span style={inFlight ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
+                      <ChipSelect ref={statusRef} label={statusCfg.label} color={statusCfg.color} options={STATUS_OPTIONS} onChange={handleStatusChange} />
+                    </span>
+                  </PropRow>
+                  <PropRow label="Priority">
+                    <span style={inFlight ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
+                      <ChipSelect ref={priorityRef} label={priorityCfg.label} color={priorityCfg.color} options={PRIORITY_OPTIONS} onChange={handlePriorityChange} />
+                    </span>
+                  </PropRow>
+                  <PropRow label="Tags">
+                    <div style={{ position: 'relative' }}>
+                      <button onClick={() => setTagsOpen(v => !v)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                        {task.tags?.length ? task.tags.map(tag => (
+                          <span key={tag.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs border"
+                            style={{ borderColor: tag.color + '50', background: tag.color + '20', color: tag.color, fontFamily: "'Instrument Sans', sans-serif" }}>
+                            {tag.name}
+                          </span>
+                        )) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No tags</span>}
+                      </button>
+                      {tagsOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setTagsOpen(false)} />
+                          <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
+                            {(allTags ?? []).map(tag => {
+                              const sel = task.tags?.some(t => t.id === tag.id);
+                              return (
+                                <button key={tag.id} onClick={() => handleTagToggle(tag.id)}
+                                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
+                                  style={{ background: sel ? 'var(--color-base-200)' : 'transparent', color: sel ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
+                                  {tag.name}
+                                  {sel && <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                                </button>
+                              );
+                            })}
+                            {!allTags?.length && <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>No tags yet</div>}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </PropRow>
+                  <PropRow label="Assignee">
+                    <div style={{ position: 'relative' }}>
+                      <button ref={assigneeTriggerRef}
+                        onClick={() => { setAssigneeOpen(v => !v); setAssigneeHighlight(0); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {task.assignee ? (
+                          <>
+                            <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={20} />
+                            <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>
+                              {task.assigneeType === 'human' ? 'You' : (task.assignee as any).displayName}
+                            </span>
+                          </>
+                        ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No assignee</span>}
+                      </button>
+                      {assigneeOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
+                          <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
+                            {(() => {
+                              const allOpts = [
+                                { id: null as string | null, type: null as 'human'|'agent'|null, label: 'Unassigned', isAgent: false },
+                                ...(allHumans ?? []).map(h => ({ id: h.id, type: 'human' as const, label: h.displayName, isAgent: false })),
+                                ...(allAgents ?? []).map(a => ({ id: a.id, type: 'agent' as const, label: a.displayName, isAgent: true })),
+                              ];
+                              return allOpts.map((opt, myIdx) => {
+                                const isActive = opt.id ? task.assigneeId === opt.id : !task.assigneeId;
+                                return (
+                                  <button key={opt.id ?? 'none'} onClick={() => handleAssignChange(opt.id, opt.type)}
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
+                                    style={{ background: myIdx === assigneeHighlight || isActive ? 'var(--color-base-200)' : 'transparent', color: isActive ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                                    {opt.isAgent ? <ActorAvatar name={opt.label} isAgent size={16} /> : null}
+                                    {opt.label}
+                                    {isActive && <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </PropRow>
+                  <PropRow label="Project">
+                    <div style={{ position: 'relative' }}>
+                      <button onClick={() => setProjectOpen(v => !v)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {task.project ? (
+                          <>
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                            <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>{task.project.name}</span>
+                          </>
+                        ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No project</span>}
+                      </button>
+                      {projectOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
+                          <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
+                            <button onClick={() => handleProjectChange(null)}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
+                              style={{ background: !task.projectId ? 'var(--color-base-200)' : 'transparent', color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
+                            </button>
+                            {(allProjects ?? []).map(p => (
+                              <button key={p.id} onClick={() => handleProjectChange(p.id)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
+                                style={{ background: task.projectId === p.id ? 'var(--color-base-200)' : 'transparent', color: task.projectId === p.id ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </PropRow>
+                  <div style={{ height: 1, background: 'var(--color-base-200)', margin: '8px 0' }} />
+                  <PropRow label="Created by">
+                    {(() => {
+                      const createdAct = activities.find(a => a.verb === 'created');
+                      const ct = createdAct?.actorType;
+                      const actor = createdAct?.actor as any;
+                      const name = actor?.displayName ?? actor?.name ?? 'You';
+                      return (
+                        <span className="flex items-center gap-1.5">
+                          <ActorAvatar name={name} isAgent={ct === 'agent'} isExternal={ct === 'external'} size={16} />
+                          <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>
+                            {ct === 'agent' || ct === 'external' ? name : 'You'}
+                          </span>
+                        </span>
+                      );
+                    })()}
+                  </PropRow>
+                  {task.startDate && <PropRow label="Started"><span style={{ color: 'var(--color-base-800)' }}>{fmtDate(task.startDate)}</span></PropRow>}
+                  {task.status === 'done' && <PropRow label="Completed"><span style={{ color: '#22C55E' }}>{fmtDate(task.updatedAt)}</span></PropRow>}
+                  <PropRow label="Created"><span style={{ color: 'var(--color-base-800)' }}>{fmtDate(task.createdAt)}</span></PropRow>
+                  <PropRow label="Updated"><span style={{ color: 'var(--color-base-800)' }}>{relativeTime(task.updatedAt)}</span></PropRow>
+                </>
+              ) : (
+                <div className="py-8 text-center text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "'Instrument Sans', sans-serif" }}>Loading…</div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Properties: horizontal scrollable chip row */}
         <div
