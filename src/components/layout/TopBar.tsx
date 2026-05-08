@@ -252,6 +252,7 @@ const GROUP_OPTIONS: { value: GroupByField; label: string }[] = [
   { value: 'priority', label: 'Priority' },
   { value: 'assignee', label: 'Assignee' },
   { value: 'project', label: 'Project' },
+  { value: 'completedDate', label: 'Completed' },
   { value: 'none', label: 'None' },
 ];
 

@@ -52,6 +52,50 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 const ASSIGNEE_ORDER = ['agent', 'human', 'unassigned', ''];
+
+const COMPLETED_DATE_ORDER = ['today', 'yesterday', 'this_week', 'this_month', 'this_year', 'older', 'no_date'];
+const COMPLETED_DATE_LABEL: Record<string, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  this_week: 'This Week',
+  this_month: 'This Month',
+  this_year: 'This Year',
+  older: 'Older',
+  no_date: 'Not Completed',
+};
+const COMPLETED_DATE_COLOR: Record<string, string> = {
+  today: '#22C55E',
+  yesterday: '#3189FF',
+  this_week: '#7E67F7',
+  this_month: '#FFC674',
+  this_year: '#94A3B8',
+  older: 'var(--color-base-400)',
+  no_date: 'var(--color-base-400)',
+};
+
+function getCompletedDateBucket(task: Task): string {
+  if (task.status !== 'done') return 'no_date';
+  const now = new Date();
+  const completed = new Date(task.updatedAt);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const completedDay = new Date(completed.getFullYear(), completed.getMonth(), completed.getDate());
+  const diffDays = Math.floor((today.getTime() - completedDay.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  // This week: Monday of current week through now (excluding today/yesterday)
+  const dayOfWeek = today.getDay();
+  const daysFromMonday = (dayOfWeek + 6) % 7;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - daysFromMonday);
+  if (completedDay >= weekStart) return 'this_week';
+  // This month (excluding this week)
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (completedDay >= monthStart) return 'this_month';
+  // This year (excluding this month)
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  if (completedDay >= yearStart) return 'this_year';
+  return 'older';
+}
 const ASSIGNEE_LABEL: Record<string, string> = {
   agent: 'Agent',
   human: 'Human',
@@ -71,6 +115,7 @@ function getGroupKey(task: Task, groupBy: GroupByField): string {
   if (groupBy === 'priority') return task.priority || '';
   if (groupBy === 'assignee') return task.assigneeType || (task.assigneeId ? 'human' : 'unassigned');
   if (groupBy === 'project') return task.projectId ?? '__none__';
+  if (groupBy === 'completedDate') return getCompletedDateBucket(task);
   return 'all';
 }
 
@@ -97,6 +142,12 @@ function sortedGroupKeys(keys: string[], groupBy: GroupByField): string[] {
     return [
       ...keys.filter(k => k !== '__none__').sort(),
       ...keys.filter(k => k === '__none__'),
+    ];
+  }
+  if (groupBy === 'completedDate') {
+    return [
+      ...COMPLETED_DATE_ORDER.filter(k => keys.includes(k)),
+      ...keys.filter(k => !COMPLETED_DATE_ORDER.includes(k)),
     ];
   }
   return keys;
@@ -128,6 +179,7 @@ function groupLabel(key: string, groupBy: GroupByField): string {
   if (groupBy === 'priority') return PRIORITY_LABEL[key] ?? key;
   if (groupBy === 'assignee') return ASSIGNEE_LABEL[key] ?? key;
   if (groupBy === 'project') return key === '__none__' ? 'No Project' : (_projectNameCache[key] ?? key);
+  if (groupBy === 'completedDate') return COMPLETED_DATE_LABEL[key] ?? key;
   return 'All Issues';
 }
 
@@ -136,6 +188,7 @@ function groupColor(key: string, groupBy: GroupByField): string {
   if (groupBy === 'priority') return PRIORITY_COLOR[key] ?? 'var(--color-base-500)';
   if (groupBy === 'assignee') return ASSIGNEE_COLOR[key] ?? 'var(--color-base-500)';
   if (groupBy === 'project') return 'var(--color-base-500)';
+  if (groupBy === 'completedDate') return COMPLETED_DATE_COLOR[key] ?? 'var(--color-base-500)';
   return 'var(--color-base-500)';
 }
 
