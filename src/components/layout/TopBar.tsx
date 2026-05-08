@@ -427,6 +427,35 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
               </svg>
             </button>
           )}
+
+          {/* Group by — mobile */}
+          {!hideToolbar && !mobileSearchOpen && (
+            <div ref={groupRef} className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => toggle('group')}
+                className="flex items-center justify-center w-8 h-8 rounded"
+                style={{
+                  background: (openPanel === 'group' || f.groupBy !== 'none') ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  color: (openPanel === 'group' || f.groupBy !== 'none') ? 'var(--color-base-800)' : 'var(--color-base-500)',
+                  border: (openPanel === 'group' || f.groupBy !== 'none') ? '1px solid #2A2A2E' : '1px solid transparent',
+                  cursor: 'pointer',
+                }}
+                aria-label="Group by"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                </svg>
+              </button>
+              {openPanel === 'group' && (
+                <GroupDropdown
+                  current={f.groupBy}
+                  onChange={v => { set({ groupBy: v }); setOpenPanel(null); }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
