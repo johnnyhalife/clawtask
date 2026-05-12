@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import NextImage from 'next/image';
 import { Project, Tag, Agent } from '@/types';
 import { apiPost, useApi } from '@/hooks/useApi';
 import { TypeaheadChipSelect, STATUS_OPTIONS, PRIORITY_OPTIONS, AGENT_COLOR } from './ChipSelect';
@@ -496,7 +497,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
         {/* Header */}
         <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
           {workspaceLogo ? (
-            <img src={workspaceLogo} alt={appName} className="size-5 rounded object-cover flex-shrink-0" />
+            <NextImage src={workspaceLogo} alt={appName} width={20} height={20} className="size-5 rounded object-cover flex-shrink-0" unoptimized />
           ) : (
             <div
               className="flex-shrink-0 px-1.5 py-0.5 rounded text-xs font-bold"
