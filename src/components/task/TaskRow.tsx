@@ -45,7 +45,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
   const dotColor = statusDotColor[task.status] || 'var(--color-base-650)';
   const priorityColor = priorityDotColor[task.priority] || 'var(--color-base-500)';
 
-  const handleClick = () => {
+  const openTask = () => {
     onClick?.();
     push(`/issues/${task.issueId.toLowerCase()}`);
   };
@@ -64,8 +64,8 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
           outline: selected ? '2px solid #3189FF' : 'none',
           outlineOffset: '-2px',
         }}
-        onClick={handleClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+        onClick={openTask}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTask(); } }}
         onMouseEnter={(e) => {
           if (!selected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
         }}
@@ -137,8 +137,8 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
           outlineOffset: '-2px',
         borderBottom: '1px solid var(--color-base-300)',
       }}
-      onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+      onClick={openTask}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTask(); } }}
       onMouseEnter={(e) => {
         if (!selected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
       }}
