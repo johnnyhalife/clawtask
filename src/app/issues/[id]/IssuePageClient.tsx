@@ -698,14 +698,19 @@ export function IssuePageClient() {
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
-            <button
-              type="submit"
-              disabled={submitting || !newComment.trim()}
-              className="flex-shrink-0 px-3 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none', minHeight: '44px' }}
-            >
-              {submitting ? '…' : 'Send'}
-            </button>
+            <div className="flex items-center justify-between mt-1.5">
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+                ⌘/Ctrl+Enter to send
+              </span>
+              <button
+                type="submit"
+                disabled={submitting || !newComment.trim()}
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-semibold"
+                style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none' }}
+              >
+                {submitting ? '…' : 'Send'}
+              </button>
+            </div>
           </div>
         </form>
 
@@ -881,14 +886,15 @@ export function IssuePageClient() {
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-2">
-                <button type="submit" disabled={submitting || !newComment.trim()}
-                  className="px-4 py-1.5 rounded-lg text-sm font-semibold"
-                  style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none' }}>
-                  {submitting ? 'Sending…' : 'Send'}
-                </button>
-              </div>
+            <div className="flex items-center justify-between mt-1.5 mb-1">
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+                ⌘/Ctrl+Enter to send
+              </span>
+              <button type="submit" disabled={submitting || !newComment.trim()}
+                className="px-4 py-1.5 rounded-lg text-sm font-semibold"
+                style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none' }}>
+                {submitting ? 'Sending…' : 'Send'}
+              </button>
             </div>
           </form>
         </div>
