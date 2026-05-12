@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -58,7 +59,7 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
   );
 }
 
-export function Sidebar({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
+function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -262,5 +263,13 @@ export function Sidebar({ appName, workspaceLogo }: { appName: string; workspace
         </Link>
       </div>
     </aside>
+  );
+}
+
+export function Sidebar({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
+  return (
+    <Suspense fallback={<aside className="hidden md:flex flex-col w-56 flex-shrink-0" />}>
+      <SidebarInner appName={appName} workspaceLogo={workspaceLogo} />
+    </Suspense>
   );
 }
