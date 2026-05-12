@@ -140,8 +140,8 @@ export function TypeaheadChipSelect({
                 }}
               >
                 {opt.value
-                  ? <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
-                  : <span className="w-2 h-2 flex-shrink-0" />}
+                  ? <span className="size-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
+                  : <span className="size-2 flex-shrink-0" />}
                 {opt.label}
                 {active && (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto flex-shrink-0" style={{ color: 'var(--color-base-600)' }}>
@@ -243,7 +243,7 @@ export const ChipSelect = forwardRef<ChipSelectHandle, {
                     fontFamily: "'Instrument Sans', sans-serif",
                   }}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
+                  <span className="size-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
                   {opt.label}
                 </button>
               );

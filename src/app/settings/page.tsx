@@ -82,7 +82,7 @@ function GeneralSettings() {
         <label htmlFor="workspace-logo" className="block text-sm font-medium style-base-800 mb-2">Workspace Logo</label>
         <div className="flex items-center gap-4">
           <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+            className="size-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
             style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)' }}
           >
             {logoPreview ? (
@@ -220,7 +220,7 @@ function AdapterSettings() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-[var(--color-base-500)]" />
+        <div className="size-2 rounded-full bg-[var(--color-base-500)]" />
         <span className="text-xs style-base-600">Connection status shown per agent in the Agents tab</span>
       </div>
 
@@ -289,7 +289,7 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
       </td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${probeDot}`} />
+          <div className={`size-2 rounded-full ${probeDot}`} />
           <span className="text-xs style-base-600">{agent.probeStatus}</span>
         </div>
       </td>

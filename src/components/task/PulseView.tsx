@@ -250,7 +250,7 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
         onClick={() => setCollapsed(v => !v)}
       >
         {/* Icon */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
+        <div className="flex-shrink-0 size-8 rounded-md flex items-center justify-center"
           style={{ background: isDone ? 'rgba(34,197,94,0.1)' : 'var(--color-base-150)', border: `1px solid ${isDone ? 'rgba(34,197,94,0.35)' : 'var(--color-base-300)'}`, color: isDone ? '#22C55E' : 'var(--color-base-650)' }}>
           {isDone ? (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -354,7 +354,7 @@ function ActiveRunCard({ task, onClick }: { task: Task; onClick: () => void }) {
       )}
       {!latestComment && (
         <div className="flex items-center gap-1.5 mt-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#3189FF', animation: 'pulse 1.5s infinite' }} />
+          <span className="inline-block size-1.5 rounded-full" style={{ background: '#3189FF', animation: 'pulse 1.5s infinite' }} />
           <span className="text-xs" style={{ color: 'var(--color-base-400)', fontFamily: "\'Instrument Sans\', sans-serif" }}>working…</span>
         </div>
       )}
@@ -496,7 +496,7 @@ export function PulseView() {
         {activeRuns.length > 0 && (
           <section>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-base-900)', fontFamily: "'Instrument Sans', sans-serif" }}>
-              <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#3189FF', boxShadow: '0 0 6px #3189FF' }} />
+              <span className="inline-block size-2 rounded-full" style={{ background: '#3189FF', boxShadow: '0 0 6px #3189FF' }} />
               Active now
             </h3>
             <div className="space-y-2">

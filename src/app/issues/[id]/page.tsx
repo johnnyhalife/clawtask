@@ -470,7 +470,7 @@ export default function IssuePage() {
                                 <button key={tag.id} onClick={() => handleTagToggle(tag.id)}
                                   className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                                   style={{ background: sel ? 'var(--color-base-200)' : 'transparent', color: sel ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
+                                  <span className="size-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
                                   {tag.name}
                                   {sel && <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                                 </button>
@@ -530,7 +530,7 @@ export default function IssuePage() {
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                         {task.project ? (
                           <>
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                            <span className="size-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
                             <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>{task.project.name}</span>
                           </>
                         ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No project</span>}
@@ -542,13 +542,13 @@ export default function IssuePage() {
                             <button onClick={() => handleProjectChange(null)}
                               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                               style={{ background: !task.projectId ? 'var(--color-base-200)' : 'transparent', color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
+                              <span className="size-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
                             </button>
                             {(allProjects ?? []).map(p => (
                               <button key={p.id} onClick={() => handleProjectChange(p.id)}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                                 style={{ background: task.projectId === p.id ? 'var(--color-base-200)' : 'transparent', color: task.projectId === p.id ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
+                                <span className="size-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
                               </button>
                             ))}
                           </div>
@@ -608,7 +608,7 @@ export default function IssuePage() {
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border"
                   style={{ borderColor: task.project.color + '50', background: task.project.color + '20', color: task.project.color, fontFamily: "'Instrument Sans', sans-serif", whiteSpace: 'nowrap' }}
                 >
-                  <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                  <span className="inline-block size-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
                   {task.project.name}
                 </span>
               )}
@@ -742,14 +742,14 @@ export default function IssuePage() {
           <div className="flex-shrink-0 px-8 pt-6 pb-5" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
             {/* Meta row */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ background: STATUS_COLOR[task?.status ?? 'todo'] }} />
+              <span className="inline-block size-3 rounded-full flex-shrink-0" style={{ background: STATUS_COLOR[task?.status ?? 'todo'] }} />
               <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem' }}>—</span>
               <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', fontWeight: 600 }}>{task?.issueId}</span>
               {task?.project && (
                 <>
                   <span style={{ color: 'var(--color-base-300)' }}>·</span>
                   <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                    <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                    <span className="inline-block size-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
                     {task.project.name}
                   </span>
                 </>
@@ -961,7 +961,7 @@ export default function IssuePage() {
                                 style={{ background: sel ? 'var(--color-base-200)' : 'transparent', color: sel ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}
                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = sel ? 'var(--color-base-200)' : 'transparent')}>
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
+                                <span className="size-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
                                 {tag.name}
                                 {sel && <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                               </button>
@@ -1047,7 +1047,7 @@ export default function IssuePage() {
                                           onMouseEnter={() => setAssigneeHighlight(myIdx)}
                                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                                           style={{ background: isHL || isActive ? 'var(--color-base-200)' : 'transparent', color: isActive ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                                          {opt.id ? <ActorAvatar name={opt.label} isAgent={opt.isAgent} size={16} /> : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />}
+                                          {opt.id ? <ActorAvatar name={opt.label} isAgent={opt.isAgent} size={16} /> : <span className="size-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />}
                                           {opt.label}
                                         </button>
                                       </>
@@ -1071,7 +1071,7 @@ export default function IssuePage() {
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {task.project ? (
                         <>
-                          <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                          <span className="inline-block size-2.5 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
                           <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>{task.project.name}</span>
                         </>
                       ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No project</span>}
@@ -1083,13 +1083,13 @@ export default function IssuePage() {
                           <button onClick={() => handleProjectChange(null)} onMouseEnter={() => setProjectHighlight(0)}
                             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                             style={{ background: projectHighlight === 0 || !task.projectId ? 'var(--color-base-200)' : 'transparent', color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
+                            <span className="size-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />No project
                           </button>
                           {(allProjects ?? []).map((p, pi) => (
                             <button key={p.id} onClick={() => handleProjectChange(p.id)} onMouseEnter={() => setProjectHighlight(pi + 1)}
                               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                               style={{ background: projectHighlight === pi + 1 || task.projectId === p.id ? 'var(--color-base-200)' : 'transparent', color: task.projectId === p.id ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
+                              <span className="size-2 rounded-full flex-shrink-0" style={{ background: p.color }} />{p.name}
                             </button>
                           ))}
                         </div>

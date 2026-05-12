@@ -40,7 +40,7 @@ function IconBtn({
       type="button"
       title={title}
       onClick={onClick}
-      className="flex items-center justify-center w-7 h-7 rounded transition-colors"
+      className="flex items-center justify-center size-7 rounded transition-colors"
       style={{
         background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
         color: active ? 'var(--color-base-800)' : 'var(--color-base-500)',
@@ -418,7 +418,7 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
             <button
               type="button"
               onClick={() => setMobileSearchOpen(true)}
-              className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
+              className="flex items-center justify-center size-8 rounded flex-shrink-0"
               style={{ background: 'transparent', color: 'var(--color-base-500)', border: 'none', cursor: 'pointer' }}
               aria-label="Search"
             >
@@ -434,7 +434,7 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
               <button
                 type="button"
                 onClick={() => toggle('group')}
-                className="flex items-center justify-center w-8 h-8 rounded"
+                className="flex items-center justify-center size-8 rounded"
                 style={{
                   background: (openPanel === 'group' || f.groupBy !== 'none') ? 'rgba(255,255,255,0.08)' : 'transparent',
                   color: (openPanel === 'group' || f.groupBy !== 'none') ? 'var(--color-base-800)' : 'var(--color-base-500)',

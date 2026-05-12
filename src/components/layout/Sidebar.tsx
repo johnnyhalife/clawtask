@@ -102,11 +102,11 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
           <img
             src={workspaceLogo}
             alt={appName}
-            className="flex-shrink-0 w-7 h-7 rounded-md object-cover"
+            className="flex-shrink-0 size-7 rounded-md object-cover"
           />
         ) : (
           <div
-            className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-white text-xs font-bold"
+            className="flex-shrink-0 size-7 rounded-md flex items-center justify-center text-white text-xs font-bold"
             style={{ background: '#3189FF', fontFamily: "'Darker Grotesque', sans-serif" }}
           >
             {initials}
@@ -169,7 +169,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
                     onMouseLeave={(e) => { if (!isActive) Object.assign((e.currentTarget as HTMLElement).style, { background: '', color: '#6B7280' }); }}
                   >
                     <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="size-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: project.color }}
                     />
                     <span className="truncate" style={{ fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem' }}>{project.name}</span>

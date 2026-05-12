@@ -143,7 +143,7 @@ function TagsToolbarPill({
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
+                  <span className="size-2 rounded-full flex-shrink-0" style={{ background: tag.color }} />
                   <span style={{ color: selectedTags.includes(tag.id) ? 'var(--color-base-900)' : 'var(--color-base-700)' }}>{tag.name}</span>
                   {selectedTags.includes(tag.id) && (
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3189FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="ml-auto flex-shrink-0">
@@ -221,7 +221,7 @@ function ToolbarDropdown({
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = active ? 'var(--color-base-200)' : 'transparent')}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
+                  <span className="size-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
                   {opt.label}
                 </button>
               );
@@ -496,7 +496,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
         {/* Header */}
         <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
           {workspaceLogo ? (
-            <img src={workspaceLogo} alt={appName} className="w-5 h-5 rounded object-cover flex-shrink-0" />
+            <img src={workspaceLogo} alt={appName} className="size-5 rounded object-cover flex-shrink-0" />
           ) : (
             <div
               className="flex-shrink-0 px-1.5 py-0.5 rounded text-xs font-bold"

@@ -536,7 +536,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-base-150)')}
                               onMouseLeave={e => (e.currentTarget.style.background = !task.assignee ? 'var(--color-base-150)' : 'transparent')}
                             >
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />
+                              <span className="size-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />
                               Unassigned
                             </button>
                             {humans.length > 0 && (
@@ -595,7 +595,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 <div style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif" }}>
                   {task.project ? (
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
+                      <span className="size-2 rounded-full flex-shrink-0" style={{ background: task.project.color }} />
                       {task.project.name}
                     </span>
                   ) : (
@@ -657,7 +657,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                       className="flex items-center gap-2.5 py-1.5 px-3 rounded-md"
                       style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)' }}
                     >
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: sub.status === 'done' ? '#22C55E' : sub.status === 'in_progress' ? '#3189FF' : sub.status === 'backlog' ? '#94A3B8' : 'var(--color-base-650)' }} />
+                      <span className="size-2 rounded-full flex-shrink-0" style={{ background: sub.status === 'done' ? '#22C55E' : sub.status === 'in_progress' ? '#3189FF' : sub.status === 'backlog' ? '#94A3B8' : 'var(--color-base-650)' }} />
                       <span className="font-mono-id">{sub.issueId}</span>
                       <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{sub.title}</span>
                     </div>
