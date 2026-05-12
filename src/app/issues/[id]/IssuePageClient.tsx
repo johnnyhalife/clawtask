@@ -274,7 +274,7 @@ export function IssuePageClient() {
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); closeAll(); priorityRef.current?.openDropdown(); }
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); closeAll(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
       if (e.key === 't' || e.key === 'T') { e.preventDefault(); const wasOpen = tagsOpen; closeAll(); setTagsOpen(!wasOpen); }
-      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); closeAll(); setProjectHighlight(0); setProjectOpen(true); return; }
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); closeAll(); const currentIdx = [null, ...(allProjects ?? [])].findIndex(p => (p ? (p as any).id : null) === (task?.projectId ?? null)); setProjectHighlight(currentIdx >= 0 ? currentIdx : 0); setProjectOpen(true); return; }
       // Arrow nav inside project picker
       if (projectOpen) {
         const opts = [null, ...(allProjects ?? [])];
@@ -283,18 +283,13 @@ export function IssuePageClient() {
         else if (e.key === 'Enter') {
           e.preventDefault();
           const sel = opts[projectHighlight];
-          const newProjectId = sel ? (sel as any).id : null;
-          if (newProjectId !== (task?.projectId ?? null)) {
-            handleProjectChange(newProjectId);
-          } else {
-            setProjectOpen(false);
-          }
+          handleProjectChange(sel ? (sel as any).id : null);
         }
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects]);
+  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task]);
 
   useSse(event => {
     if (event.type === 'comment.added') {
