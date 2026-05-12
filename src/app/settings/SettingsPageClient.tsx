@@ -306,10 +306,11 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
           ) : (
             <>
               <Button size="sm" variant="ghost" onClick={() => setEditing(true)} disabled={!isReady}>Edit</Button>
+
               <Button size="sm" variant="ghost" onClick={handleProbe} disabled={probing}>
                 {probing ? '...' : 'Probe'}
               </Button>
-              <Button size="sm" variant="danger" onClick={handleDelete} disabled={!isReady}>Delete</Button>
+              <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
             </>
           )}
         </div>
