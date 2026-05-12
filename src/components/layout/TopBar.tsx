@@ -304,6 +304,7 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { push } = router;
   const { theme } = useTheme();
   const isMobile = useIsMobile();
 
@@ -331,7 +332,7 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) router.push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+    if (query.trim()) push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
   };
 
   // Mobile search expand effect
@@ -370,7 +371,7 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (query.trim()) {
-                    router.push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+                    push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
                     setMobileSearchOpen(false);
                   }
                 }}
