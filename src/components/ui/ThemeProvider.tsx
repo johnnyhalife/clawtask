@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, use, useEffect, useState } from 'react';
 
 export type Theme = 'dark' | 'light' | 'system';
 
@@ -10,7 +10,7 @@ const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void;
   toggle: () => {},
 });
 
-export function useTheme() { return useContext(ThemeContext); }
+export function useTheme() { return use(ThemeContext); }
 
 function resolveTheme(t: Theme): 'dark' | 'light' {
   if (t === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
