@@ -259,12 +259,22 @@ export function IssuePageClient() {
         return;
       }
       if (isEditing) return;
-      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); setEditingTask(true); return; }
-      if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
-      if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
-      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
-      if (e.key === 't' || e.key === 'T') { e.preventDefault(); setTagsOpen(v => !v); }
-      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); setProjectHighlight(0); setProjectOpen(true); }
+
+      // Close all open dropdowns before opening a new one
+      const closeAll = () => {
+        statusRef.current?.closeDropdown();
+        priorityRef.current?.closeDropdown();
+        setTagsOpen(false);
+        setAssigneeOpen(false);
+        setProjectOpen(false);
+      };
+
+      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); closeAll(); setEditingTask(true); return; }
+      if (e.key === 's' || e.key === 'S') { e.preventDefault(); closeAll(); statusRef.current?.openDropdown(); }
+      if (e.key === 'p' || e.key === 'P') { e.preventDefault(); closeAll(); priorityRef.current?.openDropdown(); }
+      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); closeAll(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
+      if (e.key === 't' || e.key === 'T') { e.preventDefault(); const wasOpen = tagsOpen; closeAll(); setTagsOpen(!wasOpen); }
+      if (e.key === 'j' || e.key === 'J') { e.preventDefault(); closeAll(); setProjectHighlight(0); setProjectOpen(true); }
       // Arrow nav inside project picker
       if (projectOpen) {
         const opts = [null, ...(allProjects ?? [])];
@@ -280,7 +290,7 @@ export function IssuePageClient() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [push, assigneeOpen, editingTask, projectOpen, projectHighlight, allProjects]);
+  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects]);
 
   useSse(event => {
     if (event.type === 'comment.added') {
