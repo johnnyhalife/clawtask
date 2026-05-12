@@ -86,7 +86,7 @@ function TagsToolbarPill({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setInput(''); }} />
+          <div role="presentation" className="fixed inset-0 z-10" onClick={() => { setOpen(false); setInput(''); }} />
           <div
             ref={dropdownRef}
             className="absolute left-0 bottom-full mb-1 rounded-lg shadow-2xl z-20 flex flex-col"
@@ -204,7 +204,7 @@ function ToolbarDropdown({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div
             className="absolute left-0 bottom-full mb-1 rounded-lg shadow-2xl overflow-hidden z-20"
             style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', minWidth: '140px' }}
@@ -483,6 +483,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.5)' }}
       onClick={onClose}

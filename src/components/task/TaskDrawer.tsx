@@ -270,6 +270,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
       <>
         {/* Backdrop */}
         <div
+          role="presentation"
           className="fixed inset-0 bg-black/50 z-40"
           style={{ zIndex: 40 }}
           onClick={onClose}
@@ -434,7 +435,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div role="presentation" className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
 
       {/* Drawer */}
       <div
@@ -527,7 +528,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                       </button>
                       {assigneeOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
+                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
                           <div style={{
                             position: 'absolute', top: '100%', left: 0, zIndex: 20,
                             background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)',

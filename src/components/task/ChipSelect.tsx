@@ -100,7 +100,7 @@ export function TypeaheadChipSelect({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onMouseDown={() => doClose()} />
+          <div role="presentation" className="fixed inset-0 z-10" onMouseDown={() => doClose()} />
           <div
             className="absolute left-0 top-full mt-1 rounded-lg shadow-xl z-20 overflow-hidden"
             style={{ background: 'var(--color-base)', border: '1px solid var(--color-base-300)', minWidth: '200px' }}
@@ -222,7 +222,7 @@ export const ChipSelect = forwardRef<ChipSelectHandle, {
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={doClose} />
+          <div role="presentation" className="fixed inset-0 z-10" onClick={doClose} />
           <div
             className="absolute left-0 top-full mt-1 rounded-lg shadow-2xl overflow-hidden z-20"
             style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', minWidth: '140px' }}

@@ -462,7 +462,7 @@ export default function IssuePage() {
                       </button>
                       {tagsOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setTagsOpen(false)} />
+                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setTagsOpen(false)} />
                           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                             {(allTags ?? []).map(tag => {
                               const sel = task.tags?.some(t => t.id === tag.id);
@@ -498,7 +498,7 @@ export default function IssuePage() {
                       </button>
                       {assigneeOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
+                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
                           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                             {(() => {
                               const allOpts = [
@@ -537,7 +537,7 @@ export default function IssuePage() {
                       </button>
                       {projectOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
+                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
                           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                             <button onClick={() => handleProjectChange(null)}
                               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
@@ -949,7 +949,7 @@ export default function IssuePage() {
                     </button>
                     {tagsOpen && (
                       <>
-                        <div className="fixed inset-0 z-10" onClick={() => setTagsOpen(false)} />
+                        <div role="presentation" className="fixed inset-0 z-10" onClick={() => setTagsOpen(false)} />
                         <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                           {(allTags ?? []).map(tag => {
                             const sel = task.tags?.some(t => t.id === tag.id);
@@ -1020,7 +1020,7 @@ export default function IssuePage() {
                       </button>
                       {assigneeOpen && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
+                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
                           <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                             {(() => {
                               let idx = 0;
@@ -1076,7 +1076,7 @@ export default function IssuePage() {
                     </button>
                     {projectOpen && (
                       <>
-                        <div className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
+                        <div role="presentation" className="fixed inset-0 z-10" onClick={() => setProjectOpen(false)} />
                         <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
                           <button onClick={() => handleProjectChange(null)} onMouseEnter={() => setProjectHighlight(0)}
                             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"

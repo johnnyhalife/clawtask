@@ -53,6 +53,8 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
   if (isMobile) {
     return (
       <div
+        role="button"
+        tabIndex={0}
         className="flex items-center gap-3 cursor-pointer select-none"
         style={{
           minHeight: '44px',
@@ -63,6 +65,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
           outlineOffset: '-2px',
         }}
         onClick={handleClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
         onMouseEnter={(e) => {
           if (!selected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
         }}
@@ -123,6 +126,8 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className="flex items-center gap-3 cursor-pointer transition-colors select-none"
       style={{
         height: '36px',
@@ -133,6 +138,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
         borderBottom: '1px solid var(--color-base-300)',
       }}
       onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
       onMouseEnter={(e) => {
         if (!selected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
       }}

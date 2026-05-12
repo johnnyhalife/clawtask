@@ -85,7 +85,9 @@ function GroupingSheet({ current, onChange, onClose }: GroupingSheetProps) {
     <>
       {/* Backdrop */}
       <div
+        role="presentation"
         onClick={onClose}
+        onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
         style={{
           position: 'fixed',
           inset: 0,
