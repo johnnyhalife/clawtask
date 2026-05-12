@@ -35,7 +35,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   ref?: Ref<HTMLTextAreaElement>;
 }
 
-export function Textarea({ style, ref, ...props }: TextareaProps) {
+function Textarea({ style, ref, ...props }: TextareaProps) {
   return (
     <textarea
       ref={ref}
