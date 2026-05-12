@@ -278,7 +278,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="h-screen bg-[#0A0A0B] flex items-center justify-center text-[var(--color-base-500)]">Loading...</div>}>
+    <Suspense fallback={<div className="h-screen bg-[#0A0A0B] flex items-center justify-center text-[var(--color-base-500)]">Loading…</div>}>
       <HomeContent />
     </Suspense>
   );
