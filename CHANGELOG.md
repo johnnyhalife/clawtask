@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+---
+
+## 2026-05-12 (dep cleanup)
+
 ### Dependencies
 - Removed unused `zod` dependency
 - Upgraded `react-markdown` 9 → 10
