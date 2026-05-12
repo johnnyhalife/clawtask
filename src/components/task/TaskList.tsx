@@ -155,7 +155,7 @@ function sortedGroupKeys(keys: string[], groupBy: GroupByField): string[] {
 
 // Project name cache populated at render time via task data
 const _projectNameCache: Record<string, string> = {};
-export function cacheProjectName(id: string, name: string) { _projectNameCache[id] = name; }
+function cacheProjectName(id: string, name: string) { _projectNameCache[id] = name; }
 
 // Returns tasks in the same flat order TaskList renders them (respects groupBy)
 export function getFlatOrderedTasks(tasks: Task[], groupBy: GroupByField): Task[] {

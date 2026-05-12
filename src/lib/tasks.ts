@@ -51,7 +51,7 @@ export function resolveTaskId(db: Database.Database, idOrSlug: string): string |
   return resolveTask(db, idOrSlug)?.id;
 }
 
-export function resolveTask(db: Database.Database, idOrSlug: string): TaskRow | undefined {
+function resolveTask(db: Database.Database, idOrSlug: string): TaskRow | undefined {
   const byId = db.prepare('SELECT * FROM tasks WHERE id = ?').get(idOrSlug) as TaskRow | undefined;
   if (byId) return byId;
   return db.prepare('SELECT * FROM tasks WHERE UPPER(issueId) = UPPER(?)').get(idOrSlug) as TaskRow | undefined;
