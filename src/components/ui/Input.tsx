@@ -51,7 +51,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   ref?: Ref<HTMLSelectElement>;
 }
 
-export function Select({ style, children, ref, ...props }: SelectProps) {
+function Select({ style, children, ref, ...props }: SelectProps) {
   return (
     <select
       ref={ref}
