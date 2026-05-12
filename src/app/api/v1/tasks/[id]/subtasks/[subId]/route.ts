@@ -6,7 +6,11 @@ import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string; subId: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  props: { params: Promise<{ id: string; subId: string }> }
+) {
+  const params = await props.params;
   const db = getDb();
   const sub = db.prepare('SELECT * FROM tasks WHERE id = ? AND parentTaskId = ?').get(params.subId, params.id) as any;
   if (!sub) return err('NOT_FOUND', 'Subtask not found', 404);
@@ -44,7 +48,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return ok(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string; subId: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  props: { params: Promise<{ id: string; subId: string }> }
+) {
+  const params = await props.params;
   const db = getDb();
   const sub = db.prepare('SELECT * FROM tasks WHERE id = ? AND parentTaskId = ?').get(params.subId, params.id);
   if (!sub) return err('NOT_FOUND', 'Subtask not found', 404);

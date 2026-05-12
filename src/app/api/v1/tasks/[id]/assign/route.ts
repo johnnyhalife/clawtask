@@ -8,7 +8,8 @@ import { authenticateAgent } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
 import { resolveTaskId } from '@/lib/tasks';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);

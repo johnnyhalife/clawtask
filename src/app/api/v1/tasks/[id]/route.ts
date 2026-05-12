@@ -6,14 +6,16 @@ import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const task = getTaskWithDetails(db, params.id);
   if (!task) return err('NOT_FOUND', 'Task not found', 404);
   return ok(task);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
   let assigneeChanged = false;
@@ -94,7 +96,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return ok(updated);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id);
   if (!task) return err('NOT_FOUND', 'Task not found', 404);

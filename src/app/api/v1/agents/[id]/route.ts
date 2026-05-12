@@ -7,14 +7,16 @@ function sanitizeAgent(agent: any) {
   return { ...rest, apiKey: '••••••' };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(params.id) as any;
   if (!agent) return err('NOT_FOUND', 'Agent not found', 404);
   return ok(sanitizeAgent(agent));
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(params.id) as any;
   if (!agent) return err('NOT_FOUND', 'Agent not found', 404);
@@ -28,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return ok(sanitizeAgent(db.prepare('SELECT * FROM agents WHERE id = ?').get(params.id)));
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(params.id);
   if (!agent) return err('NOT_FOUND', 'Agent not found', 404);

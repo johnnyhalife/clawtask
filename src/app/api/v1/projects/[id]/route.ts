@@ -2,14 +2,16 @@ import { NextRequest } from 'next/server';
 import { getDb } from '@/db/db';
 import { ok, err } from '@/lib/response';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(params.id);
   if (!project) return err('NOT_FOUND', 'Project not found', 404);
   return ok(project);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(params.id);
   if (!project) return err('NOT_FOUND', 'Project not found', 404);
@@ -29,7 +31,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return ok(db.prepare('SELECT * FROM projects WHERE id = ?').get(params.id));
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(params.id);
   if (!project) return err('NOT_FOUND', 'Project not found', 404);

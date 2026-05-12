@@ -7,7 +7,8 @@ import { broadcastSse } from '@/lib/sse';
 import { resolveTaskId } from '@/lib/tasks';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);

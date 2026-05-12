@@ -16,7 +16,8 @@ function enrichComment(db: ReturnType<typeof getDb>, row: any) {
   return { ...row, humanRequested: row.humanRequested === 1, author };
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return ok(rows.map((r) => enrichComment(db, r)));
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);

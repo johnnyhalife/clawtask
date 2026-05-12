@@ -7,14 +7,16 @@ import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
 import { authenticateAgent } from '@/lib/auth';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const rows = db.prepare('SELECT * FROM tasks WHERE parentTaskId = ? ORDER BY createdAt ASC').all(params.id) as any[];
   const subtasks = rows.map((r) => enrichTask(db, r));
   return ok(subtasks);
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const parent = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
   if (!parent) return err('NOT_FOUND', 'Parent task not found', 404);

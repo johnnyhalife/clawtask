@@ -10,7 +10,8 @@ import { resolveTaskId } from '@/lib/tasks';
 
 const VALID_STATUSES = ['backlog', 'todo', 'in_progress', 'blocked', 'done', 'archived'];
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const db = getDb();
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);

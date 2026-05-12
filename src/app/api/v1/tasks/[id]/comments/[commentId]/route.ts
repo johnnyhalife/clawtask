@@ -12,7 +12,11 @@ function enrichComment(db: ReturnType<typeof getDb>, row: any) {
   return { ...row, humanRequested: row.humanRequested === 1, author };
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string; commentId: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  props: { params: Promise<{ id: string; commentId: string }> }
+) {
+  const params = await props.params;
   const db = getDb();
   const comment = db.prepare('SELECT * FROM comments WHERE id = ? AND taskId = ?').get(params.commentId, params.id) as any;
   if (!comment) return err('NOT_FOUND', 'Comment not found', 404);
