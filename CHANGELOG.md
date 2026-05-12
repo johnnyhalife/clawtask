@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## 2026-05-12
 
+### Code quality
+- `useContext` → `use()` in ThemeProvider (React 19 pattern) `7e2f506`
+- Destructure `push` from `useRouter` in TopBar `aafd000`
+- Remove unused `Textarea` export from `Input.tsx` `93537ba`
+- Replace last `<img>` with `next/image` in Sidebar workspace logo `7f786cb`
+
 ### Dependencies
 - **React 18 → 19** — `forwardRef` removed from `Button`, `Input`, `TopBar`, `ChipSelect` (ref-as-prop pattern) `00e8770`
 - **Next.js 14 → 15** — no async params migration needed; route handlers were already using `Promise<params>` pattern `8930aab`
