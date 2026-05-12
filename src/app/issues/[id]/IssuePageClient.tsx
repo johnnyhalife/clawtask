@@ -301,8 +301,8 @@ export function IssuePageClient() {
     }
   }, () => { reloadTask(); loadTimeline(); });
 
-  // is the task actively being worked on by an agent?
-  const inFlight = task?.status === 'in_progress' && !!task?.assigneeId;
+  // is the task actively being worked on by an agent? (human assignees don't lock the UI)
+  const inFlight = task?.status === 'in_progress' && task?.assigneeType === 'agent' && !!task?.assigneeId;
 
   const handleStatusChange = async (status: string) => {
     await apiPost(`/api/v1/tasks/${taskId}/status`, { status });
