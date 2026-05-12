@@ -123,7 +123,7 @@ function GeneralSettings() {
         <Input
           id="workspace-name"
           value={form.appName}
-          onChange={(e) => setForm({ ...form, appName: e.target.value })}
+          onChange={(e) => setForm(prev => ({ ...prev, appName: e.target.value }))}
         />
       </div>
       <div>
@@ -131,7 +131,7 @@ function GeneralSettings() {
         <Input
           id="issue-prefix"
           value={form.issuePrefix}
-          onChange={(e) => setForm({ ...form, issuePrefix: e.target.value.toUpperCase() })}
+          onChange={(e) => setForm(prev => ({ ...prev, issuePrefix: e.target.value.toUpperCase() }))}
           maxLength={10}
         />
         <p className="text-xs style-base-500 mt-1">Issues will be numbered like {form.issuePrefix || 'CWT'}-001</p>
@@ -141,7 +141,7 @@ function GeneralSettings() {
         <Input
           id="human-name"
           value={form.humanName}
-          onChange={(e) => setForm({ ...form, humanName: e.target.value })}
+          onChange={(e) => setForm(prev => ({ ...prev, humanName: e.target.value }))}
         />
       </div>
       <div>
@@ -149,7 +149,7 @@ function GeneralSettings() {
         <Input
           id="human-display-name"
           value={form.humanDisplayName}
-          onChange={(e) => setForm({ ...form, humanDisplayName: e.target.value })}
+          onChange={(e) => setForm(prev => ({ ...prev, humanDisplayName: e.target.value }))}
         />
       </div>
       <Button type="submit" variant="primary" disabled={saving}>
@@ -405,7 +405,7 @@ function AgentsSettings() {
             <Input
               id="agent-openclaw-id"
               value={newAgent.openclawAgentId}
-              onChange={(e) => setNewAgent({ ...newAgent, openclawAgentId: e.target.value })}
+              onChange={(e) => setNewAgent(prev => ({ ...prev, openclawAgentId: e.target.value }))}
               placeholder="main"
               className="w-44"
             />
@@ -415,7 +415,7 @@ function AgentsSettings() {
             <Input
               id="agent-display-name"
               value={newAgent.displayName}
-              onChange={(e) => setNewAgent({ ...newAgent, displayName: e.target.value })}
+              onChange={(e) => setNewAgent(prev => ({ ...prev, displayName: e.target.value }))}
               placeholder="Clawdio"
               className="w-44"
             />
