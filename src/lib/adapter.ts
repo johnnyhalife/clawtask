@@ -824,9 +824,11 @@ Instructions:
       db.prepare(`UPDATE tasks SET status = 'in_progress', updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(task.id);
       const humanRow = db.prepare('SELECT id FROM humans LIMIT 1').get() as any;
       if (humanRow) {
-        const { logActivity } = await import('./activity');
-        const { broadcastSse } = await import('./sse');
-        const { enrichTask } = await import('./tasks');
+        const [{ logActivity }, { broadcastSse }, { enrichTask }] = await Promise.all([
+          import('./activity'),
+          import('./sse'),
+          import('./tasks'),
+        ]);
         logActivity(db, { taskId: task.id, actorId: humanRow.id, actorType: 'human', verb: 'status_changed', meta: { from: 'done', to: 'in_progress' } });
         const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id) as any);
         broadcastSse({ type: 'task.updated', data: updated });

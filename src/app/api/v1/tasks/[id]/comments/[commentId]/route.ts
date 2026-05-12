@@ -17,8 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const comment = db.prepare('SELECT * FROM comments WHERE id = ? AND taskId = ?').get(params.commentId, params.id) as any;
   if (!comment) return err('NOT_FOUND', 'Comment not found', 404);
 
-  const agent = await authenticateAgent(req);
-  const body = await req.json();
+  const [agent, body] = await Promise.all([authenticateAgent(req), req.json()]);
 
   // Only allow content update
   if (body.content !== undefined) {
