@@ -4,9 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Bug fixes
+- Comment area layout broken on mobile — was using horizontal flex with hint+button as textarea sibling; fixed to column layout. `⌘/Ctrl+Enter` hint now hidden on small screens (irrelevant on touch) `20d2479`
+
 ### Code quality
+- Replace arbitrary z-index values in BottomNav with a deliberate scale: nav bar 100→10, backdrop 200→20, sheet 201→21. CreateTaskModal at `z-[150]` still sits above the nav correctly `dae8243`
 - Remove unused `Select` export from `Input.tsx` `685d1b3`
-- Remove `outline: none` from comment textareas in `TaskDrawer` and `IssuePageClient` — `focus-visible` ring already provides keyboard focus indicator `83c914f`
+- Remove `outline: none` from comment textareas — `focus-visible` ring already provides keyboard focus indicator `83c914f`
 
 ---
 
