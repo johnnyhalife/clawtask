@@ -690,8 +690,8 @@ export default function IssuePage() {
               onChange={e => setNewComment(e.target.value)}
               placeholder="Reply"
               rows={2}
-              className="flex-1 px-3 py-2 text-sm rounded-xl resize-none"
-              style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", outline: 'none' }} className="focus-visible:ring-1 focus-visible:ring-[#3189FF]"
+              className="flex-1 px-3 py-2 text-sm rounded-xl resize-none focus-visible:ring-1 focus-visible:ring-[#3189FF]"
+              style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", outline: 'none' }}
               onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-base-500)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
@@ -873,8 +873,8 @@ export default function IssuePage() {
               onChange={e => setNewComment(e.target.value)}
               placeholder="Reply"
               rows={3}
-              className="w-full px-4 py-3 text-sm rounded-xl resize-none mb-3"
-              style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", outline: 'none' }} className="focus-visible:ring-1 focus-visible:ring-[#3189FF]"
+              className="w-full px-4 py-3 text-sm rounded-xl resize-none mb-3 focus-visible:ring-1 focus-visible:ring-[#3189FF]"
+              style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", outline: 'none' }}
               onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-base-500)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
