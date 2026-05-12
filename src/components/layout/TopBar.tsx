@@ -335,9 +335,9 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
 
   // Mobile search expand effect
   useEffect(() => {
-    if (mobileSearchOpen) {
-      setTimeout(() => mobileSearchRef.current?.focus(), 50);
-    }
+    if (!mobileSearchOpen) return;
+    const id = setTimeout(() => mobileSearchRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [mobileSearchOpen]);
 
   // Mobile layout
