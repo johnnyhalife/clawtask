@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 ## 2026-05-12
 
+### Dependencies
+- **TypeScript 5.9 → 6.0** — one fix required: `globals.css.d.ts` shim added for TS6's new side-effect import enforcement `3910da2`
+- **uuid 9 → 14** — Node 20+ required (running Node 26 ✅); `import { v4 as uuidv4 }` pattern unchanged `bb0ada0`
+- **better-sqlite3** 12.9 → 12.10 (patch) `bb0ada0`
+- **ws** 8.20.0 → 8.20.1 (patch) `bb0ada0`
+- **postcss** 8.5.12 → 8.5.14 (patch) `bb0ada0`
+- Updated `@types/uuid`, `@types/ws`, `@types/better-sqlite3` to match `bb0ada0`
+
+
 ### Bug fixes
 - Empty-state CTA on project with no issues now reads **Create Issue** instead of ~~Create Agent~~ (#1) `47ca2b1`
 - Agent delete button in Settings → Agents is now always enabled, regardless of probe status (`pending`, `error`) — broken agents can be cleaned up without API workarounds (#2) `992a5a5`
