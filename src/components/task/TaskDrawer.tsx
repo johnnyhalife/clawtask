@@ -45,6 +45,7 @@ function CommentBubble({ item }: { item: Comment | (Activity & { _type: 'activit
           {a.verb.replace(/_/g, ' ')} this issue
         </span>
         <span
+          suppressHydrationWarning
           style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', color: 'var(--color-base-400)', flexShrink: 0 }}
         >
           {new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -129,6 +130,7 @@ function CommentBubble({ item }: { item: Comment | (Activity & { _type: 'activit
           )}
         </span>
         <span
+          suppressHydrationWarning
           className="ml-auto flex-shrink-0"
           style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', color: 'var(--color-base-400)' }}
         >
@@ -609,6 +611,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
               <div>
                 <div className="section-label mb-1" style={{ fontSize: '10px' }}>Created</div>
                 <div
+                  suppressHydrationWarning
                   style={{ color: 'var(--color-base-650)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}
                 >
                   {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

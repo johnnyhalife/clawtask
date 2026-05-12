@@ -480,7 +480,7 @@ function ExternalSystemsSettings() {
                     <span style={{ color: 'var(--color-base-800)', fontSize: '0.85rem', fontFamily: "'Instrument Sans', sans-serif" }}>{sys.name}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4" style={{ color: 'var(--color-base-500)', fontSize: '0.8rem', fontFamily: "'Roboto Mono', monospace" }}>{new Date(sys.createdAt).toLocaleDateString()}</td>
+                <td suppressHydrationWarning className="py-3 px-4" style={{ color: 'var(--color-base-500)', fontSize: '0.8rem', fontFamily: "'Roboto Mono', monospace" }}>{new Date(sys.createdAt).toLocaleDateString()}</td>
                 <td className="py-3 px-4">
                   <Button size="sm" variant="ghost" onClick={() => handleDelete(sys.id)}>Delete</Button>
                 </td>
