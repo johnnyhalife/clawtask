@@ -196,7 +196,12 @@ export const ChipSelect = forwardRef<ChipSelectHandle, {
     if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIdx(i => Math.min(i + 1, options.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIdx(i => Math.max(i - 1, 0)); }
     else if (e.key === 'Enter') { e.preventDefault(); doSelect(options[highlightIdx]); }
-    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); doClose(); }
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.nativeEvent.stopImmediatePropagation();
+      doClose();
+    }
   };
 
   return (
