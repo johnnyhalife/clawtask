@@ -750,8 +750,8 @@ export default function SettingsPage() {
                     fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem',
                     border: 'none', cursor: 'pointer',
                   }}
-                  onMouseEnter={e => { if (activeTab !== tab.key) { (e.currentTarget as HTMLElement).style.background = 'rgba(128,128,128,0.06)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)'; } }}
-                  onMouseLeave={e => { if (activeTab !== tab.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-600)'; } }}
+                  onMouseEnter={e => { if (activeTab !== tab.key) Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(128,128,128,0.06)', color: 'var(--color-base-800)' }); }}
+                  onMouseLeave={e => { if (activeTab !== tab.key) Object.assign((e.currentTarget as HTMLElement).style, { background: 'transparent', color: 'var(--color-base-600)' }); }}
                 >
                   {tab.label}
                 </button>

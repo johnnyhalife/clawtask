@@ -50,8 +50,8 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
         background: active ? 'rgba(128,128,128,0.1)' : 'transparent',
         fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem',
       }}
-      onMouseEnter={(e) => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(128,128,128,0.06)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)'; } }}
-      onMouseLeave={(e) => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--color-base-600)'; } }}
+      onMouseEnter={(e) => { if (!active) Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(128,128,128,0.06)', color: 'var(--color-base-800)' }); }}
+      onMouseLeave={(e) => { if (!active) Object.assign((e.currentTarget as HTMLElement).style, { background: 'transparent', color: 'var(--color-base-600)' }); }}
     >
       <span style={{ color: active ? 'var(--color-base-900)' : 'var(--color-base-600)' }}>{icon}</span>
       <span>{label}</span>
@@ -165,18 +165,8 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
                         ? { background: 'rgba(128,128,128,0.1)', color: 'var(--color-base-900)' }
                         : { color: 'var(--color-base-600)' }
                     }
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(128,128,128,0.06)';
-                        (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLElement).style.background = '';
-                        (e.currentTarget as HTMLElement).style.color = '#6B7280';
-                      }
-                    }}
+                    onMouseEnter={(e) => { if (!isActive) Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(128,128,128,0.06)', color: 'var(--color-base-800)' }); }}
+                    onMouseLeave={(e) => { if (!isActive) Object.assign((e.currentTarget as HTMLElement).style, { background: '', color: '#6B7280' }); }}
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -246,14 +236,8 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
           href="/settings"
           className="flex items-center gap-2.5 px-2.5 py-1.5 rounded text-sm transition-colors"
           style={{ color: 'var(--color-base-600)', fontFamily: "'Instrument Sans', sans-serif" }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = 'rgba(128,128,128,0.06)';
-            (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = '';
-            (e.currentTarget as HTMLElement).style.color = '#6B7280';
-          }}
+          onMouseEnter={(e) => Object.assign((e.currentTarget as HTMLElement).style, { background: 'rgba(128,128,128,0.06)', color: 'var(--color-base-800)' })}
+          onMouseLeave={(e) => Object.assign((e.currentTarget as HTMLElement).style, { background: '', color: '#6B7280' })}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />

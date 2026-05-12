@@ -462,14 +462,8 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             onClick={onClose}
             className="p-1 rounded transition-colors"
             style={{ color: 'var(--color-base-500)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = 'var(--color-base-800)';
-              (e.currentTarget as HTMLElement).style.background = 'var(--color-base-150)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = 'var(--color-base-500)';
-              (e.currentTarget as HTMLElement).style.background = 'transparent';
-            }}
+            onMouseEnter={(e) => Object.assign((e.currentTarget as HTMLElement).style, { color: 'var(--color-base-800)', background: 'var(--color-base-150)' })}
+            onMouseLeave={(e) => Object.assign((e.currentTarget as HTMLElement).style, { color: 'var(--color-base-500)', background: 'transparent' })}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
