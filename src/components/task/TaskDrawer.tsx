@@ -322,7 +322,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 <h2
                   style={{
                     fontFamily: "'Darker Grotesque', sans-serif",
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: '1.1rem',
                     color: 'var(--color-base-900)',
                     lineHeight: 1.3,
@@ -480,7 +480,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 className="font-display mb-3"
                 style={{
                   fontFamily: "'Darker Grotesque', sans-serif",
-                  fontWeight: 700,
+                  fontWeight: 600,
                   fontSize: '1.15rem',
                   color: 'var(--color-base-900)',
                   lineHeight: 1.3,

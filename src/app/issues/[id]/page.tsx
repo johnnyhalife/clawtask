@@ -627,7 +627,7 @@ export default function IssuePage() {
 
         {/* Issue header */}
         <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
-          <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? 8 : 0 }}>
+          <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? 8 : 0 }}>
             {task?.title}
           </h1>
           {task?.description && (
@@ -803,7 +803,7 @@ export default function IssuePage() {
               </div>
             ) : (
               <>
-                <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? '10px' : 0 }}>
+                <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? '10px' : 0 }}>
                   {task?.title}
                 </h1>
                 {task?.description && (
