@@ -1,9 +1,9 @@
-export type Priority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
-export type AssigneeType = 'agent' | 'human';
-export type CommentType = 'message' | 'thinking' | 'tool';
-export type ProbeStatus = 'pending' | 'ok' | 'error';
-export type ActivityVerb =
+type Priority = 'low' | 'medium' | 'high' | 'urgent';
+type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
+type AssigneeType = 'agent' | 'human';
+type CommentType = 'message' | 'thinking' | 'tool';
+type ProbeStatus = 'pending' | 'ok' | 'error';
+type ActivityVerb =
   | 'created'
   | 'assigned'
   | 'unassigned'
@@ -30,7 +30,7 @@ export interface Tag {
   createdAt: string;
 }
 
-export interface Human {
+interface Human {
   id: string;
   name: string;
   displayName: string;
@@ -121,10 +121,10 @@ export interface ApiError {
   };
 }
 
-export type ApiResponse<T> = ApiOk<T> | ApiError;
+type ApiResponse<T> = ApiOk<T> | ApiError;
 
 // SSE Event types
-export type SseEventType =
+type SseEventType =
   | 'task.created'
   | 'task.updated'
   | 'comment.added'

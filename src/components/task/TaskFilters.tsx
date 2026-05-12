@@ -1,15 +1,15 @@
 'use client';
 
 export type SortField = 'updatedAt' | 'createdAt' | 'priority' | 'title' | 'issueId';
-export type SortOrder = 'asc' | 'desc';
+type SortOrder = 'asc' | 'desc';
 export type StatusValue = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type PriorityValue = 'urgent' | 'high' | 'medium' | 'low';
 export type AssigneeFilter = '' | 'agent' | 'human' | 'unassigned';
 export type GroupByField = 'status' | 'priority' | 'assignee' | 'project' | 'completedDate' | 'none';
 
-// Legacy single-value types (kept for any remaining consumers)
-export type StatusFilter = '' | StatusValue;
-export type PriorityFilter = '' | PriorityValue;
+// Legacy single-value types (internal use only)
+type StatusFilter = '' | StatusValue;
+type PriorityFilter = '' | PriorityValue;
 
 export interface FilterState {
   sortField: SortField;
