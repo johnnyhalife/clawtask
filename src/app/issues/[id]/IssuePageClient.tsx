@@ -34,7 +34,7 @@ function fmtDate(d: string | null | undefined) {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  todo: '#71717A', in_progress: '#3189FF', blocked: '#F87171', done: '#22C55E', archived: '#71717A',
+  backlog: '#94A3B8', todo: '#71717A', in_progress: '#3189FF', blocked: '#F87171', done: '#22C55E', archived: '#71717A',
 };
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: '#F87171', high: '#FFC674', medium: '#FFC674', low: '#71717A',
