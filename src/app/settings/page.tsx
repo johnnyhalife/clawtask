@@ -356,7 +356,7 @@ function AgentsSettings() {
       {/* API Key modal */}
       {newKey && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 max-w-lg">
-          <div className="text-sm font-medium text-amber-400 mb-2">⚠️ Save this API key — shown once!</div>
+          <div className="text-sm font-medium text-amber-400 mb-2">⚠️ Save this API key, shown once!</div>
           <div className="flex items-center gap-2 mb-3">
             <code className="flex-1 bg-[var(--color-base-150)] border border-[var(--color-base-300)] rounded px-3 py-2 text-xs font-mono style-base-800 break-all">
               {newKey}
@@ -466,7 +466,7 @@ function ExternalSystemsSettings() {
     <div className="space-y-6">
       {newKey && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 max-w-lg">
-          <div className="text-sm font-medium text-amber-400 mb-1">⚠️ Save this API key for <strong>{newName}</strong> — shown once!</div>
+          <div className="text-sm font-medium text-amber-400 mb-1">⚠️ Save this API key for <strong>{newName}</strong>, shown once!</div>
           <div className="flex items-center gap-2 mb-3">
             <code className="flex-1 bg-[var(--color-base-150)] border border-[var(--color-base-300)] rounded px-3 py-2 text-xs font-mono break-all">{newKey}</code>
             <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard.writeText(newKey!); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>{copied ? '✓' : 'Copy'}</Button>

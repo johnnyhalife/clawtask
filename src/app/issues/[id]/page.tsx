@@ -745,7 +745,7 @@ export default function IssuePage() {
             {/* Meta row */}
             <div className="flex items-center gap-2 mb-4">
               <span className="inline-block size-3 rounded-full flex-shrink-0" style={{ background: STATUS_COLOR[task?.status ?? 'todo'] }} />
-              <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem' }}>—</span>
+              <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem' }}>·</span>
               <span style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', fontWeight: 600 }}>{task?.issueId}</span>
               {task?.project && (
                 <>
