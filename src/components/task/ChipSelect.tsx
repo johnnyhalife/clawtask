@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useImperativeHandle, Ref } from 'react';
 
 export const STATUS_OPTIONS = [
   { value: 'backlog', label: 'Backlog', color: '#94A3B8' },
@@ -164,12 +164,13 @@ export interface ChipSelectHandle {
   isOpen: () => boolean;
 }
 
-export const ChipSelect = forwardRef<ChipSelectHandle, {
+export function ChipSelect({ label, color, options, onChange, ref }: {
   label: string;
   color: string;
   options: ChipOption[];
   onChange: (v: string) => void;
-}>(function ChipSelect({ label, color, options, onChange }, ref) {
+  ref?: Ref<ChipSelectHandle>;
+}) {
   const [open, setOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -262,4 +263,4 @@ export const ChipSelect = forwardRef<ChipSelectHandle, {
       )}
     </div>
   );
-});
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, forwardRef } from 'react';
+import { useState, useCallback, useRef, useEffect, Ref } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
@@ -18,6 +18,7 @@ interface TopBarProps {
   hideAssignee?: boolean;
   hideToolbar?: boolean;
   totalCount?: number;
+  ref?: Ref<HTMLInputElement>;
 }
 
 // ─── Reusable: close dropdown when clicking outside ──────────────────────────
@@ -297,7 +298,7 @@ function GroupDropdown({ current, onChange }: { current: GroupByField; onChange:
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 type Panel = 'filter' | 'sort' | 'group' | null;
 
-export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hideToolbar, totalCount }, searchRef) {
+export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hideToolbar, totalCount, ref: searchRef }: TopBarProps) {
   const [query, setQuery] = useState('');
   const [openPanel, setOpenPanel] = useState<Panel>(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -574,4 +575,4 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
       </div>
     </div>
   );
-});
+}
