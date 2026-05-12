@@ -716,7 +716,7 @@ export function IssuePageClient() {
               <button
                 type="submit"
                 disabled={submitting || !newComment.trim()}
-                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-semibold"
+                className="sm:flex-shrink-0 w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg text-sm font-semibold"
                 style={{ background: 'var(--color-base-900)', color: 'var(--color-base)', fontFamily: "'Instrument Sans', sans-serif", fontWeight: 700, opacity: submitting || !newComment.trim() ? 0.4 : 1, cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer', border: 'none' }}
               >
                 {submitting ? '…' : 'Send'}
