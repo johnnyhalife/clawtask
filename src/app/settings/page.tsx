@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import NextImage from 'next/image';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { Agent } from '@/types';
@@ -85,7 +86,7 @@ function GeneralSettings() {
             style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)' }}
           >
             {logoPreview ? (
-              <img src={logoPreview} alt="logo" className="w-full h-full object-cover rounded-lg" />
+              <NextImage src={logoPreview} alt="logo" width={48} height={48} className="w-full h-full object-cover rounded-lg" unoptimized />
             ) : (
               <span className="style-base-500 text-xs">None</span>
             )}
