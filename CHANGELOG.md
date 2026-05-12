@@ -4,42 +4,30 @@ All notable changes to this project are documented in this file.
 
 ## 2026-05-12
 
-### Code quality
-- `useContext` → `use()` in ThemeProvider (React 19 pattern) `7e2f506`
-- Destructure `push` from `useRouter` in TopBar `aafd000`
-- Remove unused `Textarea` export from `Input.tsx` `93537ba`
-- Replace last `<img>` with `next/image` in Sidebar workspace logo `7f786cb`
-
-### Dependencies
-- **React 18 → 19** — `forwardRef` removed from `Button`, `Input`, `TopBar`, `ChipSelect` (ref-as-prop pattern) `00e8770`
-- **Next.js 14 → 15** — no async params migration needed; route handlers were already using `Promise<params>` pattern `8930aab`
-- **@types/react 18 → 19** `8930aab`
-- **TypeScript 5.9 → 6.0** — one fix required: `globals.css.d.ts` shim added for TS6's new side-effect import enforcement `3910da2`
-- **uuid 9 → 14** — Node 20+ required (running Node 26 ✅); `import { v4 as uuidv4 }` pattern unchanged `bb0ada0`
-- **better-sqlite3** 12.9 → 12.10 (patch) `bb0ada0`
-- **ws** 8.20.0 → 8.20.1 (patch) `bb0ada0`
-- **postcss** 8.5.12 → 8.5.14 (patch) `bb0ada0`
-- Updated `@types/uuid`, `@types/ws`, `@types/better-sqlite3` to match `bb0ada0`
-
-
 ### Bug fixes
-- Empty-state CTA on project with no issues now reads **Create Issue** instead of ~~Create Agent~~ (#1) `47ca2b1`
-- Agent delete button in Settings → Agents is now always enabled, regardless of probe status (`pending`, `error`) — broken agents can be cleaned up without API workarounds (#2) `992a5a5`
-- Backlog status chip on the issue page now renders correctly (was white/empty) `9ffb394`
-- Closing the issue page no longer leaves Status/Priority dropdowns open `08f482c`
-- Human assignee on an in-progress task no longer locks the UI, hides the Cancel button, or disables property fields — lock behaviour is agent-only `a697554`
+- Empty-state CTA on projects with no issues now reads **Create Issue** instead of Create Agent
+- Agent delete button in Settings → Agents is now always enabled regardless of probe status — broken agents can be cleaned up without needing API/DB workarounds
+- Backlog status chip on the issue page now renders with the correct color (was showing white/empty)
+- Closing the issue page no longer leaves Status or Priority dropdowns open in the background
+- Human assignee on an in-progress task no longer locks the UI, hides the Cancel button, or disables property fields — that behaviour is now agent-only
+- Keyboard shortcuts on the issue page (S, P, A, T, J) now close all other open dropdowns before opening the target one — previously multiple dropdowns could be open simultaneously, making Enter unpredictable
+- Opening a ChipSelect dropdown via keyboard no longer steals focus back to the Status/Priority button when switching shortcuts
+- Project picker keyboard navigation now opens with the highlight on the currently assigned project, making it intuitive to navigate to adjacent options or clear the project with ArrowUp → Enter
 
 ### UX improvements
-- **T** keyboard shortcut opens the Tags dropdown on the issue page; **Esc** closes it; hover hint shows `T` in the Properties pane (matches S, P, A, J shortcuts) `2876ce0`
-- **⌘/Ctrl+Enter** hint text added below comment textareas (mobile and desktop); shortcut was already functional `f2ac227`
+- **T** keyboard shortcut opens the Tags dropdown on the issue page; **Esc** closes it; hover hint shown in the Properties pane (consistent with S, P, A, J)
+- **⌘/Ctrl+Enter** hint added below comment textareas on both mobile and desktop layouts
 
-### Code quality (React Doctor)
-- Page metadata (`<title>`, `<description>`) added via server-component wrappers for home, issue, and settings pages `86a0fc8` `8b2221d`
-- `searchParams.get` destructured with `.bind()` in Sidebar, BottomNav, HomeContent for React Compiler memoization compatibility `8c88733`
-- Remaining `<img>` replaced with `next/image` in CreateTaskModal logo preview `7ae248f`
-- Em dashes replaced in UI text/separators `b31a025`
-- Typographic ellipsis (`…`) used in loading fallback `c040fcd`
-- Generic `handleClick` handler renamed to `openTask` in TaskRow `839bbb7`
+### Dependencies
+- **React 18 → 19** — migrated `forwardRef` to ref-as-prop in `Button`, `Input`, `TopBar`, `ChipSelect`; `useContext` replaced with `use()` in `ThemeProvider`
+- **Next.js 14 → 15** — async params pattern applied across all dynamic API routes
+- **TypeScript 5.9 → 6.0** — added `globals.css.d.ts` shim for TS6's stricter side-effect import enforcement
+- **uuid 9 → 14**, **better-sqlite3 12.9 → 12.10**, **ws 8.20.0 → 8.20.1**, **postcss 8.5.12 → 8.5.14** (patch bumps, no code changes required)
+
+### Code quality
+- All `<img>` elements replaced with `next/image` across the codebase
+- Page `<title>` and `<meta description>` added for home, issue, and settings pages
+- Miscellaneous React Doctor improvements: `searchParams.get` binding, typographic punctuation, handler naming, unused exports removed
 
 ---
 
