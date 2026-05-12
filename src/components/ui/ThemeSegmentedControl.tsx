@@ -73,7 +73,7 @@ export function ThemeSegmentedControl() {
             alignItems: 'center',
             color: theme === opt.value ? 'var(--color-base-800)' : 'var(--color-base-450)',
             boxShadow: theme === opt.value ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
-            transition: 'all 0.12s',
+            transition: 'color 0.12s, box-shadow 0.12s, background 0.12s',
           }}
         >
           {opt.icon}
