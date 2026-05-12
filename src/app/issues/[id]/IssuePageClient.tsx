@@ -697,20 +697,20 @@ export function IssuePageClient() {
             bottom: 'calc(56px + env(safe-area-inset-bottom))',
           }}
         >
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <textarea
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               placeholder="Reply"
               rows={2}
-              className="flex-1 px-3 py-2 text-sm rounded-xl resize-none focus-visible:ring-1 focus-visible:ring-[#3189FF]"
+              className="w-full px-3 py-2 text-sm rounded-xl resize-none focus-visible:ring-1 focus-visible:ring-[#3189FF]"
               style={{ background: 'var(--color-base-100)', border: '1px solid var(--color-base-300)', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}
               onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-base-500)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
-            <div className="flex items-center justify-between mt-1.5">
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+            <div className="flex items-center justify-between">
+              <span className="hidden sm:inline" style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
                 ⌘/Ctrl+Enter to send
               </span>
               <button
@@ -898,7 +898,7 @@ export function IssuePageClient() {
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
             <div className="flex items-center justify-between mt-1.5 mb-1">
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+              <span className="hidden sm:inline" style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
                 ⌘/Ctrl+Enter to send
               </span>
               <button type="submit" disabled={submitting || !newComment.trim()}
