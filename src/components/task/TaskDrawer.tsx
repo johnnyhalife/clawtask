@@ -390,6 +390,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                     placeholder="Add a comment…"
                     rows={2}
                     className="flex-1 px-3 py-2 text-sm rounded-lg resize-none"
+                    className="focus-visible:ring-1 focus-visible:ring-[#3189FF]"
                     style={{
                       background: 'var(--color-base-150)',
                       border: '1px solid var(--color-base-300)',
@@ -717,7 +718,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Add a comment… (Markdown supported)"
                 rows={2}
-                className="w-full px-3 py-2 text-sm rounded-lg resize-none transition-colors"
+                className="w-full px-3 py-2 text-sm rounded-lg resize-none transition-colors focus-visible:ring-1 focus-visible:ring-[#3189FF]"
                 style={{
                   background: 'var(--color-base-150)',
                   border: '1px solid var(--color-base-300)',
