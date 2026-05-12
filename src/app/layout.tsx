@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
 
-        {/* Apply saved theme before first paint — prevents flash */}
+        {/* Apply saved theme before first paint — prevents flash. Static literal only, no user data. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('clawtask-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
@@ -30,15 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
 
         {/* Register service worker */}
-        <script
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js').catch(function() {});
-  });
-}
-`,
+            __html: `if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}`,
           }}
         />
       </head>
