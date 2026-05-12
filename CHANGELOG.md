@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased] — 2026-05-12
+## 2026-05-12
 
 ### Bug fixes
 - Empty-state CTA on project with no issues now reads **Create Issue** instead of ~~Create Agent~~ (#1) `47ca2b1`
