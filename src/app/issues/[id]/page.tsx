@@ -896,9 +896,11 @@ export default function IssuePage() {
           className="flex-shrink-0 flex flex-col overflow-hidden"
           style={{
             width: propsPaneOpen ? 260 : 40,
+            minWidth: propsPaneOpen ? 260 : 40,
+            maxWidth: propsPaneOpen ? 260 : 40,
             background: 'var(--color-base)',
             borderLeft: '1px solid var(--color-base-200)',
-            transition: 'width 0.2s ease',
+            transition: 'max-width 0.2s ease, min-width 0.2s ease',
           }}
         >
           {/* Properties header — aligned with breadcrumb topbar */}
