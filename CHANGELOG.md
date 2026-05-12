@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Dependencies
+- Removed unused `zod` dependency
+- Upgraded `react-markdown` 9 → 10
+- Upgraded `bcryptjs` 2 → 3
+
+---
+
 ## 2026-05-12 (patch)
 
 ### Bug fixes
