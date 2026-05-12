@@ -2,15 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 2026-05-12 (patch)
 
 ### Bug fixes
-- Comment area layout broken on mobile — was using horizontal flex with hint+button as textarea sibling; fixed to column layout. `⌘/Ctrl+Enter` hint now hidden on small screens (irrelevant on touch) `20d2479`
+- Comment area on mobile now stacks correctly — textarea full width, hint and Send button below it
+- Send button is full width on mobile with a taller tap target; compact and right-aligned on desktop
+- `⌘/Ctrl+Enter` hint hidden on small screens where it doesn't apply
 
 ### Code quality
-- Replace arbitrary z-index values in BottomNav with a deliberate scale: nav bar 100→10, backdrop 200→20, sheet 201→21. CreateTaskModal at `z-[150]` still sits above the nav correctly `dae8243`
-- Remove unused `Select` export from `Input.tsx` `685d1b3`
-- Remove `outline: none` from comment textareas — `focus-visible` ring already provides keyboard focus indicator `83c914f`
+- BottomNav z-index values replaced with a deliberate scale (nav 10, backdrop 20, sheet 21) — no visual change, CreateTaskModal still layers correctly above
+- Removed unused `Select` export from `Input.tsx`
+- Removed `outline: none` from comment textareas — `focus-visible` ring handles keyboard focus
 
 ---
 
