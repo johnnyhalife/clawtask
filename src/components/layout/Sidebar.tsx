@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -100,10 +101,13 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
       {/* Workspace header */}
       <div className="px-3 flex items-center gap-2.5" style={{ height: 48, borderBottom: '1px solid var(--color-base-300)', flexShrink: 0 }}>
         {workspaceLogo ? (
-          <img
+          <NextImage
             src={workspaceLogo}
             alt={appName}
+            width={28}
+            height={28}
             className="flex-shrink-0 size-7 rounded-md object-cover"
+            unoptimized
           />
         ) : (
           <div
