@@ -91,7 +91,7 @@ function GroupingSheet({ current, onChange, onClose }: GroupingSheetProps) {
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 200,
+          zIndex: 20,
           background: 'rgba(0,0,0,0.4)',
         }}
       />
@@ -102,7 +102,7 @@ function GroupingSheet({ current, onChange, onClose }: GroupingSheetProps) {
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 201,
+          zIndex: 21,
           background: 'var(--color-base-100)',
           borderTop: '1px solid var(--color-base-300)',
           borderRadius: '16px 16px 0 0',
@@ -261,7 +261,7 @@ function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps)
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 100,
+          zIndex: 10,
           background: 'var(--color-base)',
           borderTop: '1px solid var(--color-base-300)',
           display: 'flex',
