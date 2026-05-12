@@ -108,7 +108,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
               <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(a.createdAt)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-base-200)', color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.08em' }}>STATUS</span>
+              <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-base-200)', color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem' }}>STATUS</span>
               <span className="text-xs" style={{ color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>{from?.replace(/_/g, ' ')}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3A3A3E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
               <span className="text-xs font-semibold" style={{ color: STATUS_COLOR[to] ?? '#71717A', fontFamily: "'Instrument Sans', sans-serif" }}>{to?.replace(/_/g, ' ')}</span>
