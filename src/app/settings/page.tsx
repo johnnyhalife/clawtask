@@ -242,6 +242,9 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
   const [displayName, setDisplayName] = useState(agent.displayName);
   const [probing, setProbing] = useState(false);
 
+  // Keep local edit state in sync if the agent prop changes externally
+  useEffect(() => { setDisplayName(agent.displayName); }, [agent.displayName]);
+
   const handleSave = async () => {
     await apiPatch(`/api/v1/agents/${agent.id}`, { displayName });
     setEditing(false);
