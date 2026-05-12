@@ -5,6 +5,9 @@ All notable changes to this project are documented in this file.
 ## 2026-05-12
 
 ### Dependencies
+- **React 18 → 19** — `forwardRef` removed from `Button`, `Input`, `TopBar`, `ChipSelect` (ref-as-prop pattern) `00e8770`
+- **Next.js 14 → 15** — no async params migration needed; route handlers were already using `Promise<params>` pattern `8930aab`
+- **@types/react 18 → 19** `8930aab`
 - **TypeScript 5.9 → 6.0** — one fix required: `globals.css.d.ts` shim added for TS6's new side-effect import enforcement `3910da2`
 - **uuid 9 → 14** — Node 20+ required (running Node 26 ✅); `import { v4 as uuidv4 }` pattern unchanged `bb0ada0`
 - **better-sqlite3** 12.9 → 12.10 (patch) `bb0ada0`
