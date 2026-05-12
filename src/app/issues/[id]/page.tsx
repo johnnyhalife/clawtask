@@ -249,6 +249,8 @@ export default function IssuePage() {
       const tag = (e.target as HTMLElement)?.tagName;
       const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
+        if (statusRef.current?.isOpen()) { e.stopPropagation(); statusRef.current.closeDropdown(); return; }
+        if (priorityRef.current?.isOpen()) { e.stopPropagation(); priorityRef.current.closeDropdown(); return; }
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
         if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }

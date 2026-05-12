@@ -160,6 +160,8 @@ export function TypeaheadChipSelect({
 
 export interface ChipSelectHandle {
   openDropdown: () => void;
+  closeDropdown: () => void;
+  isOpen: () => boolean;
 }
 
 export const ChipSelect = forwardRef<ChipSelectHandle, {
@@ -182,6 +184,8 @@ export const ChipSelect = forwardRef<ChipSelectHandle, {
 
   useImperativeHandle(ref, () => ({
     openDropdown: () => { doOpen(); buttonRef.current?.focus(); },
+    closeDropdown: doClose,
+    isOpen: () => open,
   }));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
