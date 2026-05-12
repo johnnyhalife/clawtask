@@ -78,7 +78,7 @@ function GeneralSettings() {
     <form onSubmit={handleSave} className="max-w-md space-y-6">
       {/* Workspace Logo */}
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-2">Workspace Logo</label>
+        <label htmlFor="workspace-logo" className="block text-sm font-medium style-base-800 mb-2">Workspace Logo</label>
         <div className="flex items-center gap-4">
           <div
             className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -119,15 +119,17 @@ function GeneralSettings() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Workspace Name</label>
+        <label htmlFor="workspace-name" className="block text-sm font-medium style-base-800 mb-1">Workspace Name</label>
         <Input
+          id="workspace-name"
           value={form.appName}
           onChange={(e) => setForm({ ...form, appName: e.target.value })}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Issue Prefix</label>
+        <label htmlFor="issue-prefix" className="block text-sm font-medium style-base-800 mb-1">Issue Prefix</label>
         <Input
+          id="issue-prefix"
           value={form.issuePrefix}
           onChange={(e) => setForm({ ...form, issuePrefix: e.target.value.toUpperCase() })}
           maxLength={10}
@@ -135,15 +137,17 @@ function GeneralSettings() {
         <p className="text-xs style-base-500 mt-1">Issues will be numbered like {form.issuePrefix || 'CWT'}-001</p>
       </div>
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Human Name</label>
+        <label htmlFor="human-name" className="block text-sm font-medium style-base-800 mb-1">Human Name</label>
         <Input
+          id="human-name"
           value={form.humanName}
           onChange={(e) => setForm({ ...form, humanName: e.target.value })}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Human Display Name</label>
+        <label htmlFor="human-display-name" className="block text-sm font-medium style-base-800 mb-1">Human Display Name</label>
         <Input
+          id="human-display-name"
           value={form.humanDisplayName}
           onChange={(e) => setForm({ ...form, humanDisplayName: e.target.value })}
         />
@@ -192,8 +196,9 @@ function AdapterSettings() {
   return (
     <form onSubmit={handleSave} className="max-w-md space-y-6">
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Gateway URL</label>
+        <label htmlFor="gateway-url" className="block text-sm font-medium style-base-800 mb-1">Gateway URL</label>
         <Input
+          id="gateway-url"
           value={gatewayUrl}
           onChange={(e) => setGatewayUrl(e.target.value)}
           placeholder="ws://host.docker.internal:18789/ws"
@@ -202,8 +207,9 @@ function AdapterSettings() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium style-base-800 mb-1">Auth Token</label>
+        <label htmlFor="auth-token" className="block text-sm font-medium style-base-800 mb-1">Auth Token</label>
         <Input
+          id="auth-token"
           type="password"
           value={gatewayAuthToken}
           onChange={(e) => setGatewayAuthToken(e.target.value)}
@@ -395,8 +401,9 @@ function AgentsSettings() {
         <h3 className="text-sm font-semibold style-base-800 mb-3">Register New Agent</h3>
         <form onSubmit={handleAdd} className="flex items-end gap-3 flex-wrap">
           <div>
-            <label className="block text-xs style-base-600 mb-1">OpenClaw Agent ID</label>
+            <label htmlFor="agent-openclaw-id" className="block text-xs style-base-600 mb-1">OpenClaw Agent ID</label>
             <Input
+              id="agent-openclaw-id"
               value={newAgent.openclawAgentId}
               onChange={(e) => setNewAgent({ ...newAgent, openclawAgentId: e.target.value })}
               placeholder="main"
@@ -404,8 +411,9 @@ function AgentsSettings() {
             />
           </div>
           <div>
-            <label className="block text-xs style-base-600 mb-1">Display Name</label>
+            <label htmlFor="agent-display-name" className="block text-xs style-base-600 mb-1">Display Name</label>
             <Input
+              id="agent-display-name"
               value={newAgent.displayName}
               onChange={(e) => setNewAgent({ ...newAgent, displayName: e.target.value })}
               placeholder="Clawdio"
@@ -496,8 +504,8 @@ function ExternalSystemsSettings() {
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-base-800)' }}>Add External System</h3>
         <form onSubmit={handleAdd} className="flex items-end gap-3">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--color-base-600)' }}>System Name</label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Temporal" className="w-48" />
+            <label htmlFor="system-name" className="block text-xs mb-1" style={{ color: 'var(--color-base-600)' }}>System Name</label>
+            <Input id="system-name" value={name} onChange={e => setName(e.target.value)} placeholder="Temporal" className="w-48" />
           </div>
           <Button type="submit" variant="primary" disabled={adding || !name.trim()}>{adding ? 'Adding...' : '+ Add System'}</Button>
         </form>
