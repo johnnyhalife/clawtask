@@ -395,7 +395,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                       border: '1px solid var(--color-base-300)',
                       color: 'var(--color-base-800)',
                       fontFamily: "'Instrument Sans', sans-serif",
-                      outline: 'none',
                     }}
                     onFocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#3189FF'; }}
                     onBlur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-base-300)'; }}
@@ -723,7 +722,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                   border: '1px solid var(--color-base-300)',
                   color: 'var(--color-base-800)',
                   fontFamily: "'Instrument Sans', sans-serif",
-                  outline: 'none',
                 }}
                 onFocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#3189FF'; }}
                 onBlur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-base-300)'; }}
