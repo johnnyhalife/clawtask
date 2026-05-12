@@ -40,14 +40,14 @@ const priorityDotColor: Record<string, string> = {
 };
 
 export function TaskRow({ task, selected, onClick }: TaskRowProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const isMobile = useIsMobile();
   const dotColor = statusDotColor[task.status] || 'var(--color-base-650)';
   const priorityColor = priorityDotColor[task.priority] || 'var(--color-base-500)';
 
   const handleClick = () => {
     onClick?.();
-    router.push(`/issues/${task.issueId.toLowerCase()}`);
+    push(`/issues/${task.issueId.toLowerCase()}`);
   };
 
   if (isMobile) {

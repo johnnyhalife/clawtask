@@ -185,7 +185,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function IssuePage() {
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const { theme } = useTheme();
   const taskSlug = params.id as string; // may be slug (cwt-012) or UUID
 
@@ -252,7 +252,7 @@ export default function IssuePage() {
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
         if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
-        router.push('/?tab=all');
+        push('/?tab=all');
         return;
       }
       if (isEditing) return;
@@ -276,7 +276,7 @@ export default function IssuePage() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [router, assigneeOpen, editingTask, projectOpen, projectHighlight, allProjects]);
+  }, [push, assigneeOpen, editingTask, projectOpen, projectHighlight, allProjects]);
 
   useSse(event => {
     if (event.type === 'comment.added') {

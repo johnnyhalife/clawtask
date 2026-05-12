@@ -19,6 +19,7 @@ import { useFavicon } from '@/hooks/useFavicon';
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { push } = router;
   const activeTab = searchParams.get('tab') || 'pulse';
   const projectId = searchParams.get('projectId') || '';
   const tagId = searchParams.get('tagId') || '';
@@ -73,7 +74,7 @@ function HomeContent() {
       }
       if ((e.key === 'l' || e.key === 'L') && activeTab === 'pulse') {
         e.preventDefault();
-        router.push('/?tab=all');
+        push('/?tab=all');
       }
     };
     document.addEventListener('keydown', handler);
@@ -194,7 +195,7 @@ function HomeContent() {
           const task = tasks.find(t => t.id === selectedTaskId);
           if (task) {
             setSelectedTaskId(null);
-            router.push(`/issues/${task.issueId.toLowerCase()}`);
+            push(`/issues/${task.issueId.toLowerCase()}`);
           }
         }
       } else if (e.key === 'Escape') {
@@ -232,7 +233,7 @@ function HomeContent() {
                 <div className="px-6 pt-4 pb-2 text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>
                   Results for <span style={{ color: 'var(--color-base-800)' }}>"{q}"</span>
                   <button
-                    onClick={() => router.push(`/?tab=${activeTab}`)}
+                    onClick={() => push(`/?tab=${activeTab}`)}
                     className="ml-2"
                     style={{ color: 'var(--color-base-400)' }}
                   >
@@ -259,7 +260,7 @@ function HomeContent() {
           onClose={() => setShowCreate(false)}
           onCreated={(_taskId, issueId) => {
             setShowCreate(false);
-            router.push(`/issues/${issueId.toLowerCase()}`);
+            push(`/issues/${issueId.toLowerCase()}`);
           }}
           defaultProjectId={projectId}
         />

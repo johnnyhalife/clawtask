@@ -364,7 +364,7 @@ function ActiveRunCard({ task, onClick }: { task: Task; onClick: () => void }) {
 
 export function PulseView() {
   const { theme } = useTheme(); // subscribe so cells re-render on theme change
-  const router = useRouter();
+  const { push } = useRouter();
   const isMobile = useIsMobile();
   const [allActivity, setAllActivity] = useState<Activity[]>([]);
   const [activeRuns, setActiveRuns] = useState<Task[]>([]);
@@ -504,7 +504,7 @@ export function PulseView() {
                 <ActiveRunCard
                   key={task.id}
                   task={task}
-                  onClick={() => router.push(`/issues/${task.issueId.toLowerCase()}`)}
+                  onClick={() => push(`/issues/${task.issueId.toLowerCase()}`)}
                 />
               ))}
             </div>
@@ -539,7 +539,7 @@ export function PulseView() {
                     <IssueGroupRow
                       key={group.taskId}
                       group={group}
-                      onOpenTask={(id, issueId) => router.push(`/issues/${(issueId ?? id).toLowerCase()}`)}
+                      onOpenTask={(id, issueId) => push(`/issues/${(issueId ?? id).toLowerCase()}`)}
                     />
                   ))}
                 </div>

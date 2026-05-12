@@ -62,7 +62,7 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
 function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const activeTab = searchParams.get('tab') || 'pulse';
   const isMobile = useIsMobile();
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
@@ -158,7 +158,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
               return (
                 <li key={project.id}>
                   <button
-                    onClick={() => router.push(`/?tab=all&projectId=${project.id}`)}
+                    onClick={() => push(`/?tab=all&projectId=${project.id}`)}
                     className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-sm transition-colors text-left"
                     style={
                       isActive
@@ -193,7 +193,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
             return (
               <li key={tag.id}>
                 <button
-                  onClick={() => router.push(`/?tab=all&tagId=${tag.id}`)}
+                  onClick={() => push(`/?tab=all&tagId=${tag.id}`)}
                   className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-left transition-colors"
                   style={{
                     background: isActive ? 'rgba(128,128,128,0.1)' : 'transparent',
