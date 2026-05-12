@@ -161,6 +161,7 @@ export function TypeaheadChipSelect({
 export interface ChipSelectHandle {
   openDropdown: () => void;
   closeDropdown: () => void;
+  closeDropdownSilent: () => void;
   isOpen: () => boolean;
 }
 
@@ -186,6 +187,7 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
   useImperativeHandle(ref, () => ({
     openDropdown: () => { doOpen(); buttonRef.current?.focus(); },
     closeDropdown: doClose,
+    closeDropdownSilent: () => setOpen(false),
     isOpen: () => open,
   }));
 

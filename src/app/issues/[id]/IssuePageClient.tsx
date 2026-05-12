@@ -260,10 +260,10 @@ export function IssuePageClient() {
       }
       if (isEditing) return;
 
-      // Close all open dropdowns before opening a new one
+      // Close all open dropdowns before opening a new one (silent = no focus-return)
       const closeAll = () => {
-        statusRef.current?.closeDropdown();
-        priorityRef.current?.closeDropdown();
+        statusRef.current?.closeDropdownSilent();
+        priorityRef.current?.closeDropdownSilent();
         setTagsOpen(false);
         setAssigneeOpen(false);
         setProjectOpen(false);
