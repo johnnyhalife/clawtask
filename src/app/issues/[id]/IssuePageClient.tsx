@@ -251,6 +251,7 @@ export function IssuePageClient() {
       if (e.key === 'Escape') {
         if (statusRef.current?.isOpen()) { e.stopPropagation(); statusRef.current.closeDropdown(); return; }
         if (priorityRef.current?.isOpen()) { e.stopPropagation(); priorityRef.current.closeDropdown(); return; }
+        if (tagsOpen) { e.stopPropagation(); setTagsOpen(false); return; }
         if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
         if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
@@ -262,6 +263,7 @@ export function IssuePageClient() {
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); priorityRef.current?.openDropdown(); }
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
+      if (e.key === 't' || e.key === 'T') { e.preventDefault(); setTagsOpen(v => !v); }
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); setProjectHighlight(0); setProjectOpen(true); }
       // Arrow nav inside project picker
       if (projectOpen) {
@@ -946,7 +948,7 @@ export function IssuePageClient() {
                   </span>
                 </PropRow>
                 {/* Tags */}
-                <PropRow label="Tags">
+                <PropRow label="Tags" kbd="T">
                   <div style={{ position: 'relative' }}>
                     <button onClick={() => setTagsOpen(v => !v)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
