@@ -235,7 +235,8 @@ interface BottomNavProps {
 function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'pulse';
+  const get = searchParams.get.bind(searchParams);
+  const activeTab = get('tab') || 'pulse';
   const [showGroupSheet, setShowGroupSheet] = useState(false);
 
   // Close sheet when navigating away from issues

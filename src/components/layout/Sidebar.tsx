@@ -62,8 +62,9 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
 function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const get = searchParams.get.bind(searchParams);
   const { push } = useRouter();
-  const activeTab = searchParams.get('tab') || 'pulse';
+  const activeTab = get('tab') || 'pulse';
   const isMobile = useIsMobile();
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: tags, reload: reloadTags } = useApi<Tag[]>('/api/v1/tags');
@@ -154,7 +155,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
         <div className="px-2 mb-4">
           <ul className="space-y-px">
             {(projects || []).map((project) => {
-              const isActive = searchParams.get('projectId') === project.id;
+              const isActive = get('projectId') === project.id;
               return (
                 <li key={project.id}>
                   <button
@@ -189,7 +190,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
         </div>
         <ul className="space-y-px px-2 mb-2">
           {(tags || []).slice(0, tagsExpanded ? undefined : TAG_LIMIT).map((tag) => {
-            const isActive = searchParams.get('tagId') === tag.id;
+            const isActive = get('tagId') === tag.id;
             return (
               <li key={tag.id}>
                 <button

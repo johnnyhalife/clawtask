@@ -19,12 +19,13 @@ import { useFavicon } from '@/hooks/useFavicon';
 
 export function HomeContent() {
   const searchParams = useSearchParams();
+  const get = searchParams.get.bind(searchParams);
   const router = useRouter();
   const { push } = router;
-  const activeTab = searchParams.get('tab') || 'pulse';
-  const projectId = searchParams.get('projectId') || '';
-  const tagId = searchParams.get('tagId') || '';
-  const q = searchParams.get('q') || '';
+  const activeTab = get('tab') || 'pulse';
+  const projectId = get('projectId') || '';
+  const tagId = get('tagId') || '';
+  const q = get('q') || '';
 
   const { data: config } = useApi<Config>('/api/v1/config');
   const { data: projects } = useApi<Project[]>('/api/v1/projects');
