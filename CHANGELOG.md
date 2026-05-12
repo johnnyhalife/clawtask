@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Code quality
+- Remove unused `Select` export from `Input.tsx` `685d1b3`
+- Remove `outline: none` from comment textareas in `TaskDrawer` and `IssuePageClient` — `focus-visible` ring already provides keyboard focus indicator `83c914f`
+
+---
+
 ## 2026-05-12
 
 ### Bug fixes
