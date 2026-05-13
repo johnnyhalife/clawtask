@@ -418,6 +418,7 @@ export function PulseView() {
   // ── Contribution grid ──
   const weeks = useMemo(() => buildGrid(startDate, endDate, periodActivity), [startDate, endDate, periodActivity]);
   const monthLabels = useMemo(() => buildMonthLabels(weeks), [weeks]);
+  const todayStr = isoDate(new Date());
   const totalCount = periodActivity.length;
 
   // ── Activity groups ──
@@ -471,7 +472,7 @@ export function PulseView() {
                         <div
                           key={date}
                           title={`${date}: ${count} event${count !== 1 ? 's' : ''}`}
-                          style={{ width: 13, height: 13, borderRadius: 3, background: intensityColor(count, theme === 'dark'), gridRow: di + 1 }}
+                          style={{ width: 13, height: 13, borderRadius: 3, background: intensityColor(count, theme === 'dark'), gridRow: di + 1, boxSizing: 'border-box', border: date === todayStr ? '1.5px solid var(--color-base-500)' : 'none' }}
                         />
                       ) : null
                     )}
