@@ -302,7 +302,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
             className="flex items-center justify-between px-5 py-2 flex-shrink-0"
             style={{ borderBottom: '1px solid #27272B' }}
           >
-            <span className="font-mono-id" style={{ fontSize: '0.72rem' }}>{task?.issueId}</span>
+            <span className="font-mono-id" style={{ fontSize: '0.75rem' }}>{task?.issueId}</span>
             <button
               onClick={onClose}
               className="p-1 rounded transition-colors"
@@ -453,7 +453,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
         >
           <span
             className="font-mono-id"
-            style={{ fontSize: '0.72rem' }}
+            style={{ fontSize: '0.75rem' }}
           >
             {task?.issueId}
           </span>
@@ -606,7 +606,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 <div className="section-label mb-1" style={{ fontSize: '0.75rem' }}>Created</div>
                 <div
                   suppressHydrationWarning
-                  style={{ color: 'var(--color-base-650)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}
+                  style={{ color: 'var(--color-base-650)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}
                 >
                   {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>

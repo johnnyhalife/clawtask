@@ -175,36 +175,36 @@ function ActivityRow({ a, extraCount = 0 }: { a: Activity; extraCount?: number }
           {verbLabel(a.verb)}{extraCount > 0 && <span style={{ color: 'var(--color-base-400)', fontStyle: 'italic', marginLeft: 4 }}>(+{extraCount} more)</span>}
         </span>
         {a.verb === 'status_changed' && meta.from && meta.to && (
-          <span className="flex items-center gap-1" style={{ fontSize: '0.72rem' }}>
+          <span className="flex items-center gap-1" style={{ fontSize: '0.75rem' }}>
             <span style={{ color: STATUS_COLOR[meta.from] ?? 'var(--color-base-650)' }}>{meta.from?.replace('_', ' ')}</span>
             <span style={{ color: 'var(--color-base-400)' }}>→</span>
             <span style={{ color: STATUS_COLOR[meta.to] ?? 'var(--color-base-650)', fontWeight: 600 }}>{meta.to?.replace('_', ' ')}</span>
           </span>
         )}
         {a.verb === 'priority_changed' && meta.from && meta.to && (
-          <span className="flex items-center gap-1" style={{ fontSize: '0.72rem', color: 'var(--color-base-500)' }}>
+          <span className="flex items-center gap-1" style={{ fontSize: '0.75rem', color: 'var(--color-base-500)' }}>
             <span style={{ textDecoration: 'line-through' }}>{meta.from}</span>
             <span style={{ color: 'var(--color-base-400)' }}>→</span>
             <span style={{ fontWeight: 600 }}>{meta.to}</span>
           </span>
         )}
         {a.verb === 'assigned' && (
-          <span style={{ fontSize: '0.72rem', color: meta.assigneeType === 'agent' ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-650)', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.75rem', color: meta.assigneeType === 'agent' ? 'var(--color-purple, #7E67F7)' : 'var(--color-base-650)', fontWeight: 600 }}>
             {meta.assigneeName ?? meta.assigneeId}
           </span>
         )}
         {(a.verb === 'tagged' || a.verb === 'untagged') && (
-          <span style={{ fontSize: '0.72rem', background: 'var(--color-base-200)', borderRadius: 4, padding: '1px 6px', color: 'var(--color-base-600)', fontWeight: 500 }}>
+          <span style={{ fontSize: '0.75rem', background: 'var(--color-base-200)', borderRadius: 4, padding: '1px 6px', color: 'var(--color-base-600)', fontWeight: 500 }}>
             {meta.tagName ?? meta.tagId}
           </span>
         )}
         {a.verb === 'project_changed' && (
-          <span style={{ fontSize: '0.72rem', color: 'var(--color-base-650)', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-base-650)', fontWeight: 600 }}>
             {meta.to ? (meta.projectName ?? meta.to) : <span style={{ fontStyle: 'italic', fontWeight: 400, color: 'var(--color-base-500)' }}>removed</span>}
           </span>
         )}
       </div>
-      <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', flexShrink: 0 }}>{time}</span>
+      <span style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', flexShrink: 0 }}>{time}</span>
     </div>
   );
 }
@@ -264,7 +264,7 @@ function IssueGroupRow({ group, onOpenTask }: { group: IssueGroup; onOpenTask: (
         <div className="flex-1 min-w-0 flex items-center gap-1" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <span className="text-sm font-semibold flex-shrink-0" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>{count} {count === 1 ? 'activity' : 'activities'}</span>
           <span className="text-sm flex-shrink-0" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>on</span>
-          {group.issueId && <span className="flex-shrink-0" style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.72rem', marginRight: 2 }}>{group.issueId}</span>}
+          {group.issueId && <span className="flex-shrink-0" style={{ color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', marginRight: 2 }}>{group.issueId}</span>}
           <button
             type="button"
             className="text-sm font-medium min-w-0"
@@ -339,7 +339,7 @@ function ActiveRunCard({ task, onClick }: { task: Task; onClick: () => void }) {
       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-base-300)')}
     >
       <div className="flex items-center gap-2 mb-1">
-        <span style={{ fontFamily: "\'Roboto Mono\', monospace", fontSize: '0.72rem', color: 'var(--color-base-500)' }}>{task.issueId}</span>
+        <span style={{ fontFamily: "\'Roboto Mono\', monospace", fontSize: '0.75rem', color: 'var(--color-base-500)' }}>{task.issueId}</span>
         <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: '#3189FF22', color: '#3189FF', border: '1px solid #3189FF44', fontFamily: "\'Instrument Sans\', sans-serif" }}>in progress</span>
         <span className="ml-auto text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "\'Instrument Sans\', sans-serif" }}>{(task.assignee as any)?.displayName}</span>
       </div>

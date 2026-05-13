@@ -213,7 +213,7 @@ function EmptyState({ message, onNewTask }: { message: string; onNewTask?: () =>
       <pre
         style={{
           fontFamily: "'Roboto Mono', 'Courier New', monospace",
-          fontSize: '0.72rem',
+          fontSize: '0.75rem',
           lineHeight: 1.5,
           color: 'var(--color-base-350)',
           margin: '0 0 20px',

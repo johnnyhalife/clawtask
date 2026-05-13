@@ -97,7 +97,7 @@ function CheckRow({
 // ─── Section header inside filter panel ──────────────────────────────────────
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.07em', textTransform: 'uppercase', padding: '10px 0 4px', fontWeight: 600 }}>
+    <div style={{ fontSize: '0.75rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.07em', textTransform: 'uppercase', padding: '10px 0 4px', fontWeight: 600 }}>
       {label}
     </div>
   );
@@ -161,7 +161,7 @@ function FilterDropdown({ f, set, hideAssignee, onClear }: {
           <button
             type="button"
             onClick={onClear}
-            style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Instrument Sans', sans-serif" }}
+            style={{ fontSize: '0.75rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Instrument Sans', sans-serif" }}
             onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}
           >
@@ -236,7 +236,7 @@ function SortDropdown({ f, cycleSort }: { f: FilterState; cycleSort: (field: Sor
           >
             {label}
             {active && (
-              <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
                 {f.sortOrder === 'asc' ? '↑' : '↓'}
               </span>
             )}
@@ -562,7 +562,7 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
 
           {/* Count */}
           {totalCount !== undefined && (
-            <span className="ml-2 text-xs tabular-nums" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}>
+            <span className="ml-2 text-xs tabular-nums" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
               {totalCount}
             </span>
           )}

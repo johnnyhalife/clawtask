@@ -82,7 +82,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
         {/* Issue ID */}
         <span
           className="flex-shrink-0 font-mono-id"
-          style={{ minWidth: '56px', fontSize: '0.7rem' }}
+          style={{ minWidth: '56px', fontSize: '0.75rem' }}
         >
           {task.issueId}
         </span>
@@ -189,7 +189,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
         className="flex-shrink-0"
         style={{
           fontFamily: "'Roboto Mono', monospace",
-          fontSize: '0.7rem',
+          fontSize: '0.75rem',
           color: 'var(--color-base-500)',
           minWidth: '52px',
           textAlign: 'right',
