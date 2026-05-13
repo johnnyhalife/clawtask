@@ -602,8 +602,8 @@ function ProjectsSettings() {
               <>
                 <span style={{ width: 14, height: 14, borderRadius: '50%', background: p.color, flexShrink: 0, display: 'inline-block' }} />
                 <span style={{ flex: 1, color: 'var(--color-base-800)', fontSize: '0.82rem' }}>{p.name}</span>
-                <button onClick={() => startEdit(p)} style={{ fontSize: '0.72rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Edit</button>
-                <button onClick={() => remove(p.id)} style={{ fontSize: '0.72rem', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Delete</button>
+                <button onClick={() => startEdit(p)} style={{ fontSize: '0.75rem', color: 'var(--color-base-500)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Edit</button>
+                <button onClick={() => remove(p.id)} style={{ fontSize: '0.75rem', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>Delete</button>
               </>
             )}
           </div>
