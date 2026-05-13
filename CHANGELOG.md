@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Code quality
+- `HomeContent`: use `Array.toSorted()` instead of spread+sort — avoids unnecessary array allocation (`js-tosorted-immutable`)
+- `IssuePageClient` dropdown: lower `zIndex` from 100 → 50 — deliberate scale value (`no-z-index-9999`)
+- `IssuePageClient` props pane: simplify transition from `max-width/min-width` to `width` (`no-layout-transition-inline`)
+- `CreateTaskModal` overlay: add `onKeyDown` Escape handler (`click-events-have-key-events`)
+- `CreateTaskModal` modal div: add `role="dialog"` + `aria-modal` + `onKeyDown` stop-propagation (`click-events-have-key-events`, `no-static-element-interactions`)
+
 ---
 
 ## 2026-05-12 (dep cleanup)
