@@ -131,7 +131,7 @@ export function HomeContent() {
     else if (filters.assignee === 'unassigned') tasks = tasks.filter((t) => !t.assigneeType);
 
     // Sort
-    tasks = [...tasks].sort((a, b) => {
+    tasks = tasks.toSorted((a, b) => {
       let cmp = 0;
       if (filters.sortField === 'updatedAt') {
         cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
