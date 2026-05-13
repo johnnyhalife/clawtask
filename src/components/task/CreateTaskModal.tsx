@@ -488,6 +488,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.5)' }}
       onClick={onClose}
+      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
       <div
         className="w-full max-w-lg rounded-xl shadow-2xl flex flex-col overflow-hidden"
