@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 2026-05-13 (deps)
 
 ### Dependencies
 - Upgraded `next` 15.5.18 → 16.2.6 (security: 7 High + 4 Moderate CVEs patched)
