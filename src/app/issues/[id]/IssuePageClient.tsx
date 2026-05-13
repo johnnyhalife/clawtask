@@ -780,7 +780,7 @@ export function IssuePageClient() {
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></svg>
                 </button>
                 {editMenuOpen && (
-                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-base)', border: '1px solid var(--color-base-300)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 120 }}>
+                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-base)', border: '1px solid var(--color-base-300)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 50, minWidth: 120 }}>
                     <button type="button"
                       onClick={() => { setEditMenuOpen(false); setEditingTask(true); }}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif", gap: 16 }}
