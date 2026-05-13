@@ -491,9 +491,12 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
       onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
         className="w-full max-w-lg rounded-xl shadow-2xl flex flex-col overflow-hidden"
         style={{ background: 'var(--color-base)', border: '1px solid var(--color-base-300)', maxHeight: '82vh' }}
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
