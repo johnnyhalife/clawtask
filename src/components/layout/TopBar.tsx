@@ -97,7 +97,7 @@ function CheckRow({
 // ─── Section header inside filter panel ──────────────────────────────────────
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div style={{ fontSize: '0.65rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.07em', textTransform: 'uppercase', padding: '10px 0 4px', fontWeight: 600 }}>
+    <div style={{ fontSize: '0.7rem', color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.07em', textTransform: 'uppercase', padding: '10px 0 4px', fontWeight: 600 }}>
       {label}
     </div>
   );
