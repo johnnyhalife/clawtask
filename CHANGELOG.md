@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 2026-05-13
 
 ### Features
 - `PulseView`: today's square in the contribution graph now has a thin border so the current day is immediately visible at a glance
