@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Dependencies
+- Upgraded `next` 15.5.18 → 16.2.6 (security: 7 High + 4 Moderate CVEs patched)
+- Upgraded `@types/node` 20.19.39 → 25.7.0
+
+---
+
 ## 2026-05-13
 
 ### Features

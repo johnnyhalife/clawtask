@@ -13,7 +13,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "12.10.0",
-    "next": "15.5.18",
+    "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-markdown": "^10.1.0",
@@ -24,7 +24,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "7.6.13",
-    "@types/node": "^20.12.7",
+    "@types/node": "25.7.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/uuid": "11.0.0",
