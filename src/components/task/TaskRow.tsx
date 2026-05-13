@@ -113,7 +113,7 @@ export function TaskRow({ task, selected, onClick }: TaskRowProps) {
             background: dotColor + '22',
             color: dotColor,
             fontFamily: "'Instrument Sans', sans-serif",
-            fontSize: '0.65rem',
+            fontSize: '0.75rem',
             fontWeight: 600,
             whiteSpace: 'nowrap',
           }}
