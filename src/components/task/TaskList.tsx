@@ -348,7 +348,7 @@ export function TaskList({
                     {label}
                   </span>
                   {/* Count */}
-                  <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.68rem', color: 'var(--color-base-400)' }}>
+                  <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', color: 'var(--color-base-400)' }}>
                     {groupTasks.length}
                   </span>
                 </button>
