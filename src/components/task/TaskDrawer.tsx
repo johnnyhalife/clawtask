@@ -46,7 +46,7 @@ function CommentBubble({ item }: { item: Comment | (Activity & { _type: 'activit
         </span>
         <span
           suppressHydrationWarning
-          style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', color: 'var(--color-base-400)', flexShrink: 0 }}
+          style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', color: 'var(--color-base-400)', flexShrink: 0 }}
         >
           {new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
@@ -132,7 +132,7 @@ function CommentBubble({ item }: { item: Comment | (Activity & { _type: 'activit
         <span
           suppressHydrationWarning
           className="ml-auto flex-shrink-0"
-          style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem', color: 'var(--color-base-400)' }}
+          style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', color: 'var(--color-base-400)' }}
         >
           {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
@@ -499,7 +499,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
               style={{ borderTop: '1px solid #27272B', borderBottom: '1px solid #27272B' }}
             >
               <div>
-                <div className="section-label mb-1" style={{ fontSize: '10px' }}>Assignee</div>
+                <div className="section-label mb-1" style={{ fontSize: '0.75rem' }}>Assignee</div>
                 <div style={{ position: 'relative' }}>
                   {(task.status === 'todo' || task.status === 'backlog') ? (
                     <>
@@ -539,7 +539,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                               Unassigned
                             </button>
                             {humans.length > 0 && (
-                              <div className="px-3 pt-2 pb-0.5 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.6rem' }}>Me</div>
+                              <div className="px-3 pt-2 pb-0.5 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.7rem' }}>Me</div>
                             )}
                             {humans.map(h => (
                               <button
@@ -555,7 +555,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                               </button>
                             ))}
                             {agents.length > 0 && (
-                              <div className="px-3 pt-2 pb-0.5 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.6rem' }}>Agents</div>
+                              <div className="px-3 pt-2 pb-0.5 text-xs" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '0.7rem' }}>Agents</div>
                             )}
                             {agents.map(a => (
                               <button
@@ -590,7 +590,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 </div>
               </div>
               <div>
-                <div className="section-label mb-1" style={{ fontSize: '10px' }}>Project</div>
+                <div className="section-label mb-1" style={{ fontSize: '0.75rem' }}>Project</div>
                 <div style={{ color: 'var(--color-base-700)', fontFamily: "'Instrument Sans', sans-serif" }}>
                   {task.project ? (
                     <span className="flex items-center gap-1.5">
@@ -603,7 +603,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 </div>
               </div>
               <div>
-                <div className="section-label mb-1" style={{ fontSize: '10px' }}>Created</div>
+                <div className="section-label mb-1" style={{ fontSize: '0.75rem' }}>Created</div>
                 <div
                   suppressHydrationWarning
                   style={{ color: 'var(--color-base-650)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}
@@ -613,7 +613,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
               </div>
               {task.tags && task.tags.length > 0 && (
                 <div className="col-span-2">
-                  <div className="section-label mb-1" style={{ fontSize: '10px' }}>Tags</div>
+                  <div className="section-label mb-1" style={{ fontSize: '0.75rem' }}>Tags</div>
                   <div className="flex flex-wrap gap-1">
                     {task.tags.map((tag) => (
                       <span
@@ -635,7 +635,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 className="px-5 py-3 flex-shrink-0"
                 style={{ borderBottom: '1px solid #27272B' }}
               >
-                <div className="section-label mb-2" style={{ fontSize: '10px' }}>Description</div>
+                <div className="section-label mb-2" style={{ fontSize: '0.75rem' }}>Description</div>
                 <div className="prose-clawtask text-sm">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{task.description}</ReactMarkdown>
                 </div>
@@ -648,7 +648,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                 className="px-5 py-3 flex-shrink-0"
                 style={{ borderBottom: '1px solid #27272B' }}
               >
-                <div className="section-label mb-2" style={{ fontSize: '10px' }}>Subtasks ({task.subtasks.length})</div>
+                <div className="section-label mb-2" style={{ fontSize: '0.75rem' }}>Subtasks ({task.subtasks.length})</div>
                 <div className="space-y-1.5">
                   {task.subtasks.map((sub) => (
                     <div
