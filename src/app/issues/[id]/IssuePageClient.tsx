@@ -108,7 +108,7 @@ function TimelineEntry({ item, showHeader = true, showBorder = true, groupLastTi
               <span className="ml-auto text-xs flex-shrink-0" style={{ color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>{relativeTime(a.createdAt)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-base-200)', color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.65rem' }}>STATUS</span>
+              <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--color-base-200)', color: 'var(--color-base-500)', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>STATUS</span>
               <span className="text-xs" style={{ color: 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>{from?.replace(/_/g, ' ')}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3A3A3E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
               <span className="text-xs font-semibold" style={{ color: STATUS_COLOR[to] ?? '#71717A', fontFamily: "'Instrument Sans', sans-serif" }}>{to?.replace(/_/g, ' ')}</span>
@@ -710,7 +710,7 @@ export function IssuePageClient() {
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
             <div className="flex items-center justify-between">
-              <span className="hidden sm:inline" style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+              <span className="hidden sm:inline" style={{ fontSize: '0.75rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
                 ⌘/Ctrl+Enter to send
               </span>
               <button
@@ -788,7 +788,7 @@ export function IssuePageClient() {
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >
                       <span>Edit</span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", background: 'var(--color-base-200)', border: '1px solid var(--color-base-300)', borderRadius: 3, padding: '1px 5px' }}>E</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace", background: 'var(--color-base-200)', border: '1px solid var(--color-base-300)', borderRadius: 3, padding: '1px 5px' }}>E</span>
                     </button>
                   </div>
                 )}
@@ -898,7 +898,7 @@ export function IssuePageClient() {
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleComment(e as any); }}
             />
             <div className="flex items-center justify-between mt-1.5 mb-1">
-              <span className="hidden sm:inline" style={{ fontSize: '0.65rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
+              <span className="hidden sm:inline" style={{ fontSize: '0.75rem', color: 'var(--color-base-400)', fontFamily: "'Roboto Mono', monospace" }}>
                 ⌘/Ctrl+Enter to send
               </span>
               <button type="submit" disabled={submitting || !newComment.trim()}
@@ -1059,8 +1059,8 @@ export function IssuePageClient() {
                                     const needsSection = (myIdx === 1 && (allHumans ?? []).length > 0) || (myIdx === 1 + (allHumans ?? []).length && (allAgents ?? []).length > 0);
                                     return (
                                       <>
-                                        {needsSection && myIdx === 1 && <div key="sec-me" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.6rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Me</div>}
-                                        {needsSection && myIdx > 1 && <div key="sec-agents" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.6rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agents</div>}
+                                        {needsSection && myIdx === 1 && <div key="sec-me" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Me</div>}
+                                        {needsSection && myIdx > 1 && <div key="sec-agents" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agents</div>}
                                         <button key={opt.id ?? 'unassigned'}
                                           onMouseDown={e => { e.preventDefault(); handleAssignChange(opt.id, opt.type); }}
                                           onMouseEnter={() => setAssigneeHighlight(myIdx)}
