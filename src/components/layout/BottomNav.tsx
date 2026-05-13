@@ -337,17 +337,14 @@ function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps)
                       position: 'absolute',
                       top: 8,
                       right: 'calc(50% - 16px)',
-                      fontSize: '0.45rem',
-                      lineHeight: 1,
-                      color: showGroupSheet ? '#3189FF' : 'var(--color-base-400)',
-                      fontFamily: "'Instrument Sans', sans-serif",
-                      fontWeight: 600,
-                      letterSpacing: '0.03em',
+                      width: 3,
+                      height: 3,
+                      borderRadius: '50%',
+                      background: showGroupSheet ? '#3189FF' : 'var(--color-base-400)',
                       pointerEvents: 'none',
+                      display: 'block',
                     }}
-                  >
-                    ▾
-                  </span>
+                  />
                 )}
               </button>
             );
