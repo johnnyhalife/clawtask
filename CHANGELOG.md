@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Features
+- `PulseView`: today's square in the contribution graph now has a thin border so the current day is immediately visible at a glance
+
 ### Code quality
 - Bumped all sub-`0.75rem` font sizes to min `0.75rem` (12px) across TaskDrawer, TaskRow, TaskList, TopBar, PulseView, IssuePageClient, SettingsPageClient — 37 instances (`no-tiny-text`); 10 intentional exceptions kept (6 ALLCAPS group headers at `0.7rem`, 4 PulseView chart axis labels)
 - `BottomNav`: replaced `0.45rem` chevron glyph with a 3px CSS dot indicator (`no-tiny-text`)
