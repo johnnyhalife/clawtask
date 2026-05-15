@@ -299,7 +299,7 @@ class AdapterService {
 
             sendReq('connect', {
               minProtocol: 3,
-              maxProtocol: 3,
+              maxProtocol: 4,
               client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
               role: ROLE,
               scopes: SCOPES,
@@ -492,7 +492,7 @@ class AdapterService {
 
     const connectParams = {
       minProtocol: 3,
-      maxProtocol: 3,
+      maxProtocol: 4,
       client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
       role: ROLE,
       scopes: SCOPES,
@@ -576,7 +576,7 @@ class AdapterService {
                 // Connect with token only (no device) + pairing scope
                 await sendReq('connect', {
                   minProtocol: 3,
-                  maxProtocol: 3,
+                  maxProtocol: 4,
                   client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
                   role: ROLE,
                   scopes: [...SCOPES, 'operator.pairing'],
