@@ -4,7 +4,7 @@ import { ok, err } from '@/lib/response';
 import { getTaskWithDetails, enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateAgent } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -21,12 +21,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   let assigneeChanged = false;
   if (!task) return err('NOT_FOUND', 'Task not found', 404);
 
-  const agent = await authenticateAgent(req);
-  const actorId = agent
-    ? agent.id
-    : (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)?.id;
-  const actorType: 'agent' | 'human' = agent ? 'agent' : 'human';
-  if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   const body = await req.json();
   const allowed = ['title', 'description', 'priority', 'status', 'projectId', 'assigneeId', 'assigneeType', 'startDate', 'endDate', 'parentTaskId'];

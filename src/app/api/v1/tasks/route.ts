@@ -5,7 +5,7 @@ import { ok, err } from '@/lib/response';
 import { enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateRequest } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const db = getDb();
@@ -84,19 +84,9 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const body = await req.json();
 
-  const actor = await authenticateRequest(req);
-  let actorId: string | undefined;
-  let actorType: 'agent' | 'human' | 'external';
-  if (actor?.kind === 'agent') {
-    actorId = actor.id;
-    actorType = 'agent';
-  } else if (actor?.kind === 'external') {
-    actorId = actor.id;
-    actorType = 'external';
-  } else {
-    actorId = (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)?.id;
-    actorType = 'human';
-  }
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
   if (!body.title) return err('MISSING_TITLE', 'title is required', 400);

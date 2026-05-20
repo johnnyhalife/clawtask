@@ -4,7 +4,7 @@ import { ok, err } from '@/lib/response';
 import { enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateAgent } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
 import { resolveTaskId } from '@/lib/tasks';
 
@@ -14,12 +14,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const taskId = resolveTaskId(db, params.id);
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
 
-  const agent = await authenticateAgent(req);
-  const actorId = agent
-    ? agent.id
-    : (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)?.id;
-  const actorType: 'agent' | 'human' = agent ? 'agent' : 'human';
-  if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   const body = await req.json();
   if (!body.assigneeId || !body.assigneeType) return err('MISSING_FIELDS', 'assigneeId and assigneeType required', 400);

@@ -4,7 +4,7 @@ import { ok, err } from '@/lib/response';
 import { enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateAgent } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 
 export async function PATCH(
   req: NextRequest,
@@ -15,12 +15,9 @@ export async function PATCH(
   const sub = db.prepare('SELECT * FROM tasks WHERE id = ? AND parentTaskId = ?').get(params.subId, params.id) as any;
   if (!sub) return err('NOT_FOUND', 'Subtask not found', 404);
 
-  const agent = await authenticateAgent(req);
-  const actorId = agent
-    ? agent.id
-    : (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)?.id;
-  const actorType: 'agent' | 'human' = agent ? 'agent' : 'human';
-  if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   const body = await req.json();
   const allowed = ['title', 'description', 'priority', 'status', 'assigneeId', 'assigneeType', 'startDate', 'endDate'];

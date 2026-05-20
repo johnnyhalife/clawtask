@@ -4,7 +4,7 @@ import { getDb } from '@/db/db';
 import { ok, err } from '@/lib/response';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateAgent } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 import { getAdapterService } from '@/lib/adapter';
 import { resolveTaskId } from '@/lib/tasks';
 
@@ -40,11 +40,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!taskId) return err('NOT_FOUND', 'Task not found', 404);
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
 
-  const agent = await authenticateAgent(req);
-  const human = db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined;
-  const actorId = agent ? agent.id : human?.id;
-  const actorType: 'agent' | 'human' = agent ? 'agent' : 'human';
-  if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   const body = await req.json();
   const rawContent: string = body.content || '';
@@ -67,7 +65,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   logActivity(db, { taskId, actorId, actorType, verb: 'commented', humanRequested: body.humanRequested });
 
   // If human posted a comment and task is assigned to an agent, notify adapter
-  if (actorType === 'human' && task.assigneeId && task.assigneeType === 'agent') {
+  // Skip empty comments — they are likely unauthenticated agent posts that fell back to human; notifying would create a loop
+  if (actorType === 'human' && rawContent.trim() !== '' && task.assigneeId && task.assigneeType === 'agent') {
     const adapter = getAdapterService();
     adapter.notifyHumanComment(task, comment).catch(() => {});
   }

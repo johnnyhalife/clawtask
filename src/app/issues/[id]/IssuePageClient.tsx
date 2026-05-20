@@ -808,7 +808,7 @@ export function IssuePageClient() {
                 <div className="flex gap-2">
                   <button type="button"
                     onClick={async () => {
-                      await fetch(`/api/v1/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editTitle, description: editDescription }) });
+                      await apiPatch(`/api/v1/tasks/${taskId}`, { title: editTitle, description: editDescription });
                       reloadTask();
                       setEditingTask(false);
                     }}

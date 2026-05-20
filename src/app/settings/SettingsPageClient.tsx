@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
+import { useApi, apiPatch, apiPost, apiDelete, getToken } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
 import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -57,7 +57,8 @@ function GeneralSettings() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/v1/config/logo', { method: 'POST', body: fd });
+      const token = await getToken();
+      const res = await fetch('/api/v1/config/logo', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
       const data = await res.json();
       if (data.ok) {
         setLogoPreview(data.data.logoUrl + '?t=' + Date.now());
@@ -70,7 +71,7 @@ function GeneralSettings() {
   };
 
   const handleLogoRemove = async () => {
-    await fetch('/api/v1/config/logo', { method: 'DELETE' });
+    await apiDelete('/api/v1/config/logo');
     setLogoPreview(null);
     reload();
   };
@@ -459,7 +460,7 @@ function ExternalSystemsSettings() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/v1/external-systems/${id}`, { method: 'DELETE' });
+    await apiDelete(`/api/v1/external-systems/${id}`);
     reload();
   };
 

@@ -5,7 +5,7 @@ import { ok, err } from '@/lib/response';
 import { enrichTask } from '@/lib/tasks';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
-import { authenticateAgent } from '@/lib/auth';
+import { requireActor } from '@/lib/auth';
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -21,12 +21,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const parent = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
   if (!parent) return err('NOT_FOUND', 'Parent task not found', 404);
 
-  const agent = await authenticateAgent(req);
-  const actorId = agent
-    ? agent.id
-    : (db.prepare('SELECT id FROM humans LIMIT 1').get() as { id: string } | undefined)?.id;
-  const actorType: 'agent' | 'human' = agent ? 'agent' : 'human';
-  if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
+  const actor = await requireActor(req);
+  if (actor instanceof Response) return actor;
+  const { actorId, actorType } = actor;
 
   const body = await req.json();
   if (!body.title) return err('MISSING_TITLE', 'title is required', 400);

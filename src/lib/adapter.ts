@@ -656,12 +656,19 @@ class AdapterService {
 Your Clawtask API key: ${apiKey}
 Use it as Bearer token on ALL requests to ${CLAWTASK_SELF_URL}/api/v1/
 
+IMPORTANT: ALL Clawtask API calls MUST use exec/bash with curl or Python — never web_fetch. web_fetch cannot send Authorization headers and will post comments as the wrong user.
+
+Example comment post:
+  curl -s -X POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/comments \
+    -H "Authorization: Bearer ${apiKey}" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "your comment here"}'
+
 Instructions:
 1. Set status to in_progress: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "in_progress" }
 2. Fetch full task details: GET ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}
 3. Do the work.
 4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
-   POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/comments with body { "content": "your comment here" }
 5. When done, mark it: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }`;
     const idempotencyKey = uuidv4();
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
