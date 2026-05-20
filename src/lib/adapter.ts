@@ -661,6 +661,7 @@ Instructions:
 2. Fetch full task details: GET ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}
 3. Do the work.
 4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
+   POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/comments with body { "content": "your comment here" }
 5. When done, mark it: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }`;
     const idempotencyKey = uuidv4();
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
