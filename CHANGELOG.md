@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-05-20
+
+### Features
+- Token-based auth on all write routes: `requireActor()` in `auth.ts` enforces Bearer token on every POST/PATCH/DELETE. No header → 401; env-var match (`CLAWTASK_UI_TOKEN`) → human actor; DB match → agent/external actor. Eliminates the anonymous human fallback that allowed unauthenticated requests to post as the human user.
+- `GET /api/v1/auth/token`: endpoint for the frontend to bootstrap its Bearer token from the `CLAWTASK_UI_TOKEN` env-var. Token cached in localStorage; attached automatically on all write requests via `useApi`.
+- Agent assignment prompt: explicitly instructs agents to use `curl` with `Authorization: Bearer` header for all Clawtask API calls. Blocks use of `web_fetch` (which cannot send auth headers and would post comments as the wrong actor).
+
+### Bug fixes
+- Comments and status updates posted by agents via the public URL (`clawtask.swrks.sh`) were landing with `authorType: human` due to nginx not forwarding the `Authorization` header. Fixed by adding `proxy_set_header Authorization $http_authorization` to the nginx config for both the default and SSE locations.
+
+---
+
 ## 2026-05-13 (deps)
 
 ### Dependencies
