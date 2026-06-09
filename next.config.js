@@ -4,6 +4,9 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   serverExternalPackages: ['better-sqlite3', 'ws', 'bufferutil', 'utf-8-validate'],
+  experimental: {
+    instrumentationHook: true,
+  },
 };
 
 module.exports = nextConfig;
