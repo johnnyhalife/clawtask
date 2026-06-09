@@ -511,7 +511,6 @@ class AdapterService {
       conn.status = 'connected';
       conn.handshakeDone = true;
       conn.autoPairAttempted = false;
-      console.log('[adapter] handshake complete for agent', conn.agentId);
       this.processNextTask(conn);
     } catch (err: any) {
       const msg: string = err?.message ?? '';
@@ -617,7 +616,6 @@ class AdapterService {
   // ─── Task dispatch ────────────────────────────────────────────────────────
 
   private async processNextTask(conn: AgentConnection) {
-    console.log('[adapter] processNextTask', { agentId: conn.agentId, wsOpen: conn.ws?.readyState === WebSocket.OPEN, handshakeDone: conn.handshakeDone, currentTaskId: conn.currentTaskId });
     if (!conn.ws || conn.ws.readyState !== WebSocket.OPEN || !conn.handshakeDone) return;
     if (conn.currentTaskId) return;
 
@@ -631,8 +629,6 @@ class AdapterService {
           createdAt ASC
         LIMIT 1
       `).get(conn.agentId) as any;
-
-      console.log('[adapter] processNextTask query result', nextTask ? { id: nextTask.id, issueId: nextTask.issueId, status: nextTask.status } : null);
 
       if (!nextTask) return;
 
@@ -678,15 +674,12 @@ Instructions:
     const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
 
     try {
-      console.log('[adapter] dispatchTask sending agent req', { taskId: task.id, issueId: task.issueId, sessionKey, agentId: conn.openclawAgentId });
       const accepted = await this.sendReq(conn, 'agent', {
         message,
         idempotencyKey,
         sessionKey,
         agentId: conn.openclawAgentId,
       }, 15000) as any;
-
-      console.log('[adapter] agent req accepted', accepted);
 
       const runId: string = accepted?.runId ?? idempotencyKey;
       conn.currentRunId = runId;
@@ -695,14 +688,12 @@ Instructions:
 
       // If not immediately resolved, wait for completion
       if (acceptedStatus !== 'ok') {
-        console.log('[adapter] waiting for agent.wait', { runId });
         await this.sendReq(conn, 'agent.wait', {
           runId,
           timeoutMs: 300000,
         }, 360000);
       }
 
-      console.log('[adapter] task complete', task.id);
       conn.currentTaskId = null;
       conn.currentRunId = null;
       conn.currentCommentId = null;
@@ -806,7 +797,6 @@ Instructions:
   }
 
   async notifyHumanComment(task: any, comment: any) {
-    console.log('[adapter] notifyHumanComment', { taskId: task.id, assigneeId: task.assigneeId, assigneeType: task.assigneeType, commentId: comment.id });
     if (!task.assigneeId || task.assigneeType !== 'agent') return;
 
     // Ensure the agent is connected — connect if not yet tracked
