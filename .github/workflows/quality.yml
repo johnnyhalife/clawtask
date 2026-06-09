@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install build tools
-        run: sudo pacman -Sy --noconfirm base-devel
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends build-essential python3
 
       - name: Setup Node
         uses: actions/setup-node@v4
