@@ -698,6 +698,7 @@ Instructions:
       conn.currentTaskId = null;
       conn.currentRunId = null;
       conn.currentCommentId = null;
+      this.processNextTask(conn);
     }
   }
 
