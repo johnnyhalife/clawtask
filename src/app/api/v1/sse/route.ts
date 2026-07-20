@@ -25,17 +25,18 @@ export async function GET() {
         }
       }, 30000);
 
-      // Cleanup on close
-      const cleanup = () => {
+      // Stash cleanup on the controller so cancel() can reach it.
+      // NOTE: start()'s return value is NOT a cancel hook per the Streams spec —
+      // only cancel() fires on client disconnect. Returning cleanup here was a
+      // no-op leak: the heartbeat timer and SSE writer closure lived forever.
+      (controller as any)._cleanup = () => {
         clearInterval(heartbeat);
         remove();
       };
-
-      // When stream is cancelled (client disconnect)
-      return cleanup;
     },
-    cancel() {
-      // cleanup handled above
+    cancel(reason) {
+      const c = this as unknown as { _cleanup?: () => void };
+      c._cleanup?.();
     },
   });
 
