@@ -26,8 +26,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     return err('INVALID_STATUS', `status must be one of: ${VALID_STATUSES.join(', ')}`, 400);
   }
 
-  db.prepare("UPDATE tasks SET status = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-    .run(body.status, taskId);
+  if (body.status === 'blocked') {
+    // Blocked tasks are unassigned so the agent stops looping and a human can interject.
+    db.prepare("UPDATE tasks SET status = ?, assigneeId = NULL, assigneeType = NULL, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+      .run(body.status, taskId);
+  } else {
+    db.prepare("UPDATE tasks SET status = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+      .run(body.status, taskId);
+  }
 
   const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any);
   if (body.status === 'archived') {
@@ -39,7 +45,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   // If transitioning to an actionable status with an agent assignee, wake the adapter
   // (includes todo — tasks moved out of backlog should trigger dispatch immediately)
-  const AGENT_TRIGGER_STATUSES = ['todo', 'in_progress', 'blocked'];
+  // 'blocked' is intentionally excluded: assignee is cleared above, so there is nothing to redispatch to.
+  const AGENT_TRIGGER_STATUSES = ['todo', 'in_progress'];
   if (AGENT_TRIGGER_STATUSES.includes(body.status) && updated.assigneeId && updated.assigneeType === 'agent') {
     const adapter = getAdapterService();
     adapter.assignTaskToAgent(updated, updated.assigneeId).catch(() => {});

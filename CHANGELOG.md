@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-09-10
+
+### Bug fixes
+- Blocked tasks no longer loop: marking a task `blocked` now clears `assigneeId`/`assigneeType` (status stays `blocked`), and `blocked` was removed from the adapter's auto-dispatch trigger list. Previously an agent-reported `blocked` status kept the assignee in place and re-triggered dispatch to the same agent, looping indefinitely and leaving no window for a human to interject.
+
+---
+
 ## 2026-05-20
 
 ### Features
