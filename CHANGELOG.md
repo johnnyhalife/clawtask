@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## Unreleased
 
 ### Features
+- All Issues defaults to Todo, In Progress and Blocked. Issue detail has Previous/Next buttons and unmodified left/right arrow shortcuts in the same grouped order, using the saved grouping preference.
 - Durable per-agent run ownership and FIFO human followups. Unknown acceptance, timeout and connection loss retain work instead of repeating it.
 - Done task sessions archive only after terminal run observation and idle gateway checks. Followups restore the same session before dispatch. Task responses expose dispatch and cleanup recovery state.
 
@@ -12,6 +13,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Issue lists filter statuses before pagination and load all matching pages. Creation, updates, deletion and reconnect refresh detail navigation; a deleted current issue returns to All Issues. Stale route identities, open pickers, editors, handled keys and modifier keys cannot drive detail navigation.
 - Settings now shows Probe gateway/API errors beside the agent status as an accessible alert. Retrying clears stale feedback; successful probes clear the error.
 - Gateway Probe and persistent connections now sign the validated server challenge timestamp. Backend connections request protocol 4, including token-only pairing. Malformed device challenges fail before connect.
 - Explicit reassignment after a completed blocked run now saves a pending dispatch in the same transaction as assignment. Resume with the latest unused human comment and the original session. Duplicate assignments do not repeat pending or active work; recovery and owner conflicts return 409. Task/subtask creation and PATCH use the same admission helper.
@@ -20,6 +22,7 @@ All notable changes to this project are documented in this file.
 - Agent comments now use the authenticated API only. Gateway stream events no longer create or append task comments. Browser updates still use SSE.
 
 ### Tests
+- Moved navigation defaults into the supported tests directory and added behavioral navigation, pagination, deletion, keyboard and route-reset regressions. Local isolated-HOME suite: 124 tests passed. See docs/issue-navigation.md for limits.
 - Added 29 isolated assignment/API regressions. Reproduced the blocked → human comment → todo → reassignment failure on both assignment routes before the fix; all 75 tests now pass. See docs/blocked-reassignment-evidence.md for local gates and limits.
 - Local real-gateway checks passed for initial completion/archive, same-session followup restore/archive, browser live delivery, blocked-to-done archive, and queue sequencing. Automated checks passed on Node 26.9.0; Node 20 CI remains a separate gate.
 - Added 32 isolated fake-gateway lifecycle tests and 4 transport tests, plus 6 API status/admission tests. Quality CI now runs npm test.

@@ -13,6 +13,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const status = searchParams.get('status');
+  const statuses = searchParams.getAll('statuses');
+  const validStatuses = ['backlog', 'todo', 'in_progress', 'blocked', 'done', 'archived'];
+  if (statuses.some(status => !validStatuses.includes(status))) return err('INVALID_STATUS', 'Invalid task status filter', 400);
   const priority = searchParams.get('priority');
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
@@ -22,8 +25,9 @@ export async function GET(req: NextRequest) {
   const mineFilter = searchParams.get('mineFilter');
   const sort = searchParams.get('sort') || 'updatedAt';
   const order = searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '50', 10);
+  const page = Number(searchParams.get('page') || '1');
+  const limit = Number(searchParams.get('limit') || '50');
+  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 500) return err('INVALID_PAGINATION', 'page must be positive and limit must be 1–500', 400);
   const offset = (page - 1) * limit;
 
   // Resolve human id for mineFilter queries
@@ -45,6 +49,7 @@ export async function GET(req: NextRequest) {
   `;
   const params: (string | number)[] = [];
 
+  if (statuses.length) { query += ' AND t.status IN (' + statuses.map(() => '?').join(',') + ')'; params.push(...statuses); }
   if (status) { query += ' AND t.status = ?'; params.push(status); }
   if (priority) { query += ' AND t.priority = ?'; params.push(priority); }
   if (projectId) { query += ' AND t.projectId = ?'; params.push(projectId); }
@@ -64,19 +69,13 @@ export async function GET(req: NextRequest) {
     // already filtered above
   }
 
+  // Count the same filtered relation before pagination, including Mine joins.
+  const total = (db.prepare('SELECT COUNT(*) as c FROM (' + query + ')').get(...params) as { c: number }).c;
   const validSorts = ['updatedAt', 'createdAt', 'priority', 'status', 'endDate'];
   const sortCol = validSorts.includes(sort) ? sort : 'updatedAt';
-  query += ` ORDER BY t.${sortCol} ${order} LIMIT ? OFFSET ?`;
-  params.push(limit, offset);
-
-  const rows = db.prepare(query).all(...params) as any[];
+  query += ' ORDER BY t.' + sortCol + ' ' + order + ', t.id ASC LIMIT ? OFFSET ?';
+  const rows = db.prepare(query).all(...params, limit, offset) as any[];
   const tasks = rows.map((r) => enrichTask(db, r));
-
-  const total = (
-    db.prepare(
-      `SELECT COUNT(DISTINCT t.id) as c FROM tasks t ${tagId ? 'JOIN task_tags tt ON tt.taskId = t.id' : ''} WHERE t.parentTaskId IS NULL ${status ? 'AND t.status = ?' : ''} ${priority ? 'AND t.priority = ?' : ''} ${projectId ? 'AND t.projectId = ?' : ''} ${assigneeId ? 'AND t.assigneeId = ?' : ''} ${tagId ? 'AND tt.tagId = ?' : ''}`
-    ).get(...params.slice(0, -2)) as { c: number }
-  ).c;
 
   return ok({ tasks, total, page, limit });
 }

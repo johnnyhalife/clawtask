@@ -7,6 +7,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Task, Comment, Activity } from '@/types';
 import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
+import { useTaskCollection } from '@/hooks/useTaskCollection';
+import { getDefaultFiltersForTab, GroupByField } from '@/components/task/TaskFilters';
+import { filterAndSortTasks, getFlatOrderedTasks, getIssueNeighbors, issueArrowDirection, parseGroupBy, GROUPBY_STORAGE_KEY } from '@/lib/task-view';
 import { useSse } from '@/hooks/useSse';
 import { ChipSelect, ChipSelectHandle, STATUS_OPTIONS, PRIORITY_OPTIONS } from '@/components/task/ChipSelect';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -190,25 +193,23 @@ export function IssuePageClient() {
   const taskSlug = params.id as string; // may be slug (cwt-012) or UUID
 
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
-  const { data: task, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
-  // Match the default All Issues view: open tasks, newest update first.
-  const { data: issueList, reload: reloadIssueList } = useApi<{ tasks: Task[] }>('/api/v1/tasks?sort=updatedAt&order=desc&limit=500');
-  // Real UUID — used for SSE matching and sub-resource calls once task loads
+  const { data: loadedTask, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
+  const task = loadedTask && (loadedTask.id === taskSlug || loadedTask.issueId.toLowerCase() === taskSlug.toLowerCase()) ? loadedTask : null;
+  // Detail follows default All Issues filters and the shared grouping preference.
+  const { data: issueList, reload: reloadIssueList } = useTaskCollection('/api/v1/tasks?sort=updatedAt&order=desc&limit=500&statuses=todo&statuses=in_progress&statuses=blocked');
+  const [groupBy, setGroupBy] = useState<GroupByField>('status');
+  useEffect(() => {
+    try { setGroupBy(parseGroupBy(localStorage.getItem(GROUPBY_STORAGE_KEY))); } catch { /* storage blocked */ }
+  }, []);
+  // A route transition must not use the previous task's cached identity.
   const taskId = task?.id ?? taskSlug;
-
-  const openIssues = useMemo(
-    () => (issueList?.tasks ?? []).filter(issue => ['todo', 'in_progress', 'blocked'].includes(issue.status)),
-    [issueList]
-  );
-  const currentIssueIndex = task ? openIssues.findIndex(issue => issue.id === task.id) : -1;
-  const previousIssue = currentIssueIndex > 0 ? openIssues[currentIssueIndex - 1] : null;
-  const nextIssue = currentIssueIndex >= 0 && currentIssueIndex < openIssues.length - 1
-    ? openIssues[currentIssueIndex + 1]
-    : null;
-
+  const openIssues = useMemo(() => getFlatOrderedTasks(
+    filterAndSortTasks(issueList?.tasks ?? [], getDefaultFiltersForTab('all')), groupBy
+  ), [issueList, groupBy]);
+  const { previous: previousIssue, next: nextIssue } = getIssueNeighbors(openIssues, task?.id ?? null);
   const navigateIssue = useCallback((direction: 'previous' | 'next') => {
     const target = direction === 'previous' ? previousIssue : nextIssue;
-    if (target) push(`/issues/${target.issueId.toLowerCase()}`);
+    if (target) push('/issues/' + target.issueId.toLowerCase());
   }, [nextIssue, previousIssue, push]);
 
   // Page title
@@ -285,17 +286,12 @@ export function IssuePageClient() {
         setProjectOpen(false);
       };
 
-      if (
-        (e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
-        !editingTask &&
-        !projectOpen &&
-        !tagsOpen &&
-        !assigneeOpen &&
-        !statusRef.current?.isOpen() &&
-        !priorityRef.current?.isOpen()
-      ) {
+      const direction = issueArrowDirection(e, isEditing || editingTask || tag === 'SELECT',
+        projectOpen || tagsOpen || assigneeOpen || editMenuOpen || mobilePropsOpen ||
+        !!statusRef.current?.isOpen() || !!priorityRef.current?.isOpen());
+      if (direction && (direction === 'previous' ? previousIssue : nextIssue)) {
         e.preventDefault();
-        navigateIssue(e.key === 'ArrowLeft' ? 'previous' : 'next');
+        navigateIssue(direction);
         return;
       }
       if (e.key === 'e' || e.key === 'E') { e.preventDefault(); closeAll(); setEditingTask(true); return; }
@@ -318,10 +314,11 @@ export function IssuePageClient() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task, navigateIssue]);
+  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task, navigateIssue, previousIssue, nextIssue, editMenuOpen, mobilePropsOpen]);
 
   useSse(event => {
-    if (event.type === 'task.created' || event.type === 'task.updated') reloadIssueList();
+    if (['task.created', 'task.updated', 'task.deleted'].includes(event.type)) reloadIssueList();
+    if (event.type === 'task.deleted' && (event.data as { id: string }).id === taskId) push('/?tab=all');
     if (event.type === 'comment.added') {
       const c = event.data as Comment;
       if (c.taskId === taskId) setComments(p => p.find(x => x.id === c.id) ? p : [...p, c]);

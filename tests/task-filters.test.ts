@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getDefaultFiltersForTab } from './TaskFilters';
+import { getDefaultFiltersForTab } from '../src/components/task/TaskFilters';
 
 test('All Issues defaults to Todo, In Progress, and Blocked', () => {
   assert.deepEqual(getDefaultFiltersForTab('all').statuses, [
