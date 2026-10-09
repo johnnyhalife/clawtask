@@ -242,6 +242,7 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(agent.displayName);
   const [probing, setProbing] = useState(false);
+  const [probeError, setProbeError] = useState<string | null>(null);
 
   // Keep local edit state in sync if the agent prop changes externally
   useEffect(() => { setDisplayName(agent.displayName); }, [agent.displayName]);
@@ -254,9 +255,13 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
 
   const handleProbe = async () => {
     setProbing(true);
+    setProbeError(null);
     try {
-      await apiPost(`/api/v1/agents/${agent.id}/probe`, {});
+      const result = await apiPost<{ probeError?: string }>(`/api/v1/agents/${agent.id}/probe`, {});
+      setProbeError(result.probeError ?? null);
       onUpdated();
+    } catch (e: unknown) {
+      setProbeError(e instanceof Error && e.message ? e.message : 'Probe failed');
     } finally {
       setProbing(false);
     }
@@ -296,6 +301,9 @@ function AgentRow({ agent, onUpdated, onDeleted }: { agent: Agent; onUpdated: ()
           <div className={`size-2 rounded-full ${probeDot}`} />
           <span className="text-xs style-base-600">{agent.probeStatus}</span>
         </div>
+        {probeError && (
+          <p className="mt-1 text-xs text-red-600 break-all" role="alert">Probe: {probeError}</p>
+        )}
       </td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">

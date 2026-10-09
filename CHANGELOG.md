@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Settings now shows Probe gateway/API errors beside the agent status as an accessible alert. Retrying clears stale feedback; successful probes clear the error.
 - Gateway Probe and persistent connections now sign the validated server challenge timestamp. Backend connections request protocol 4, including token-only pairing. Malformed device challenges fail before connect.
 - Explicit reassignment after a completed blocked run now saves a pending dispatch in the same transaction as assignment. Resume with the latest unused human comment and the original session. Duplicate assignments do not repeat pending or active work; recovery and owner conflicts return 409. Task/subtask creation and PATCH use the same admission helper.
 - Blocked clears both assignee fields through status POST, task PATCH and subtask PATCH. All status routes notify the same lifecycle owner.

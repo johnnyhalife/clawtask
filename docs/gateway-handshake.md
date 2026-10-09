@@ -32,3 +32,22 @@ server timestamp, malformed challenge rejection, and reconnect reset/stale guard
 Use an isolated HOME for npm test and build to keep database/device files separate.
 No production gateway, pairing approval, or task dispatch is needed for these tests.
 The live gateway round trip and Node 20 CI remain separate release checks.
+
+## Settings Probe feedback
+
+Settings → Agents shows a failed Probe message beside the agent's probe status.
+The message comes from the existing probeError API field or a thrown API/network
+error. An unknown thrown value uses "Probe failed". A new attempt clears the old
+message, and a successful response clears it. Messages are escaped React text in
+an alert, not HTML. This feedback is local to the row and is not saved across reloads.
+
+The UI regressions execute the actual handler with injected state setters and a
+fake request, then render the actual alert fragment with React server rendering.
+They cover returned errors, thrown errors, retry/success clearing, pending state,
+and text escaping. They are not a full browser/DOM interaction test.
+
+The humanRequested markers proposed in PR #6 are deliberately not included.
+The current comment route authenticates the actor but persists humanRequested
+from the request body without checking actorType. Adding UI markers alone would
+not establish server-verified human intent. Followup admission already checks
+actorType === 'human'; this patch leaves that behavior and all lifecycle rules intact.
