@@ -1,5 +1,8 @@
 # Service worker SSE investigation (local only)
 
+Follow-up: [task-data investigation](service-worker-task-data-evidence.md) supersedes
+the SSE-only proposed policy below and adds visible request failures.
+
 ## Scope and deployment evidence
 
 PR7 merged at 2026-10-09T18:47:16Z. This work starts at main
