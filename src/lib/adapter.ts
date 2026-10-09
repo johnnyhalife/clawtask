@@ -164,6 +164,7 @@ interface AgentConnection {
   pending: Map<string, PendingRequest>;
   handshakeDone: boolean;
   challengeNonce: string | null;
+  challengeTs: number | null;
   autoPairAttempted: boolean;
   generation: number;
 }
@@ -173,6 +174,15 @@ const CLIENT_MODE = 'backend';
 const CLIENT_VERSION = 'clawtask';
 const ROLE = 'operator';
 const SCOPES = ['operator.admin'];
+const GATEWAY_PROTOCOL_VERSION = 4;
+
+function parseGatewayChallenge(payload: unknown): { nonce: string; ts: number } | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const { nonce, ts } = payload as { nonce?: unknown; ts?: unknown };
+  if (typeof nonce !== 'string' || !nonce.trim()) return null;
+  if (typeof ts !== 'number' || !Number.isSafeInteger(ts) || ts < 0) return null;
+  return { nonce, ts };
+}
 
 // ─── Adapter service ──────────────────────────────────────────────────────────
 
@@ -290,8 +300,9 @@ export class AdapterService {
           }
 
           if (frame.type === 'event' && (frame as GatewayEventFrame).event === 'connect.challenge') {
-            const nonce = (frame as any).payload?.nonce as string;
-            const signedAtMs = Date.now();
+            const challenge = parseGatewayChallenge((frame as GatewayEventFrame).payload);
+            if (!challenge) { finish(false, 'Invalid gateway challenge'); return; }
+            const { nonce, ts: signedAtMs } = challenge;
             const v3Payload = buildDeviceAuthPayloadV3({
               deviceId: identity.deviceId,
               clientId: CLIENT_ID,
@@ -304,8 +315,8 @@ export class AdapterService {
             });
 
             sendReq('connect', {
-              minProtocol: 3,
-              maxProtocol: 4,
+              minProtocol: GATEWAY_PROTOCOL_VERSION,
+              maxProtocol: GATEWAY_PROTOCOL_VERSION,
               client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
               role: ROLE,
               scopes: SCOPES,
@@ -352,6 +363,7 @@ export class AdapterService {
       pending: new Map(),
       handshakeDone: false,
       challengeNonce: null,
+      challengeTs: null,
       autoPairAttempted: false,
       generation: 0,
     };
@@ -381,7 +393,7 @@ export class AdapterService {
     if (this.connections.get(conn.agentId)!==conn) return;
     if (conn.reconnectTimer) { clearTimeout(conn.reconnectTimer);conn.reconnectTimer=null; }
     const generation=++conn.generation;
-    conn.status='connecting';conn.handshakeDone=false;conn.challengeNonce=null;
+    conn.status='connecting';conn.handshakeDone=false;conn.challengeNonce=null;conn.challengeTs=null;
     this.rejectAllPending(conn,'Connection replaced');
     try {
       const ws=this.createSocket();conn.ws=ws;
@@ -430,7 +442,9 @@ export class AdapterService {
 
   private handleEventFrame(conn: AgentConnection, frame: GatewayEventFrame) {
     if (frame.event === 'connect.challenge') {
-      conn.challengeNonce = (frame.payload as any)?.nonce ?? null;
+      const challenge = parseGatewayChallenge(frame.payload);
+      conn.challengeNonce = challenge?.nonce ?? null;
+      conn.challengeTs = challenge?.ts ?? null;
       this.doHandshake(conn);
       return;
     }
@@ -449,7 +463,10 @@ export class AdapterService {
     const identity = this.deviceIdentity;
     if (!identity) { conn.ws?.close(); return; }
 
-    const signedAtMs = Date.now();
+    const signedAtMs = conn.challengeTs;
+    if (typeof signedAtMs !== 'number' || !Number.isSafeInteger(signedAtMs) || signedAtMs < 0) {
+      conn.ws?.close(); return;
+    }
     const v3Payload = buildDeviceAuthPayloadV3({
       deviceId: identity.deviceId,
       clientId: CLIENT_ID,
@@ -462,8 +479,8 @@ export class AdapterService {
     });
 
     const connectParams = {
-      minProtocol: 3,
-      maxProtocol: 4,
+      minProtocol: GATEWAY_PROTOCOL_VERSION,
+      maxProtocol: GATEWAY_PROTOCOL_VERSION,
       client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
       role: ROLE,
       scopes: SCOPES,
@@ -549,8 +566,8 @@ export class AdapterService {
               try {
                 // Connect with token only (no device) + pairing scope
                 await sendReq('connect', {
-                  minProtocol: 3,
-                  maxProtocol: 4,
+                  minProtocol: GATEWAY_PROTOCOL_VERSION,
+                  maxProtocol: GATEWAY_PROTOCOL_VERSION,
                   client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
                   role: ROLE,
                   scopes: [...SCOPES, 'operator.pairing'],
