@@ -1,6 +1,6 @@
 # Clawtask
 
-A lightweight, self-hosted task tracker purpose-built for AI agent workflows. Built with Next.js 14, SQLite, and the OpenClaw gateway protocol.
+A lightweight, self-hosted task tracker purpose-built for AI agent workflows. Built with Next.js 16.2.6, SQLite, and the OpenClaw gateway protocol.
 
 ---
 
@@ -38,7 +38,7 @@ todo  ──[assigned to agent]──▶  in_progress  ──[agent marks done]�
                                      │
                               [human comments]
                                      │
-                              [auto-reopens if done, re-dispatches to agent]
+                              [queue → restore same session → reopen → follow-up]
 ```
 
 1. **Assignment**: Assigning a task to a registered agent triggers `assignTaskToAgent` in the adapter. This dispatches a prompt to the agent's OpenClaw session.
@@ -57,7 +57,7 @@ agent:<openclawAgentId>:clawtask:<taskId>
 
 Agents authenticate to the Clawtask API using Bearer tokens issued at registration (shown once, hashed in DB).
 
-### Stream-to-Comment Mapping
+### Comments and session cleanup
 
 Agents use the authenticated comments API. Run completion is observed through agent.wait; done task sessions archive only when the gateway reports no active work. See [lifecycle and recovery rules](docs/gateway-session-lifecycle.md).
 
@@ -67,7 +67,7 @@ Agents use the authenticated comments API. Run completion is observed through ag
 
 ### Prerequisites
 
-- Node.js ≥ 18 (tested on v25.9.0, Darwin arm64)
+- Node.js compatible with Next.js 16. Local lifecycle verification used Node 26.9.0 on Darwin arm64; quality CI uses Node 20.
 - OpenClaw gateway running locally
 - An OpenClaw agent configured (e.g. `main`)
 
@@ -139,7 +139,7 @@ All responses follow the envelope:
 
 ## Caveats
 
-- **Single-user only**: One human, no authentication. Designed for private network / Tailscale deployment.
+- **Single-user only**: One human, no interactive login. API writes use Bearer credentials. Keep the app on a trusted network; this is not a multi-user security boundary.
 - **Single OpenClaw instance**: The adapter connects to one gateway. Multi-gateway not supported.
 - **No horizontal scaling**: The SSE subscriber set and adapter singleton are in-process. Running multiple Next.js instances will break realtime and dispatch.
 - **Agent must use the API**: The adapter dispatches tasks via a prompt that includes the API key and endpoint. The agent is expected to call the Clawtask API itself to post comments and update status. Agents that don't follow instructions may leave tasks stuck in `in_progress`.
@@ -151,7 +151,7 @@ All responses follow the envelope:
 ## Known Issues
 
 - **Uncertain runs pause**: Timeout or unknown acceptance retains ownership. Bounded gateway observations can expire; recovery needs operator verification, not automatic resubmission. See dispatch/sessionCleanup in task API responses.
-- **Task stuck `in_progress` if agent crashes**: If the agent fails mid-task without calling the status API, the task remains `in_progress` indefinitely. Workaround: use Cancel to reset, or update status manually via the API.
+- **Run ends without a task outcome**: Work pauses for review. Inspect dispatch and sessionCleanup fields. Cancel or a status change does not prove a gateway run ended and does not clear retained ownership.
 - **Probe status not live**: Agent probe status is only updated when you click Probe in Settings. It does not automatically reflect WS disconnections.
 
 ---
@@ -164,7 +164,29 @@ See [DECISIONS.md](./DECISIONS.md) for the full record of architectural and impl
 
 ## Tech Stack
 
-- [Next.js 14](https://nextjs.org/) — App Router, API routes, SSR
+- [Next.js 16](https://nextjs.org/) — App Router, API routes, SSR
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — Synchronous SQLite
 - [ws](https://github.com/websockets/ws) — WebSocket client for gateway adapter
 - [OpenClaw](https://openclaw.ai) — AI agent gateway
+
+
+## Database upgrade
+
+Startup adds two tables: task_dispatches for durable work admission and run ownership, and task_sessions for original gateway identity and cleanup state. Existing tasks, comments, and activity are unchanged. No separate migration command is required. Startup does not scan and archive historical done tasks.
+
+## Manual production verification
+
+Johnny owns the main push and deployment. Before deployment, save the current image digest and take a consistent SQLite backup, including WAL state if applicable. Confirm quality CI passes for the exact deployed commit. Publishing latest alone does not establish this.
+
+1. Confirm application health and gateway probe.
+2. Johnny creates a harmless task and assigns it manually. Require one API comment and done status.
+3. Confirm one dispatch, one comment, and archive only after the run ends. Clawtask must stay done.
+4. Johnny adds one human followup. Confirm restore before dispatch, the same session ID and transcript, one reply, and archive after completion.
+5. Confirm the browser receives comments without reload.
+6. Run a harmless blocked task. Confirm both assignee fields clear, no repeat dispatch, and its session stays unarchived.
+7. Johnny marks that blocked task done. Confirm its original session archives.
+8. Confirm a second queued task starts only after the active run ends.
+
+If a check fails, pause new assignments and followups. Verify all accepted runs and pending dispatches before reverting to the saved image digest. The old app can leave the additive tables in place, but it does not honor their ownership or recovery rules. Do not restore the database automatically or discard uncertain work. Keep failure evidence for diagnosis.
+
+Local evidence and limits: docs/plans/session-lifecycle.md. Node 20 CI and container behavior are separate from the completed Node 26 local checks.
