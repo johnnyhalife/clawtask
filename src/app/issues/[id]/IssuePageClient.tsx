@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
@@ -191,8 +191,25 @@ export function IssuePageClient() {
 
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
   const { data: task, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
+  // Match the default All Issues view: open tasks, newest update first.
+  const { data: issueList, reload: reloadIssueList } = useApi<{ tasks: Task[] }>('/api/v1/tasks?sort=updatedAt&order=desc&limit=500');
   // Real UUID — used for SSE matching and sub-resource calls once task loads
   const taskId = task?.id ?? taskSlug;
+
+  const openIssues = useMemo(
+    () => (issueList?.tasks ?? []).filter(issue => ['todo', 'in_progress', 'blocked'].includes(issue.status)),
+    [issueList]
+  );
+  const currentIssueIndex = task ? openIssues.findIndex(issue => issue.id === task.id) : -1;
+  const previousIssue = currentIssueIndex > 0 ? openIssues[currentIssueIndex - 1] : null;
+  const nextIssue = currentIssueIndex >= 0 && currentIssueIndex < openIssues.length - 1
+    ? openIssues[currentIssueIndex + 1]
+    : null;
+
+  const navigateIssue = useCallback((direction: 'previous' | 'next') => {
+    const target = direction === 'previous' ? previousIssue : nextIssue;
+    if (target) push(`/issues/${target.issueId.toLowerCase()}`);
+  }, [nextIssue, previousIssue, push]);
 
   // Page title
   useEffect(() => {
@@ -259,7 +276,6 @@ export function IssuePageClient() {
         return;
       }
       if (isEditing) return;
-
       // Close all open dropdowns before opening a new one (silent = no focus-return)
       const closeAll = () => {
         statusRef.current?.closeDropdownSilent();
@@ -269,6 +285,19 @@ export function IssuePageClient() {
         setProjectOpen(false);
       };
 
+      if (
+        (e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        !editingTask &&
+        !projectOpen &&
+        !tagsOpen &&
+        !assigneeOpen &&
+        !statusRef.current?.isOpen() &&
+        !priorityRef.current?.isOpen()
+      ) {
+        e.preventDefault();
+        navigateIssue(e.key === 'ArrowLeft' ? 'previous' : 'next');
+        return;
+      }
       if (e.key === 'e' || e.key === 'E') { e.preventDefault(); closeAll(); setEditingTask(true); return; }
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); closeAll(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); closeAll(); priorityRef.current?.openDropdown(); }
@@ -289,9 +318,10 @@ export function IssuePageClient() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task]);
+  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task, navigateIssue]);
 
   useSse(event => {
+    if (event.type === 'task.created' || event.type === 'task.updated') reloadIssueList();
     if (event.type === 'comment.added') {
       const c = event.data as Comment;
       if (c.taskId === taskId) setComments(p => p.find(x => x.id === c.id) ? p : [...p, c]);
@@ -308,7 +338,7 @@ export function IssuePageClient() {
       const t = event.data as Task;
       if (t.id === taskId) reloadTask();
     }
-  }, () => { reloadTask(); loadTimeline(); });
+  }, () => { reloadTask(); reloadIssueList(); loadTimeline(); });
 
   // is the task actively being worked on by an agent? (human assignees don't lock the UI)
   const inFlight = task?.status === 'in_progress' && task?.assigneeType === 'agent' && !!task?.assigneeId;
@@ -743,7 +773,7 @@ export function IssuePageClient() {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 px-6 flex-shrink-0" style={{ height: 48, borderBottom: '1px solid var(--color-base-200)', background: 'var(--color-base)' }}>
-            <Link href="/" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.85rem', textDecoration: 'none' }}
+            <Link href="/?tab=all" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.85rem', textDecoration: 'none' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}>
               Issues
@@ -779,6 +809,24 @@ export function IssuePageClient() {
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-400)')}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></svg>
                 </button>
+                <div className="flex items-center gap-1" style={{ marginRight: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => navigateIssue('previous')}
+                    disabled={!previousIssue}
+                    title="Previous open issue (←)"
+                    aria-label="Previous open issue"
+                    style={{ color: previousIssue ? 'var(--color-base-600)' : 'var(--color-base-300)', background: 'none', border: '1px solid var(--color-base-300)', borderRadius: 5, cursor: previousIssue ? 'pointer' : 'not-allowed', fontSize: '0.72rem', padding: '3px 7px', fontFamily: "'Instrument Sans', sans-serif" }}
+                  >← Previous</button>
+                  <button
+                    type="button"
+                    onClick={() => navigateIssue('next')}
+                    disabled={!nextIssue}
+                    title="Next open issue (→)"
+                    aria-label="Next open issue"
+                    style={{ color: nextIssue ? 'var(--color-base-600)' : 'var(--color-base-300)', background: 'none', border: '1px solid var(--color-base-300)', borderRadius: 5, cursor: nextIssue ? 'pointer' : 'not-allowed', fontSize: '0.72rem', padding: '3px 7px', fontFamily: "'Instrument Sans', sans-serif" }}
+                  >Next →</button>
+                </div>
                 {editMenuOpen && (
                   <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-base)', border: '1px solid var(--color-base-300)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 50, minWidth: 120 }}>
                     <button type="button"
@@ -1150,4 +1198,3 @@ export function IssuePageClient() {
     </div>
   );
 }
-

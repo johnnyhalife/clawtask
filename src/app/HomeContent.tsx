@@ -11,7 +11,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, DEFAULT_FILTERS, GroupByField } from '@/components/task/TaskFilters';
+import { FilterState, DEFAULT_FILTERS, getDefaultFiltersForTab, GroupByField } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
@@ -44,7 +44,7 @@ export function HomeContent() {
   };
 
   const [filters, setFilters] = useState<FilterState>(() => ({
-    ...DEFAULT_FILTERS,
+    ...getDefaultFiltersForTab(activeTab),
     groupBy: getStoredGroupBy(),
   }));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -56,9 +56,9 @@ export function HomeContent() {
     } catch { /* storage blocked */ }
   }, [filters.groupBy]);
 
-  // Reset filters when tab changes, but preserve the persisted groupBy
+  // Apply the tab-specific defaults on navigation, while preserving the persisted groupBy.
   useEffect(() => {
-    setFilters(f => ({ ...DEFAULT_FILTERS, groupBy: f.groupBy }));
+    setFilters(f => ({ ...getDefaultFiltersForTab(activeTab), groupBy: f.groupBy }));
   }, [activeTab]);
 
   // "N" opens create modal (skip when typing in an input/textarea)
