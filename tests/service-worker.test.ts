@@ -13,7 +13,7 @@ function worker(network: typeof fetch = async () => new Response('network')) {
     addEventListener: (type: string, handler: (event: any) => void) => handlers.set(type, handler),
     skipWaiting() {}, clients: { claim() {} },
   };
-  vm.runInNewContext(fs.readFileSync('public/sw.js', 'utf8'), {
+  vm.runInNewContext(fs.readFileSync(process.env.SW_SOURCE || 'public/sw.js', 'utf8'), {
     self, URL, Response,
     fetch: (request: Request) => { requests.push(request); return network(request); },
     caches: {
@@ -45,19 +45,44 @@ test('event-stream Accept requests bypass worker offline and cache policies', ()
   assert.deepEqual(sw.cacheCalls, []);
 });
 
-test('ordinary task API requests stay network-only and are never cached', async () => {
-  const sw = worker();
-  const response = await sw.dispatch('/api/v1/tasks?page=1');
-  assert.equal(response?.status, 200);
-  assert.equal(await response?.text(), 'network');
-  assert.equal(sw.requests.length, 1);
+test('all API requests bypass worker fetch, fallback, and caches', () => {
+  const sw = worker(async () => { throw new TypeError('offline'); });
+  for (const path of ['/api/v1/tasks?page=1', '/api/v1/tasks/nav-001', '/api/config.js', '/api/v1/sse']) {
+    assert.equal(sw.dispatch(path), undefined);
+    assert.equal(sw.dispatch(path, { method: 'POST' }), undefined);
+  }
+  assert.equal(sw.requests.length, 0);
   assert.deepEqual(sw.cacheCalls, []);
 });
 
-test('ordinary API network failures retain the explicit offline response', async () => {
-  const sw = worker(async () => { throw new TypeError('offline'); });
-  const response = await sw.dispatch('/api/v1/tasks');
-  assert.equal(response?.status, 503);
-  assert.deepEqual(await response?.json(), { ok: false, error: 'Offline' });
-  assert.deepEqual(sw.cacheCalls, []);
+test('static cache-first requests still intercept', async () => {
+  const sw = worker();
+  assert.equal(await (await sw.dispatch('/_next/static/probe.js'))?.text(), 'network');
+  assert.deepEqual(sw.cacheCalls, ['match']);
+  assert.equal(sw.requests.length, 1);
+});
+
+
+test('activation awaits cache cleanup then client takeover, retaining current cache', async () => {
+  const handlers = new Map<string, (event: any) => void>();
+  const calls: string[] = [];
+  vm.runInNewContext(fs.readFileSync(process.env.SW_SOURCE || 'public/sw.js', 'utf8'), {
+    self: { addEventListener: (type: string, handler: any) => handlers.set(type, handler),
+      clients: { claim: async () => { calls.push('claim'); } }, skipWaiting() {} },
+    caches: { keys: async () => ['clawtask-v1', 'old-cache'], delete: async (name: string) => { calls.push('delete:' + name); } },
+  });
+  let lifetime: Promise<unknown> | undefined;
+  handlers.get('activate')!({ waitUntil: (promise: Promise<unknown>) => { lifetime = promise; } });
+  await lifetime;
+  assert.deepEqual(calls, ['delete:old-cache', 'claim']);
+});
+
+test('late afterInteractive registration does not depend on a missed load event', () => {
+  const source = fs.readFileSync(process.env.LAYOUT_SOURCE || 'src/app/layout.tsx', 'utf8');
+  const script = source.match(/__html: \x60(if\('serviceWorker'[\s\S]*?)\x60/)![1];
+  const calls: any[] = [];
+  vm.runInNewContext(script, { window: { addEventListener() {} }, navigator: { serviceWorker: { register: (...args: any[]) => { calls.push(args); return Promise.resolve(); } } } });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], '/sw.js');
+  assert.equal(calls[0][1].updateViaCache, 'none');
 });
