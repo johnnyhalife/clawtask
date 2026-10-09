@@ -27,6 +27,7 @@ export function useApi<T>(url: string, deps: unknown[] = []) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(url);
       const json = await res.json();

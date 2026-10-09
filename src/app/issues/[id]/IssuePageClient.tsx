@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Task, Comment, Activity } from '@/types';
 import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
+import { RequestState } from '@/components/ui/RequestState';
 import { useTaskCollection } from '@/hooks/useTaskCollection';
 import { getDefaultFiltersForTab, GroupByField } from '@/components/task/TaskFilters';
 import { filterAndSortTasks, getFlatOrderedTasks, getIssueNeighbors, issueArrowDirection, parseGroupBy, GROUPBY_STORAGE_KEY } from '@/lib/task-view';
@@ -193,10 +194,10 @@ export function IssuePageClient() {
   const taskSlug = params.id as string; // may be slug (cwt-012) or UUID
 
   const { data: config } = useApi<Record<string, string>>('/api/v1/config');
-  const { data: loadedTask, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
+  const { data: loadedTask, error: taskError, loading: taskLoading, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
   const task = loadedTask && (loadedTask.id === taskSlug || loadedTask.issueId.toLowerCase() === taskSlug.toLowerCase()) ? loadedTask : null;
   // Detail follows default All Issues filters and the shared grouping preference.
-  const { data: issueList, reload: reloadIssueList } = useTaskCollection('/api/v1/tasks?sort=updatedAt&order=desc&limit=500&statuses=todo&statuses=in_progress&statuses=blocked');
+  const { data: issueList, error: issueListError, reload: reloadIssueList } = useTaskCollection('/api/v1/tasks?sort=updatedAt&order=desc&limit=500&statuses=todo&statuses=in_progress&statuses=blocked');
   const [groupBy, setGroupBy] = useState<GroupByField>('status');
   useEffect(() => {
     try { setGroupBy(parseGroupBy(localStorage.getItem(GROUPBY_STORAGE_KEY))); } catch { /* storage blocked */ }
@@ -425,6 +426,8 @@ export function IssuePageClient() {
   if (isMobile) {
     return (
       <div className="flex flex-col overflow-hidden" style={{ background: 'var(--color-base)', height: '100dvh' }}>
+        <RequestState loading={taskLoading && !task} error={taskError} label="issue" onRetry={reloadTask} />
+        <RequestState loading={!issueList && !issueListError} error={issueListError} label="issue navigation" onRetry={reloadIssueList} />
         {/* Mobile: top nav bar */}
         <div
           className="flex items-center gap-2 px-4 flex-shrink-0"
@@ -783,6 +786,8 @@ export function IssuePageClient() {
             </span>
           </div>
 
+          <RequestState loading={taskLoading && !task} error={taskError} label="issue" onRetry={reloadTask} />
+          <RequestState loading={!issueList && !issueListError} error={issueListError} label="issue navigation" onRetry={reloadIssueList} />
           {/* Issue header */}
           <div className="flex-shrink-0 px-8 pt-6 pb-5" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
             {/* Meta row */}

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Task, Config, Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
+import { RequestState } from '@/components/ui/RequestState';
 import { useTaskCollection } from '@/hooks/useTaskCollection';
 import { filterAndSortTasks, parseGroupBy, GROUPBY_STORAGE_KEY } from '@/lib/task-view';
 import { useSse } from '@/hooks/useSse';
@@ -87,7 +88,7 @@ export function HomeContent() {
     return `/api/v1/tasks?${params.toString()}`;
   }, [activeTab, projectId, tagId, filters.statuses]);
 
-  const { data: taskData, reload: reloadTasks } = useTaskCollection(buildTaskUrl());
+  const { data: taskData, error: taskError, reload: reloadTasks } = useTaskCollection(buildTaskUrl());
 
   useSse((event) => {
     if (['task.created', 'task.updated', 'task.deleted'].includes(event.type)) {
@@ -190,7 +191,8 @@ export function HomeContent() {
                   </button>
                 </div>
               )}
-              <TaskList
+              <RequestState loading={!taskData && !taskError} error={taskError} onRetry={reloadTasks} />
+              {taskData && <TaskList
                 tasks={getFilteredTasks()}
                 selectedTaskId={selectedTaskId}
                 onSelectTaskId={setSelectedTaskId}
@@ -198,7 +200,7 @@ export function HomeContent() {
                 onNewTask={() => setShowCreate(true)}
                 emptyMessage="No tasks found."
                 onTaskUpdated={reloadTasks}
-              />
+              />}
             </div>
           )}
         </div>
