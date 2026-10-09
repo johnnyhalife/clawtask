@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '@/db/db';
+import { admitFollowup } from '@/lib/run-store';
 import { ok, err } from '@/lib/response';
 import { logActivity } from '@/lib/activity';
 import { broadcastSse } from '@/lib/sse';
@@ -53,10 +54,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   let lastComment: any = null;
   for (const segment of segments) {
     const id = uuidv4();
+    db.transaction(() => {
     db.prepare(`
       INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     `).run(id, taskId, actorId, actorType, commentType, segment, body.humanRequested ? 1 : 0);
+    if (actorType==='human' && segment.trim()) admitFollowup(db,task,{id,content:segment});
+    })();
     lastComment = enrichComment(db, db.prepare('SELECT * FROM comments WHERE id = ?').get(id));
     broadcastSse({ type: 'comment.added', data: lastComment });
   }

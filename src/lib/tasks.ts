@@ -40,7 +40,10 @@ export function enrichTask(db: Database.Database, row: TaskRow) {
     assignee = db.prepare('SELECT id, name, displayName FROM humans WHERE id = ?').get(row.assigneeId);
   }
 
-  return { ...row, tags, project, assignee };
+  // Additive API evidence for retained work; never expose message contents or credentials.
+  const dispatch = db.prepare("SELECT id,runId,state,errorCode FROM task_dispatches WHERE taskId=? AND state IN ('pending','submitting','running','recovery','outcome_required') ORDER BY seq LIMIT 1").get(row.id) ?? null;
+  const sessionCleanup = db.prepare('SELECT cleanupPending,cleanupAttempts,errorCode FROM task_sessions WHERE taskId=?').get(row.id) ?? null;
+  return { ...row, tags, project, assignee, dispatch, sessionCleanup };
 }
 
 /**

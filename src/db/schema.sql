@@ -115,3 +115,29 @@ CREATE INDEX IF NOT EXISTS idx_tasks_updatedAt ON tasks(updatedAt);
 CREATE INDEX IF NOT EXISTS idx_comments_taskId ON comments(taskId);
 CREATE INDEX IF NOT EXISTS idx_activity_taskId ON activity(taskId);
 CREATE INDEX IF NOT EXISTS idx_activity_createdAt ON activity(createdAt);
+
+-- Durable dispatch outbox. The stable id is also the gateway idempotency key.
+CREATE TABLE IF NOT EXISTS task_dispatches (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT NOT NULL UNIQUE,
+  taskId TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  agentId TEXT NOT NULL,
+  sessionKey TEXT NOT NULL,
+  commentId TEXT UNIQUE REFERENCES comments(id) ON DELETE RESTRICT,
+  runId TEXT,
+  state TEXT NOT NULL CHECK(state IN ('pending','submitting','running','recovery','completed','outcome_required')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  errorCode TEXT,
+  createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dispatch_owner ON task_dispatches(agentId)
+  WHERE state IN ('submitting','running','recovery');
+CREATE TABLE IF NOT EXISTS task_sessions (
+  taskId TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  agentId TEXT NOT NULL,
+  sessionKey TEXT NOT NULL,
+  sessionId TEXT,
+  cleanupPending INTEGER NOT NULL DEFAULT 0,
+  cleanupAttempts INTEGER NOT NULL DEFAULT 0,
+  errorCode TEXT
+);

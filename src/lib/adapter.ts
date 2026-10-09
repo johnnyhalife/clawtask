@@ -19,6 +19,11 @@ import fs from 'fs';
 import path from 'path';
 import { getDb } from '@/db/db';
 import { v4 as uuidv4 } from 'uuid';
+import { RunControl } from './run-control';
+import { admitFollowup } from './run-store';
+import { logActivity } from './activity';
+import { broadcastSse } from './sse';
+import { enrichTask } from './tasks';
 
 // ─── Device identity ──────────────────────────────────────────────────────────
 
@@ -177,6 +182,7 @@ export class AdapterService {
   private gatewayAuthToken: string = '';
   private deviceIdentity: DeviceIdentity | null = null;
   private initialized = false;
+  private runControl?: RunControl;
 
   constructor() {
     // Load config eagerly so probeAgent works before init() fires
@@ -583,42 +589,38 @@ export class AdapterService {
 
   // ─── Task dispatch ────────────────────────────────────────────────────────
 
-  private async processNextTask(conn: AgentConnection) {
-    if (!conn.ws || conn.ws.readyState !== WebSocket.OPEN || !conn.handshakeDone) return;
-    if (conn.currentTaskId) return;
-
-    try {
-      const db = getDb();
-      const nextTask = db.prepare(`
-        SELECT * FROM tasks
-        WHERE assigneeId = ? AND assigneeType = 'agent' AND status NOT IN ('backlog', 'done', 'archived')
-        ORDER BY
-          CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
-          createdAt ASC
-        LIMIT 1
-      `).get(conn.agentId) as any;
-
-      if (!nextTask) return;
-
-      conn.currentTaskId = nextTask.id;
-      conn.currentRunId = null;
-
-      await this.dispatchTask(conn, nextTask);
-    } catch {
-      conn.currentTaskId = null;
-      conn.currentRunId = null;
-    }
+  private control() {
+    if (!this.runControl) this.runControl = new RunControl(getDb(),
+      (conn,method,params,timeout) => this.sendReq(conn,method,params,timeout),
+      conn => this.connections.get(conn.agentId) === conn && conn.handshakeDone && conn.ws?.readyState === WebSocket.OPEN,
+      (task,comment,conn) => this.buildMessage(conn,task,comment),
+      taskId => {
+        const db=getDb();
+        const human=db.prepare('SELECT id FROM humans LIMIT 1').get() as any;
+        if (human) logActivity(db,{taskId,actorId:human.id,actorType:'human',verb:'status_changed',meta:{from:'done',to:'in_progress'}});
+        broadcastSse({type:'task.updated',data:enrichTask(db,db.prepare('SELECT * FROM tasks WHERE id=?').get(taskId) as any)});
+      });
+    return this.runControl;
   }
 
-  private async dispatchTask(conn: AgentConnection, task: any) {
-    if (!conn.ws || conn.ws.readyState !== WebSocket.OPEN) return;
+  private async processNextTask(conn: AgentConnection) {
+    try { await this.control().pump(conn); }
+    catch { console.error('[adapter] queue recovery required', {agentId:conn.agentId}); }
+  }
 
+  private buildMessage(conn: AgentConnection, task: any, comment: any) {
     const db = getDb();
     const agentRow = db.prepare('SELECT apiKey FROM agents WHERE id = ?').get(conn.agentId) as any;
     const apiKey = agentRow?.apiKey ?? '';
 
     const slug = (task.issueId as string).toLowerCase();
-    const message = `You have been assigned task ${task.issueId} in Clawtask.
+    if (comment) return `A human left a follow-up on task ${task.issueId}.
+Human comment: ${comment.content}
+Do not restart or repeat the original task. Fetch current task details from ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}, reply through POST /api/v1/tasks/${slug}/comments, then mark done through POST /api/v1/tasks/${slug}/status.
+Your Clawtask API key: ${apiKey}
+Use this Bearer token on all requests to ${CLAWTASK_SELF_URL}/api/v1/. Use exec with curl or Python, never web_fetch.`;
+
+    return `You have been assigned task ${task.issueId} in Clawtask.
 
 Your Clawtask API key: ${apiKey}
 Use it as Bearer token on ALL requests to ${CLAWTASK_SELF_URL}/api/v1/
@@ -637,39 +639,6 @@ Instructions:
 3. Do the work.
 4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
 5. When done, mark it: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }`;
-    const idempotencyKey = uuidv4();
-    const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
-
-    try {
-      const accepted = await this.sendReq(conn, 'agent', {
-        message,
-        idempotencyKey,
-        sessionKey,
-        agentId: conn.openclawAgentId,
-      }, 15000) as any;
-
-      const runId: string = accepted?.runId ?? idempotencyKey;
-      conn.currentRunId = runId;
-
-      const acceptedStatus = (accepted?.status as string ?? '').toLowerCase();
-
-      // If not immediately resolved, wait for completion
-      if (acceptedStatus !== 'ok') {
-        await this.sendReq(conn, 'agent.wait', {
-          runId,
-          timeoutMs: 300000,
-        }, 360000);
-      }
-
-      conn.currentTaskId = null;
-      conn.currentRunId = null;
-      this.processNextTask(conn);
-    } catch (err) {
-      console.error('[adapter] dispatchTask failed', err);
-      conn.currentTaskId = null;
-      conn.currentRunId = null;
-      this.processNextTask(conn);
-    }
   }
 
   // ─── Request primitive ────────────────────────────────────────────────────
@@ -710,102 +679,29 @@ Instructions:
       return;
     }
 
-    if (conn.handshakeDone && !conn.currentTaskId) {
+    if (conn.handshakeDone) {
       this.processNextTask(conn);
     }
     // If connecting or busy, task will be picked up when ready
   }
 
   async notifyHumanComment(task: any, comment: any) {
+    admitFollowup(getDb(),task,comment);
     if (!task.assigneeId || task.assigneeType !== 'agent') return;
+    if (!this.connections.has(task.assigneeId)) this.connectAgentById(task.assigneeId);
+    const conn=this.connections.get(task.assigneeId);
+    if (conn) await this.processNextTask(conn);
+  }
 
-    // Ensure the agent is connected — connect if not yet tracked
-    if (!this.connections.has(task.assigneeId)) {
-      this.connectAgentById(task.assigneeId);
-    }
-
-    const conn = this.connections.get(task.assigneeId);
-    if (!conn) return;
-
-    // If not yet connected, wait up to 8s for handshake
-    if (!conn.handshakeDone) {
-      await new Promise<void>(resolve => {
-        const start = Date.now();
-        const interval = setInterval(() => {
-          if (conn.handshakeDone || Date.now() - start > 8000) {
-            clearInterval(interval);
-            resolve();
-          }
-        }, 200);
-      });
-    }
-
-    if (!conn?.ws || conn.ws.readyState !== WebSocket.OPEN || !conn.handshakeDone) return;
-
-    const db = getDb();
-    const agentRow = db.prepare('SELECT apiKey FROM agents WHERE id = ?').get(conn.agentId) as any;
-    const apiKey = agentRow?.apiKey ?? '';
-
-    const slug = (task.issueId as string).toLowerCase();
-
-    // Auto-reopen if done — do this before checking currentTaskId so the agent gets context, not a fresh dispatch
-    if (task.status === 'done') {
-      db.prepare(`UPDATE tasks SET status = 'in_progress', updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(task.id);
-      const humanRow = db.prepare('SELECT id FROM humans LIMIT 1').get() as any;
-      if (humanRow) {
-        const [{ logActivity }, { broadcastSse }, { enrichTask }] = await Promise.all([
-          import('./activity'),
-          import('./sse'),
-          import('./tasks'),
-        ]);
-        logActivity(db, { taskId: task.id, actorId: humanRow.id, actorType: 'human', verb: 'status_changed', meta: { from: 'done', to: 'in_progress' } });
-        const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id) as any);
-        broadcastSse({ type: 'task.updated', data: updated });
-        task = { ...task, status: 'in_progress' };
-      }
-    }
-
-    // Track the task for run completion.
-    if (!conn.currentTaskId) {
-      conn.currentTaskId = task.id;
-      conn.currentRunId = null;
-    }
-
-    const message = `A human left a comment on task ${task.issueId} that you are working on.
-
-Human comment: "${comment.content}"
-
-This is a follow-up to your existing work — do NOT restart or re-execute the task from scratch. Fetch the current task state from ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug} for full context, then respond directly to the comment by posting a reply via POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/comments. When you are done responding, mark the task done again via POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }.
-
-Your Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to ${CLAWTASK_SELF_URL}/api/v1/`;
-    const idempotencyKey = uuidv4();
-    const sessionKey = `agent:${conn.openclawAgentId}:clawtask:${task.id}`;
-
-    try {
-      const accepted = await this.sendReq(conn, 'agent', {
-        message,
-        idempotencyKey,
-        sessionKey,
-        agentId: conn.openclawAgentId,
-      }, 15000) as any;
-
-      const runId: string = accepted?.runId ?? idempotencyKey;
-      const prevTaskId = conn.currentTaskId;
-      // Always update runId so the stream filter accepts chunks for this turn
-      conn.currentTaskId = task.id;
-      conn.currentRunId = runId;
-
-      const acceptedStatus = (accepted?.status as string ?? '').toLowerCase();
-      if (acceptedStatus !== 'ok') {
-        await this.sendReq(conn, 'agent.wait', { runId, timeoutMs: 300000 }, 360000);
-      }
-
-      if (!prevTaskId) {
-        conn.currentTaskId = null;
-        conn.currentRunId = null;
-        this.processNextTask(conn);
-      }
-    } catch {}
+  async notifyTaskState(task: any) {
+    this.control().statusChanged(task);
+    const stored=getDb().prepare('SELECT agentId FROM task_sessions WHERE taskId=?').get(task.id) as any;
+    const agentId=stored?.agentId ?? (task.assigneeType==='agent' ? task.assigneeId : null);
+    if (!agentId) return;
+    if (!this.connections.has(agentId)) this.connectAgentById(agentId);
+    const conn=this.connections.get(agentId);
+    if (conn && task.status==='done') await this.control().cleanup(conn,task.id);
+    if (conn && ['todo','in_progress'].includes(task.status)) await this.processNextTask(conn);
   }
 
   disconnectAgent(agentId: string) {
