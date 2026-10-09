@@ -3,6 +3,8 @@
 import { useCallback, useState } from 'react';
 import { Task } from '@/types';
 import { TaskRow } from './TaskRow';
+import { getGroupKey, sortedGroupKeys } from '@/lib/task-view';
+export { getFlatOrderedTasks } from '@/lib/task-view';
 import { GroupByField } from '@/components/task/TaskFilters';
 
 interface TaskListProps {
@@ -16,7 +18,6 @@ interface TaskListProps {
 }
 
 // ─── Order / label maps ───────────────────────────────────────────────────────
-const STATUS_ORDER = ['in_progress', 'todo', 'backlog', 'blocked', 'done', 'archived'];
 const STATUS_LABEL: Record<string, string> = {
   backlog: 'Backlog',
   in_progress: 'In Progress',
@@ -35,7 +36,6 @@ const STATUS_COLOR: Record<string, string> = {
 };
 const STATUS_DEFAULT_COLLAPSED = new Set(['backlog', 'archived']);
 
-const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low', ''];
 const PRIORITY_LABEL: Record<string, string> = {
   urgent: 'Urgent',
   high: 'High',
@@ -51,9 +51,7 @@ const PRIORITY_COLOR: Record<string, string> = {
   '': 'var(--color-base-400)',
 };
 
-const ASSIGNEE_ORDER = ['agent', 'human', 'unassigned', ''];
 
-const COMPLETED_DATE_ORDER = ['today', 'yesterday', 'this_week', 'this_month', 'this_year', 'older', 'no_date'];
 const COMPLETED_DATE_LABEL: Record<string, string> = {
   today: 'Today',
   yesterday: 'Yesterday',
@@ -73,29 +71,6 @@ const COMPLETED_DATE_COLOR: Record<string, string> = {
   no_date: 'var(--color-base-400)',
 };
 
-function getCompletedDateBucket(task: Task): string {
-  if (task.status !== 'done') return 'no_date';
-  const now = new Date();
-  const completed = new Date(task.updatedAt);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const completedDay = new Date(completed.getFullYear(), completed.getMonth(), completed.getDate());
-  const diffDays = Math.floor((today.getTime() - completedDay.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'yesterday';
-  // This week: Monday of current week through now (excluding today/yesterday)
-  const dayOfWeek = today.getDay();
-  const daysFromMonday = (dayOfWeek + 6) % 7;
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - daysFromMonday);
-  if (completedDay >= weekStart) return 'this_week';
-  // This month (excluding this week)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  if (completedDay >= monthStart) return 'this_month';
-  // This year (excluding this month)
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  if (completedDay >= yearStart) return 'this_year';
-  return 'older';
-}
 const ASSIGNEE_LABEL: Record<string, string> = {
   agent: 'Agent',
   human: 'Human',
@@ -110,69 +85,9 @@ const ASSIGNEE_COLOR: Record<string, string> = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function getGroupKey(task: Task, groupBy: GroupByField): string {
-  if (groupBy === 'status') return task.status || '';
-  if (groupBy === 'priority') return task.priority || '';
-  if (groupBy === 'assignee') return task.assigneeType || (task.assigneeId ? 'human' : 'unassigned');
-  if (groupBy === 'project') return task.projectId ?? '__none__';
-  if (groupBy === 'completedDate') return getCompletedDateBucket(task);
-  return 'all';
-}
-
-function sortedGroupKeys(keys: string[], groupBy: GroupByField): string[] {
-  if (groupBy === 'status') {
-    return [
-      ...STATUS_ORDER.filter(k => keys.includes(k)),
-      ...keys.filter(k => !STATUS_ORDER.includes(k)),
-    ];
-  }
-  if (groupBy === 'priority') {
-    return [
-      ...PRIORITY_ORDER.filter(k => keys.includes(k)),
-      ...keys.filter(k => !PRIORITY_ORDER.includes(k)),
-    ];
-  }
-  if (groupBy === 'assignee') {
-    return [
-      ...ASSIGNEE_ORDER.filter(k => keys.includes(k)),
-      ...keys.filter(k => !ASSIGNEE_ORDER.includes(k)),
-    ];
-  }
-  if (groupBy === 'project') {
-    return [
-      ...keys.filter(k => k !== '__none__').sort(),
-      ...keys.filter(k => k === '__none__'),
-    ];
-  }
-  if (groupBy === 'completedDate') {
-    return [
-      ...COMPLETED_DATE_ORDER.filter(k => keys.includes(k)),
-      ...keys.filter(k => !COMPLETED_DATE_ORDER.includes(k)),
-    ];
-  }
-  return keys;
-}
-
 // Project name cache populated at render time via task data
 const _projectNameCache: Record<string, string> = {};
 function cacheProjectName(id: string, name: string) { _projectNameCache[id] = name; }
-
-// Returns tasks in the same flat order TaskList renders them (respects groupBy)
-export function getFlatOrderedTasks(tasks: Task[], groupBy: GroupByField): Task[] {
-  if (groupBy === 'none') return tasks;
-  const groups: Record<string, Task[]> = {};
-  for (const task of tasks) {
-    const key = getGroupKey(task, groupBy);
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(task);
-  }
-  const keys = sortedGroupKeys(Object.keys(groups), groupBy);
-  const result: Task[] = [];
-  for (const key of keys) {
-    for (const task of (groups[key] ?? [])) result.push(task);
-  }
-  return result;
-}
 
 function groupLabel(key: string, groupBy: GroupByField): string {
   if (groupBy === 'status') return STATUS_LABEL[key] ?? key;

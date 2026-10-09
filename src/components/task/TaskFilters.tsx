@@ -31,3 +31,12 @@ export const DEFAULT_FILTERS: FilterState = {
   assignee: '',
   groupBy: 'status',
 };
+
+const ALL_ISSUES_DEFAULT_STATUSES: StatusValue[] = ['todo', 'in_progress', 'blocked'];
+
+export function getDefaultFiltersForTab(tab: string): FilterState {
+  return {
+    ...DEFAULT_FILTERS,
+    statuses: tab === 'all' ? [...ALL_ISSUES_DEFAULT_STATUSES] : [],
+  };
+}

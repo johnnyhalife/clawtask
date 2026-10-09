@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Task, Config, Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
+import { useTaskCollection } from '@/hooks/useTaskCollection';
+import { filterAndSortTasks, parseGroupBy, GROUPBY_STORAGE_KEY } from '@/lib/task-view';
 import { useSse } from '@/hooks/useSse';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -11,7 +13,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, DEFAULT_FILTERS, GroupByField } from '@/components/task/TaskFilters';
+import { FilterState, getDefaultFiltersForTab } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
@@ -32,33 +34,22 @@ export function HomeContent() {
   const { data: tags } = useApi<Tag[]>('/api/v1/tags');
   const [showCreate, setShowCreate] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const GROUPBY_STORAGE_KEY = 'clawtask:groupBy';
 
-  const getStoredGroupBy = (): GroupByField => {
-    try {
-      const stored = localStorage.getItem(GROUPBY_STORAGE_KEY);
-      const valid: GroupByField[] = ['status', 'priority', 'assignee', 'project', 'none'];
-      if (stored && valid.includes(stored as GroupByField)) return stored as GroupByField;
-    } catch { /* SSR or storage blocked */ }
-    return DEFAULT_FILTERS.groupBy;
-  };
-
-  const [filters, setFilters] = useState<FilterState>(() => ({
-    ...DEFAULT_FILTERS,
-    groupBy: getStoredGroupBy(),
-  }));
+  const [filters, setFilters] = useState<FilterState>(() => getDefaultFiltersForTab(activeTab));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-
-  // Persist groupBy to localStorage whenever it changes
+  const [groupingLoaded, setGroupingLoaded] = useState(false);
   useEffect(() => {
-    try {
-      localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy);
-    } catch { /* storage blocked */ }
-  }, [filters.groupBy]);
-
-  // Reset filters when tab changes, but preserve the persisted groupBy
+    try { setFilters(f => ({ ...f, groupBy: parseGroupBy(localStorage.getItem(GROUPBY_STORAGE_KEY)) })); } catch { /* storage blocked */ }
+    setGroupingLoaded(true);
+  }, []);
   useEffect(() => {
-    setFilters(f => ({ ...DEFAULT_FILTERS, groupBy: f.groupBy }));
+    if (!groupingLoaded) return;
+    try { localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy); } catch { /* storage blocked */ }
+  }, [filters.groupBy, groupingLoaded]);
+
+  // Apply the tab-specific defaults on navigation, while preserving the persisted groupBy.
+  useEffect(() => {
+    setFilters(f => ({ ...getDefaultFiltersForTab(activeTab), groupBy: f.groupBy }));
   }, [activeTab]);
 
   // "N" opens create modal (skip when typing in an input/textarea)
@@ -89,66 +80,22 @@ export function HomeContent() {
   const buildTaskUrl = useCallback(() => {
     const params = new URLSearchParams({ sort: 'updatedAt', order: 'desc', limit: '500' });
     if (activeTab === 'all') {
+      for (const status of filters.statuses) params.append('statuses', status);
       if (projectId) params.set('projectId', projectId);
       if (tagId) params.set('tagId', tagId);
     }
     return `/api/v1/tasks?${params.toString()}`;
-  }, [activeTab, projectId, tagId]);
+  }, [activeTab, projectId, tagId, filters.statuses]);
 
-  const { data: taskData, reload: reloadTasks } = useApi<{ tasks: Task[]; total: number }>(
-    buildTaskUrl(),
-    [activeTab, projectId, tagId]
-  );
+  const { data: taskData, reload: reloadTasks } = useTaskCollection(buildTaskUrl());
 
   useSse((event) => {
-    if (['task.created', 'task.updated'].includes(event.type)) {
+    if (['task.created', 'task.updated', 'task.deleted'].includes(event.type)) {
       reloadTasks();
     }
-  });
+  }, reloadTasks);
 
-  const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-
-  const getFilteredTasks = (): Task[] => {
-    if (!taskData?.tasks) return [];
-    let tasks = taskData.tasks;
-
-    // Search
-    if (q) {
-      const lq = q.toLowerCase();
-      tasks = tasks.filter(
-        (t) =>
-          t.title.toLowerCase().includes(lq) ||
-          t.issueId.toLowerCase().includes(lq) ||
-          t.description.toLowerCase().includes(lq)
-      );
-    }
-
-    // User-selected filters (multi-select)
-    if (filters.statuses.length > 0) tasks = tasks.filter((t) => filters.statuses.includes(t.status as any));
-    if (filters.priorities.length > 0) tasks = tasks.filter((t) => filters.priorities.includes(t.priority as any));
-    if (filters.assignee === 'agent') tasks = tasks.filter((t) => t.assigneeType === 'agent');
-    else if (filters.assignee === 'human') tasks = tasks.filter((t) => t.assigneeType === 'human');
-    else if (filters.assignee === 'unassigned') tasks = tasks.filter((t) => !t.assigneeType);
-
-    // Sort
-    tasks = tasks.toSorted((a, b) => {
-      let cmp = 0;
-      if (filters.sortField === 'updatedAt') {
-        cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else if (filters.sortField === 'createdAt') {
-        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (filters.sortField === 'priority') {
-        cmp = (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99);
-      } else if (filters.sortField === 'title') {
-        cmp = a.title.localeCompare(b.title);
-      } else if (filters.sortField === 'issueId') {
-        cmp = a.issueId.localeCompare(b.issueId);
-      }
-      return filters.sortOrder === 'asc' ? cmp : -cmp;
-    });
-
-    return tasks;
-  };
+  const getFilteredTasks = (): Task[] => filterAndSortTasks(taskData?.tasks ?? [], filters, q);
 
   const isMobile = useIsMobile();
   const isPulse = activeTab === 'pulse';

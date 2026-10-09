@@ -127,6 +127,7 @@ type ApiResponse<T> = ApiOk<T> | ApiError;
 type SseEventType =
   | 'task.created'
   | 'task.updated'
+  | 'task.deleted'
   | 'comment.added'
   | 'comment.updated'
   | 'activity.added'

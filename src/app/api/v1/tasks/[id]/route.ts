@@ -104,5 +104,6 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   if (!task) return err('NOT_FOUND', 'Task not found', 404);
 
   db.prepare('DELETE FROM tasks WHERE id = ?').run(params.id);
+  broadcastSse({ type: 'task.deleted', data: { id: params.id } });
   return ok({ deleted: true });
 }
