@@ -13,6 +13,7 @@ import {
 
 interface TopBarProps {
   onNewTask?: () => void;
+  onSearch?: (query: string) => void;
   filters?: FilterState;
   onFiltersChange?: (f: FilterState) => void;
   hideAssignee?: boolean;
@@ -299,7 +300,7 @@ function GroupDropdown({ current, onChange }: { current: GroupByField; onChange:
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 type Panel = 'filter' | 'sort' | 'group' | null;
 
-export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hideToolbar, totalCount, ref: searchRef }: TopBarProps) {
+export function TopBar({ onNewTask, onSearch, filters, onFiltersChange, hideAssignee, hideToolbar, totalCount, ref: searchRef }: TopBarProps) {
   const [query, setQuery] = useState('');
   const [openPanel, setOpenPanel] = useState<Panel>(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -331,9 +332,14 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
 
   const hasActiveFilters = f.statuses.length > 0 || f.priorities.length > 0 || f.assignee !== '';
 
+  const search = () => {
+    if (!query.trim()) return;
+    if (onSearch) onSearch(query);
+    else push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+  };
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+    search();
   };
 
   // Mobile search expand effect
@@ -372,7 +378,7 @@ export function TopBar({ onNewTask, filters, onFiltersChange, hideAssignee, hide
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (query.trim()) {
-                    push(`/?tab=all&q=${encodeURIComponent(query.trim())}`);
+                    search();
                     setMobileSearchOpen(false);
                   }
                 }}

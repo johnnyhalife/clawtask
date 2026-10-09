@@ -5,6 +5,7 @@ import NextImage from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { getIssueScope, projectIssuesHref } from '@/lib/issue-scope';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
@@ -65,7 +66,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const { push } = useRouter();
-  const activeTab = get('tab') || 'pulse';
+  const { activeTab, projectId, tagId } = getIssueScope(searchParams);
   const isMobile = useIsMobile();
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: tags, reload: reloadTags } = useApi<Tag[]>('/api/v1/tags');
@@ -128,7 +129,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
         </div>
         <ul className="space-y-px px-2 mb-4">
           {PULSE_ITEMS.map((item) => {
-            const active = pathname === '/' && activeTab === item.tab;
+            const active = pathname === '/' && activeTab === item.tab && !projectId && !tagId;
             return (
               <li key={item.tab}>
                 <NavLink href={item.href} active={active} icon={item.icon} label={item.label} />
@@ -143,7 +144,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
         </div>
         <ul className="space-y-px px-2 mb-4">
           {WORK_ITEMS.map((item) => {
-            const active = pathname === '/' && activeTab === item.tab;
+            const active = pathname === '/' && activeTab === item.tab && !projectId && !tagId;
             return (
               <li key={item.tab}>
                 <NavLink href={item.href} active={active} icon={item.icon} label={item.label} />
@@ -159,11 +160,12 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
         <div className="px-2 mb-4">
           <ul className="space-y-px">
             {(projects || []).map((project) => {
-              const isActive = get('projectId') === project.id;
+              const isActive = pathname === '/' && projectId === project.id;
               return (
                 <li key={project.id}>
-                  <button
-                    onClick={() => push(`/?tab=all&projectId=${project.id}`)}
+                  <Link
+                    href={projectIssuesHref(project.id)}
+                    aria-current={isActive ? 'page' : undefined}
                     className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-sm transition-colors text-left"
                     style={
                       isActive
@@ -178,7 +180,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
                       style={{ backgroundColor: project.color }}
                     />
                     <span className="truncate" style={{ fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem' }}>{project.name}</span>
-                  </button>
+                  </Link>
                 </li>
               );
             })}

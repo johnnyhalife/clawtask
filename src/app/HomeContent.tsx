@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Task, Config, Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { RequestState } from '@/components/ui/RequestState';
 import { useTaskCollection } from '@/hooks/useTaskCollection';
 import { filterAndSortTasks, parseGroupBy, GROUPBY_STORAGE_KEY } from '@/lib/task-view';
+import { getIssueScope, buildIssueCollectionUrl, withIssueSearch } from '@/lib/issue-scope';
 import { useSse } from '@/hooks/useSse';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -25,9 +26,7 @@ export function HomeContent() {
   const get = searchParams.get.bind(searchParams);
   const router = useRouter();
   const { push } = router;
-  const activeTab = get('tab') || 'pulse';
-  const projectId = get('projectId') || '';
-  const tagId = get('tagId') || '';
+  const { activeTab, projectId, tagId } = getIssueScope(searchParams);
   const q = get('q') || '';
 
   const { data: config } = useApi<Config>('/api/v1/config');
@@ -48,10 +47,7 @@ export function HomeContent() {
     try { localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy); } catch { /* storage blocked */ }
   }, [filters.groupBy, groupingLoaded]);
 
-  // Apply the tab-specific defaults on navigation, while preserving the persisted groupBy.
-  useEffect(() => {
-    setFilters(f => ({ ...getDefaultFiltersForTab(activeTab), groupBy: f.groupBy }));
-  }, [activeTab]);
+  // Keep explicit selections while navigating between project lists and Pulse.
 
   // "N" opens create modal (skip when typing in an input/textarea)
   useEffect(() => {
@@ -76,19 +72,11 @@ export function HomeContent() {
   }, [activeTab, router]);
 
   // Reset J/K selection when tab changes
-  useEffect(() => { setSelectedTaskId(null); }, [activeTab]);
+  useEffect(() => { setSelectedTaskId(null); }, [activeTab, projectId, tagId, q]);
 
-  const buildTaskUrl = useCallback(() => {
-    const params = new URLSearchParams({ sort: 'updatedAt', order: 'desc', limit: '500' });
-    if (activeTab === 'all') {
-      for (const status of filters.statuses) params.append('statuses', status);
-      if (projectId) params.set('projectId', projectId);
-      if (tagId) params.set('tagId', tagId);
-    }
-    return `/api/v1/tasks?${params.toString()}`;
-  }, [activeTab, projectId, tagId, filters.statuses]);
-
-  const { data: taskData, error: taskError, reload: reloadTasks } = useTaskCollection(buildTaskUrl());
+  const { data: taskData, error: taskError, reload: reloadTasks } = useTaskCollection(
+    buildIssueCollectionUrl({ activeTab, projectId, tagId }, filters)
+  );
 
   useSse((event) => {
     if (['task.created', 'task.updated', 'task.deleted'].includes(event.type)) {
@@ -103,7 +91,7 @@ export function HomeContent() {
   const activeProject = projectId ? projects?.find(p => p.id === projectId) : null;
   const activeTag = tagId ? tags?.find(t => t.id === tagId) : null;
   const pageLabel = isPulse ? 'Pulse'
-    : activeProject ? `Issues · ${activeProject.name}`
+    : projectId ? `Issues · ${activeProject?.name || projectId}`
     : activeTag ? `Issues · ${activeTag.name}`
     : 'Issues';
   usePageTitle(pageLabel);
@@ -155,7 +143,7 @@ export function HomeContent() {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPulse, selectedTaskId, router, filters, taskData]);
+  }, [isPulse, selectedTaskId, router, filters, taskData, q]);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
@@ -166,6 +154,7 @@ export function HomeContent() {
           onNewTask={() => setShowCreate(true)}
           filters={filters}
           onFiltersChange={setFilters}
+          onSearch={query => push(withIssueSearch(searchParams, query))}
           hideAssignee={false}
           hideToolbar={isPulse}
           totalCount={isPulse ? undefined : getFilteredTasks().length}
@@ -179,11 +168,14 @@ export function HomeContent() {
             </div>
           ) : (
             <div>
+              <h1 className="px-6 pt-4 pb-2 text-sm font-semibold" style={{ color: 'var(--color-base-800)', fontFamily: "'Instrument Sans', sans-serif" }}>
+                {projectId || tagId ? pageLabel : 'All Issues'}
+              </h1>
               {q && (
                 <div className="px-6 pt-4 pb-2 text-sm" style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif" }}>
                   Results for <span style={{ color: 'var(--color-base-800)' }}>"{q}"</span>
                   <button
-                    onClick={() => push(`/?tab=${activeTab}`)}
+                    onClick={() => push(withIssueSearch(searchParams, ''))}
                     className="ml-2"
                     style={{ color: 'var(--color-base-400)' }}
                   >
