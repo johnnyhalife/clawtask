@@ -78,3 +78,12 @@ test('uncertain accepted run cannot bind and archive a replacement identity',asy
 test('wait for a different run ID cannot release task ownership',async()=>{
  const f=fake();f.setHandler(m=>m==='agent.wait'?{runId:'other',status:'ok',endedAt:123}:undefined);await f.control.pump(f.conn);assert.equal(row().state,'recovery');assert.equal(f.conn.currentRunId,row().runId);
 });
+
+test('submission carries backend expectedExistingSessionId after restore',async()=>{status('t','done');follow('c');const f=fake();f.get('agent:test:clawtask:t').archived=true;await f.control.pump(f.conn);assert.equal(sends(f)[0].params.expectedExistingSessionId,f.get('agent:test:clawtask:t').sessionId);});
+test('another task followups start only after the active task releases its owner',async()=>{
+ const f=fake();task('other','done');const gate=deferred();let first=true;
+ f.setHandler((m,p)=>{if(m==='agent.wait'){if(first){first=false;return gate.promise;}status('other','done');return {runId:p.runId,status:'ok',endedAt:123};}});
+ const running=f.control.pump(f.conn);while(!f.calls.some(c=>c.method==='agent.wait'))await new Promise(r=>setImmediate(r));
+ follow('c1','other');follow('c2','other');await f.control.pump(f.conn);assert.equal(f.conn.currentTaskId,'t');assert.equal(sends(f).length,1);
+ status('t','done');gate.resolve({runId:row().runId,status:'ok',endedAt:123});await running;assert.deepEqual(sends(f).map(c=>c.params.message),['t','c1','c2']);assert.equal(f.conn.currentTaskId,null);
+});

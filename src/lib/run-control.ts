@@ -159,7 +159,7 @@ export class RunControl {
           try {
             const task=this.db.prepare('SELECT * FROM tasks WHERE id=?').get(row.taskId);
             const comment=row.commentId ? this.db.prepare('SELECT * FROM comments WHERE id=?').get(row.commentId) : null;
-            const accepted=await this.request(conn,'agent',{message:this.message(task,comment,conn),idempotencyKey:row.id,sessionKey:row.sessionKey,agentId:conn.openclawAgentId},15000);
+            const accepted=await this.request(conn,'agent',{message:this.message(task,comment,conn),idempotencyKey:row.id,sessionKey:row.sessionKey,agentId:conn.openclawAgentId,...this.session(row.taskId)?.sessionId ? {expectedExistingSessionId:this.session(row.taskId).sessionId} : {}},15000);
             if (typeof accepted?.runId!=='string' || accepted.runId!==row.id) throw new Error('invalid_acceptance');
             this.db.prepare("UPDATE task_dispatches SET state='running',runId=? WHERE id=? AND runId=?").run(accepted.runId,row.id,row.id);
             row={...row,state:'running'};this.log('accepted',row);
