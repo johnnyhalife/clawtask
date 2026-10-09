@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Service worker leaves SSE requests to the browser instead of proxying long-lived streams through its JSON API/offline policy.
 - Issue lists filter statuses before pagination and load all matching pages. Creation, updates, deletion and reconnect refresh detail navigation; a deleted current issue returns to All Issues. Stale route identities, open pickers, editors, handled keys and modifier keys cannot drive detail navigation.
 - Settings now shows Probe gateway/API errors beside the agent status as an accessible alert. Retrying clears stale feedback; successful probes clear the error.
 - Gateway Probe and persistent connections now sign the validated server challenge timestamp. Backend connections request protocol 4, including token-only pairing. Malformed device challenges fail before connect.
