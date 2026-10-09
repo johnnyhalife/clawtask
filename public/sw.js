@@ -41,6 +41,10 @@ self.addEventListener('fetch', (event) => {
 
   const pathname = url.pathname;
 
+  // EventSource owns the long-lived stream and its reconnects. Do not proxy it
+  // through the worker or replace a failed stream with the JSON offline fallback.
+  if (pathname === '/api/v1/sse' || request.headers.get('accept')?.includes('text/event-stream')) return;
+
   // API routes → network-first
   if (API_PATTERN.test(pathname)) {
     event.respondWith(
