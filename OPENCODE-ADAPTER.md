@@ -1,5 +1,7 @@
 # OpenCode Adapter — Spec & Milestones
 
+> Historical design proposal, not current runtime guidance. OpenClaw lifecycle and recovery now use [the verified session-lifecycle contract](docs/gateway-session-lifecycle.md). Status done does not release an active run; blocked does not respawn. The stream comment writer was removed in October 2026.
+
 Multi-adapter support for Clawtask. Adds an OpenCode server adapter alongside the existing OpenClaw adapter, with a clean shared interface, canonical API-callback comment model, per-agent locking, and session liveness monitoring.
 
 ---

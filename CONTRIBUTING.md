@@ -86,6 +86,7 @@ If the answer to #4 is yes, update the relevant docs or changelog.
 Before opening a PR, run:
 
 ```bash
+npm test
 npm run typecheck
 npm run build
 ```
@@ -96,8 +97,8 @@ For agent-related changes, verify at least one task assignment round trip:
 
 1. Register/probe an OpenClaw agent.
 2. Assign a task to that agent.
-3. Confirm output streams into the task comment thread.
-4. Confirm task status transitions correctly.
+3. Confirm one authenticated API comment appears once in the thread.
+4. Confirm done archives only after terminal run completion, then a human followup restores the same session before dispatch.
 
 ## Scope boundaries
 

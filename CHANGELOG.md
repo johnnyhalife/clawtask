@@ -4,10 +4,17 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Features
+- Durable per-agent run ownership and FIFO human followups. Unknown acceptance, timeout and connection loss retain work instead of repeating it.
+- Done task sessions archive only after terminal run observation and idle gateway checks. Followups restore the same session before dispatch. Task responses expose dispatch and cleanup recovery state.
+
 ### Bug fixes
+- Blocked clears both assignee fields through status POST, task PATCH and subtask PATCH. All status routes notify the same lifecycle owner.
+- Reconnect timer and socket callbacks now have one owner. Deliberate disconnect stays disconnected. Gateway URL replacement no longer mutates a live Map iterator.
 - Agent comments now use the authenticated API only. Gateway stream events no longer create or append task comments. Browser updates still use SSE.
 
 ### Tests
+- Added 32 isolated fake-gateway lifecycle tests and 4 transport tests, plus 6 API status/admission tests. Quality CI now runs npm test.
 - Added isolated SQLite regression tests for socket output, API comments, gateway responses, and the September 10 blocked-task fix.
 
 ## 2026-09-10

@@ -6,7 +6,7 @@ A lightweight, self-hosted task tracker purpose-built for AI agent workflows. Bu
 
 ## What It Is
 
-Clawtask is a single-user task management tool where tasks can be assigned to either humans or AI agents. When a task is assigned to an agent, Clawtask connects to the OpenClaw gateway over WebSocket, dispatches the task, streams the agent's output into a comment thread, and tracks task state transitions automatically.
+Clawtask is a single-user task management tool where tasks can be assigned to either humans or AI agents. When a task is assigned to an agent, Clawtask connects to the OpenClaw gateway over WebSocket, dispatches the task and tracks run ownership. Agents post comments and status through the authenticated API; browser updates use SSE.
 
 Think Linear — but with agents as first-class assignees.
 
@@ -28,7 +28,7 @@ Browser  ──SSE──▶  Next.js App Router  ──SQLite──  ~/.clawtask
 
 - **UI**: Dark-theme React app inspired by Linear. Real-time updates via SSE.
 - **API**: REST endpoints under `/api/v1/`. Agents authenticate with a Bearer API key.
-- **Adapter**: Singleton `AdapterService` maintains persistent WebSocket connections to OpenClaw per agent. Handles task dispatch, stream-to-comment, and task lifecycle.
+- **Adapter**: Singleton `AdapterService` maintains persistent WebSocket connections to OpenClaw per agent. Handles durable task dispatch, bounded run reconciliation, and session archive/restore.
 - **DB**: SQLite via `better-sqlite3`. WAL mode. Stored at `~/.clawtask/clawtask.db`.
 
 ### Task Lifecycle
@@ -42,9 +42,9 @@ todo  ──[assigned to agent]──▶  in_progress  ──[agent marks done]�
 ```
 
 1. **Assignment**: Assigning a task to a registered agent triggers `assignTaskToAgent` in the adapter. This dispatches a prompt to the agent's OpenClaw session.
-2. **Streaming**: The agent's output streams back via the gateway WS. Each agent turn (delimited by `stream: "job", state: "done"`) creates a new comment on the task.
+2. **Comments**: Agents post comments through the authenticated API. Gateway stream frames never write comments.
 3. **Completion**: The agent calls `POST /api/v1/tasks/:id/status` with `{ "status": "done" }` when finished.
-4. **Human follow-up**: When a human posts a comment on a task, the adapter sends it to the agent as a follow-up (not a re-execution). If the task was `done`, it auto-reopens to `in_progress` before notifying the agent.
+4. **Human follow-up**: The API saves the comment and pending dispatch atomically. Followups wait behind the agent's current run. A done task reopens only after the original session is restored.
 5. **Cancellation**: Cancel button resets task to `todo`, removes assignee, and posts a system comment informing the agent to stop.
 
 ### Agent Communication
@@ -59,7 +59,7 @@ Agents authenticate to the Clawtask API using Bearer tokens issued at registrati
 
 ### Stream-to-Comment Mapping
 
-The adapter listens for `stream: "assistant"` frames on the gateway WS. Chunks are accumulated into a single comment per agent turn. Turn boundaries are detected via `stream: "job", state: "done"` frames — each turn starts a new comment. RunId filtering ensures only output from the active task run lands in comments.
+Agents use the authenticated comments API. Run completion is observed through agent.wait; done task sessions archive only when the gateway reports no active work. See [lifecycle and recovery rules](docs/gateway-session-lifecycle.md).
 
 ---
 
@@ -150,7 +150,7 @@ All responses follow the envelope:
 
 ## Known Issues
 
-- **Comment separation requires `stream: "job"` frames**: If OpenClaw does not emit `job` stream events for a given model/session, all agent output will concatenate into a single comment. This has been tested with Claude (Anthropic) on OpenClaw.
+- **Uncertain runs pause**: Timeout or unknown acceptance retains ownership. Bounded gateway observations can expire; recovery needs operator verification, not automatic resubmission. See dispatch/sessionCleanup in task API responses.
 - **Task stuck `in_progress` if agent crashes**: If the agent fails mid-task without calling the status API, the task remains `in_progress` indefinitely. Workaround: use Cancel to reset, or update status manually via the API.
 - **Probe status not live**: Agent probe status is only updated when you click Probe in Settings. It does not automatically reflect WS disconnections.
 

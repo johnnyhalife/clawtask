@@ -1,6 +1,6 @@
 # Clawtask session lifecycle — execution plan
 
-Status: Approved on 2026-10-09. Local baseline passed. Test harness and API-only comment change verified. Run-control work is next.
+Status: Approved on 2026-10-09. Steps 4–7 implemented and fake-gateway acceptance tests passed. Step 8 real-gateway/browser integration remains with the parent agent.
 
 ## Execution record — Step 1
 
@@ -26,6 +26,26 @@ Status: Approved on 2026-10-09. Local baseline passed. Test harness and API-only
 - Before the change, socket regression failed with five stored comments. After the change: 4/4 tests passed, type check passed.
 - Updated CHANGELOG and DECISIONS for the comment-path change. The local server still runs the baseline build; it does not yet include changed code.
 - Next: run-control, queue recovery, status rules, and lifecycle changes. Gateway API shape must be verified before implementation.
+
+## Execution record — Steps 4–7
+
+- Added durable dispatch outbox, unique per-agent owned-run constraint and tracked session cleanup state. Human comment and pending dispatch admission share one transaction.
+- Initial and human followup work use one pump and matching-run completion path. Three waits per pump, six persisted observations per attempt; timeout, pending, yielded and uncertain acceptance retain ownership. Recovery never resubmits an uncertain accepted attempt.
+- Terminal run without task outcome is outcome_required, not automatic redispatch. Task API responses expose dispatch and sessionCleanup evidence.
+- Status POST, task PATCH and subtask PATCH share blocked rules and lifecycle notifications. Blocked still clears both assignee fields and never dispatches.
+- Archive/restore use sessions.describe and sessions.patch with expectedSessionId. The installed schema and handlers support the planned contract. Active-state absence, missing/replaced identity and failed restore stop agent submission. Original identity is not adopted after an uncertain submission.
+- Run submission also sends expectedExistingSessionId after restore. The installed agent schema supports this field; preflight allows it for the backend client mode already used by Clawtask, and admission checks the original entry identity. This closes replacement between restore and agent submission.
+- Serialized lifecycle checks protect local races. Comment admission during archive remains pending and restores before dispatch. A queue wake during an existing pump is retained. Cleanup retries have a three-attempt budget; only tracked cleanup recovers after restart.
+- Error plus close owns one reconnect timer. Deliberate disconnect retires callbacks. Generation guards ignore old sockets and handshake callbacks. A new URL-change regression exposed an infinite Map mutation iteration (the test process exhausted its heap). Snapshotting connection IDs fixed that fault. This is separate from the September 10 blocked loop.
+- Red evidence: after correcting a fixture missing required apiKeyHash, the initial timeout test observed null owner instead of t; the cross-task followup test observed t instead of other. Both failed against the existing adapter. Final implementation passes them through the shared controller.
+- Final fake/API/transport suite: 46/46 passing (32 lifecycle, 4 transport, 10 API/comment/status). No real gateway requests or model calls in this child.
+- npm run typecheck: passed. git diff --check: passed.
+- npm run build: passed with Node v26.9.0 and NEXT_TELEMETRY_DISABLED=1 in a copied source/dependency tree at /tmp/clawtask-lifecycle-build.Ovf4Ak/app, HOME=/tmp/clawtask-lifecycle-build.Ovf4Ak/home. This kept the parent server's .next directory and test HOME unchanged. CI still uses Node 20; that runtime was not tested locally.
+- Existing warnings remain: experimental.instrumentationHook is obsolete; Browserslist data is old; Node test tooling emits module.register deprecation warnings. No dependency upgrades were made.
+- Gateway dedupe audit: ordinary entries expire after 300000 ms and can be evicted above 1000 entries; active/future-expiry accepted entries have maintenance exemptions. No indefinite exactly-once or restart retention claim is made. See docs/gateway-session-lifecycle.md for inspected installed filenames and exact fields.
+- Quality workflow now runs npm test. Production publishing is unchanged. No push, image build, deployment, gateway configuration change, default-model change, or production data mutation.
+- Parent baseline server warm-trail / pid 94661 at 127.0.0.1:3433 was not stopped or modified. It still uses the old baseline build. next-env.d.ts remains an unrelated pre-existing generated modification and is not staged.
+- Next: Parent starts a separate updated isolated app (or deliberately switches its own baseline), authenticates the local gateway, and executes Step 8 with test-only agent/task/session keys. Verify actual accepted/wait/describe/patch responses, same session ID/transcript after restore, one API/SSE comment, blocked routes and the next queued task. Do not publish until the separate production gate is approved.
 
 ## Goal
 

@@ -4,6 +4,16 @@ This document records all major decisions made during the initial build of Clawt
 
 ---
 
+## 2026-10-09 — Durable run ownership and session lifecycle
+
+Persist comment admission and dispatch identity before sending work. Initial dispatch and human followups use the same per-agent owner. Timeout and unknown acceptance retain that owner. Gateway dedupe is bounded and is not an indefinite exactly-once guarantee, so recovery waits for a saved run instead of replaying a submission.
+
+Task done is not run completion. Cleanup checks the original session identity, gateway active state and durable pending work. Restore must succeed before reopening or dispatching. Archive and restore serialize per task; comments received during a patch remain queued. Missing or replaced identity requires recovery rather than session replacement.
+
+Waits have a persisted six-observation budget and cleanup has a three-attempt budget. Exhaustion is visible in API recovery fields and logs. The application intentionally pauses uncertain business work instead of repeating it. These local locks assume one application process.
+
+The September 10 blocked-task fix remains unchanged in meaning and now applies through all status mutation routes. The transport reconnect and Map-iteration faults are separate; they are not the historical blocked-loop diagnosis. See [verified gateway contract and recovery rules](docs/gateway-session-lifecycle.md).
+
 ## 2026-10-09 — One agent comment path
 
 Agent comments use the authenticated API. The gateway socket handles dispatch and run control, not comment storage. This removes the second comment writer and keeps author identity, activity records, and browser events on one path. Historical comments are unchanged.
