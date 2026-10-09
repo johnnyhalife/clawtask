@@ -197,7 +197,7 @@ export function IssuePageClient() {
   const { data: loadedTask, error: taskError, loading: taskLoading, reload: reloadTask } = useApi<Task>(`/api/v1/tasks/${taskSlug}`);
   const task = loadedTask && (loadedTask.id === taskSlug || loadedTask.issueId.toLowerCase() === taskSlug.toLowerCase()) ? loadedTask : null;
   // Detail follows default All Issues filters and the shared grouping preference.
-  const { data: issueList, error: issueListError, reload: reloadIssueList } = useTaskCollection('/api/v1/tasks?sort=updatedAt&order=desc&limit=500&statuses=todo&statuses=in_progress&statuses=blocked');
+  const { data: issueList, error: issueListError, reload: reloadIssueList } = useTaskCollection('/api/v1/tasks?sort=updatedAt&order=desc&limit=500');
   const [groupBy, setGroupBy] = useState<GroupByField>('status');
   useEffect(() => {
     try { setGroupBy(parseGroupBy(localStorage.getItem(GROUPBY_STORAGE_KEY))); } catch { /* storage blocked */ }
@@ -816,16 +816,16 @@ export function IssuePageClient() {
                     type="button"
                     onClick={() => navigateIssue('previous')}
                     disabled={!previousIssue}
-                    title="Previous open issue (←)"
-                    aria-label="Previous open issue"
+                    title="Previous issue (←)"
+                    aria-label="Previous issue"
                     style={{ color: previousIssue ? 'var(--color-base-600)' : 'var(--color-base-300)', background: 'none', border: '1px solid var(--color-base-300)', borderRadius: 5, cursor: previousIssue ? 'pointer' : 'not-allowed', fontSize: '0.72rem', padding: '3px 7px', fontFamily: "'Instrument Sans', sans-serif" }}
                   >← Previous</button>
                   <button
                     type="button"
                     onClick={() => navigateIssue('next')}
                     disabled={!nextIssue}
-                    title="Next open issue (→)"
-                    aria-label="Next open issue"
+                    title="Next issue (→)"
+                    aria-label="Next issue"
                     style={{ color: nextIssue ? 'var(--color-base-600)' : 'var(--color-base-300)', background: 'none', border: '1px solid var(--color-base-300)', borderRadius: 5, cursor: nextIssue ? 'pointer' : 'not-allowed', fontSize: '0.72rem', padding: '3px 7px', fontFamily: "'Instrument Sans', sans-serif" }}
                   >Next →</button>
                 </div>

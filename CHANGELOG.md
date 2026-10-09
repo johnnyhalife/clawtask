@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## Unreleased
 
 ### Features
-- All Issues defaults to Todo, In Progress and Blocked. Issue detail has Previous/Next buttons and unmodified left/right arrow shortcuts in the same grouped order, using the saved grouping preference.
+- All Issues includes every status by default. Status selections are explicit, including Backlog and Archived. Issue detail has Previous/Next buttons and unmodified left/right arrow shortcuts in the same grouped order, using the saved grouping preference.
 - Durable per-agent run ownership and FIFO human followups. Unknown acceptance, timeout and connection loss retain work instead of repeating it.
 - Done task sessions archive only after terminal run observation and idle gateway checks. Followups restore the same session before dispatch. Task responses expose dispatch and cleanup recovery state.
 

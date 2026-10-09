@@ -105,6 +105,7 @@ function SectionHeader({ label }: { label: string }) {
 
 // ─── Filter dropdown (multi-column) ──────────────────────────────────────────
 const STATUS_OPTIONS = [
+  { value: 'backlog', label: 'Backlog', color: 'var(--color-base-500)' },
   { value: 'todo', label: 'Todo', color: 'var(--color-base-650)' },
   { value: 'in_progress', label: 'In Progress', color: '#3189FF' },
   { value: 'blocked', label: 'Blocked', color: '#F87171' },

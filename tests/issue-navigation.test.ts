@@ -31,19 +31,19 @@ const localFetch = (async (url: string | URL | Request, options?: RequestInit) =
 }) as typeof fetch;
 
 test('All Issues and Pulse defaults are independent copies', () => {
-  assert.deepEqual(getDefaultFiltersForTab('all').statuses, ['todo', 'in_progress', 'blocked']);
+  assert.deepEqual(getDefaultFiltersForTab('all').statuses, []);
   assert.deepEqual(getDefaultFiltersForTab('pulse').statuses, []);
-  const filters = getDefaultFiltersForTab('all'); filters.statuses.pop();
-  assert.equal(getDefaultFiltersForTab('all').statuses.length, 3);
+  const filters = getDefaultFiltersForTab('all'); filters.statuses.push('done');
+  assert.equal(getDefaultFiltersForTab('all').statuses.length, 0);
 });
 test('detail neighbors follow grouped All Issues order, not global update order', () => {
   const input = [task('b', 'blocked', '2026-10-09'), task('t', 'todo', '2026-10-08'), task('i', 'in_progress', '2026-10-07'), task('done', 'done')];
   const ordered = getFlatOrderedTasks(filterAndSortTasks(input, getDefaultFiltersForTab('all')), 'status');
-  assert.deepEqual(ordered.map(t => t.id), ['i', 't', 'b']);
+  assert.deepEqual(ordered.map(t => t.id), ['i', 't', 'b', 'done']);
   assert.deepEqual(getIssueNeighbors(ordered, 't'), { previous: input[2], next: input[0] });
   assert.equal(getIssueNeighbors(ordered, 'i').previous, null);
-  assert.equal(getIssueNeighbors(ordered, 'b').next, null);
-  assert.deepEqual(getIssueNeighbors(ordered, 'done'), { previous: null, next: null });
+  assert.equal(getIssueNeighbors(ordered, 'b').next?.id, 'done');
+  assert.deepEqual(getIssueNeighbors(ordered, 'done'), { previous: input[0], next: null });
   assert.deepEqual(getIssueNeighbors(ordered, 'deleted'), { previous: null, next: null });
   assert.deepEqual(input.map(t => t.id), ['b', 't', 'i', 'done']);
 });
@@ -58,12 +58,12 @@ test('stored grouping and priority, assignee, project, none orders use the list 
   assert.equal(parseGroupBy('bad'), 'status'); assert.equal(parseGroupBy(null), 'status');
   assert.deepEqual(getFlatOrderedTasks(input, 'none'), input);
 });
-test('status change removes current or adjacent targets from open navigation', () => {
+test('status change retains completed targets in default navigation', () => {
   const input = [task('a'), task('b'), task('c')];
   input[1].status = 'done';
-  const ordered = filterAndSortTasks(input, getDefaultFiltersForTab('all'));
+  const ordered = getFlatOrderedTasks(filterAndSortTasks(input, getDefaultFiltersForTab('all')), 'status');
   assert.equal(getIssueNeighbors(ordered, 'a').next?.id, 'c');
-  assert.deepEqual(getIssueNeighbors(ordered, 'b'), { previous: null, next: null });
+  assert.deepEqual(getIssueNeighbors(ordered, 'b'), { previous: input[2], next: null });
 });
 test('only unmodified unhandled arrows outside editors and pickers navigate', () => {
   const event = { key: 'ArrowRight', defaultPrevented: false, altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false };

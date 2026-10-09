@@ -1,6 +1,6 @@
 # Issue detail navigation
 
-All Issues defaults to Todo, In Progress and Blocked, sorted by updated time descending.
+All Issues includes every status by default (Backlog, Todo, In Progress, Blocked, Done and Archived), sorted by updated time descending.
 Previous/Next follows that default collection and the saved clawtask:groupBy preference,
 including status, priority, assignee, project, completed date and no grouping.
 The shared list helpers define group order and sorting. Equal sort values use task UUID as a stable tie-breaker.
@@ -14,8 +14,8 @@ navigation until the new complete collection is ready. An API failure leaves nav
 This is a single-process live collection, not a database snapshot across HTTP requests.
 
 Creation, update, deletion and SSE reconnect refresh the collection. task.deleted contains the task UUID;
-a detail page for that UUID returns to All Issues. Closed, missing, deleted and subtask identities have no
-neighbors in the default top-level open collection. A route transition cannot use the previous task identity.
+a detail page for that UUID returns to All Issues. Missing, deleted and subtask identities have no
+neighbors in the default top-level all-status collection. A route transition cannot use the previous task identity.
 Left/right arrows only navigate when unmodified and not already handled, while outside editors and pickers.
 At a boundary, the corresponding button is disabled and the arrow is not consumed.
 
