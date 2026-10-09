@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { applyStatusRules, notifyTaskState } from '@/lib/task-status';
 import { getDb } from '@/db/db';
 import { ok, err } from '@/lib/response';
 import { enrichTask } from '@/lib/tasks';
@@ -20,6 +21,7 @@ export async function PATCH(
   const { actorId, actorType } = actor;
 
   const body = await req.json();
+  if (!applyStatusRules(body,sub.status)) return err('INVALID_STATUS','Invalid task status',400);
   const allowed = ['title', 'description', 'priority', 'status', 'assigneeId', 'assigneeType', 'startDate', 'endDate'];
 
   const updates: string[] = [];
@@ -42,6 +44,7 @@ export async function PATCH(
   logActivity(db, { taskId: params.subId, actorId, actorType, verb: 'updated' });
   broadcastSse({ type: 'task.updated', data: updated });
 
+  await notifyTaskState(updated);
   return ok(updated);
 }
 

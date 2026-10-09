@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { applyStatusRules, notifyTaskState } from '@/lib/task-status';
 import { getDb } from '@/db/db';
 import { ok, err } from '@/lib/response';
 import { getTaskWithDetails, enrichTask } from '@/lib/tasks';
@@ -18,7 +19,6 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const params = await props.params;
   const db = getDb();
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any;
-  let assigneeChanged = false;
   if (!task) return err('NOT_FOUND', 'Task not found', 404);
 
   const actor = await requireActor(req);
@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const { actorId, actorType } = actor;
 
   const body = await req.json();
+  if (!applyStatusRules(body,task.status)) return err('INVALID_STATUS','Invalid task status',400);
   const allowed = ['title', 'description', 'priority', 'status', 'projectId', 'assigneeId', 'assigneeType', 'startDate', 'endDate', 'parentTaskId'];
 
   const updates: string[] = [];
@@ -43,7 +44,6 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
         logActivity(db, { taskId: params.id, actorId, actorType, verb: 'priority_changed', meta: { from: task.priority, to: body[field] } });
       }
       if (field === 'assigneeId' && body[field] !== task.assigneeId) {
-        assigneeChanged = true;
         if (body[field]) {
           const assigneeType = body.assigneeType ?? task.assigneeType ?? 'human';
           logActivity(db, { taskId: params.id, actorId, actorType, verb: 'assigned', meta: { assigneeId: body[field], assigneeType } });
@@ -84,11 +84,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const updated = enrichTask(db, db.prepare('SELECT * FROM tasks WHERE id = ?').get(params.id) as any);
   broadcastSse({ type: 'task.updated', data: updated });
 
-  // If assignee changed to an agent, trigger dispatch
-  if (assigneeChanged && updated.assigneeType === 'agent' && updated.assigneeId) {
-    const { getAdapterService } = await import('@/lib/adapter');
-    getAdapterService().assignTaskToAgent(updated, updated.assigneeId).catch(() => {});
-  }
+  await notifyTaskState(updated);
 
   return ok(updated);
 }
