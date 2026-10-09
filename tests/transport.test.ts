@@ -1,0 +1,14 @@
+import { test, beforeEach, afterEach } from 'node:test';
+import Database from 'better-sqlite3';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { AdapterService } from '../src/lib/adapter';
+let db: Database.Database;
+beforeEach(()=>{db=new Database(':memory:');db.exec('CREATE TABLE config(key TEXT,value TEXT)');globalThis.__clawtask_db=db;});
+afterEach(()=>{globalThis.__clawtask_db=undefined;db.close();});
+class Socket extends EventEmitter {readyState=1;close(){this.readyState=3;this.emit('close');}send(){} }
+function fixture(){const adapter:any=Object.create(AdapterService.prototype);adapter.connections=new Map();adapter.processNextTask=()=>{};const sockets:Socket[]=[];adapter.createSocket=()=>{const ws=new Socket();sockets.push(ws);return ws;};adapter.connectAgent({id:'a',openclawAgentId:'test',displayName:'Test'});return {adapter,sockets,conn:adapter.connections.get('a')};}
+test('error followed by close owns exactly one reconnect timer',t=>{t.mock.timers.enable({apis:['setTimeout']});const f=fixture();f.sockets[0].emit('error',Error('broken'));f.sockets[0].emit('close');t.mock.timers.tick(5000);assert.equal(f.sockets.length,1);t.mock.timers.tick(5000);assert.equal(f.sockets.length,2);t.mock.timers.tick(20000);assert.equal(f.sockets.length,2);f.adapter.disconnectAgent('a');});
+test('intentional disconnect cannot reconnect from close or error',t=>{t.mock.timers.enable({apis:['setTimeout']});const f=fixture();f.adapter.disconnectAgent('a');f.sockets[0].emit('error',Error('late'));f.sockets[0].emit('close');t.mock.timers.tick(30000);assert.equal(f.sockets.length,1);assert.equal(f.adapter.connections.size,0);});
+test('obsolete socket cannot alter newer status, requests or run identity',t=>{t.mock.timers.enable({apis:['setTimeout']});const f=fixture();const old=f.sockets[0];old.emit('close');t.mock.timers.tick(5000);f.conn.handshakeDone=true;f.conn.status='connected';f.conn.currentRunId='new-run';let resolved=false;f.conn.pending.set('new-request',{timer:setTimeout(()=>{},1000),resolve:()=>{resolved=true;},reject:()=>assert.fail('obsolete rejection')});old.emit('message',JSON.stringify({type:'res',id:'new-request',ok:true,payload:{status:'ok'}}));old.emit('close');assert.equal(resolved,false);assert.equal(f.conn.status,'connected');assert.equal(f.conn.currentRunId,'new-run');f.conn.pending.clear();f.adapter.disconnectAgent('a');});
+test('URL replacement retires old connection and cannot revive its callbacks',t=>{t.mock.timers.enable({apis:['setTimeout']});const f=fixture();f.adapter.connectAgentById=()=>f.adapter.connectAgent({id:'a',openclawAgentId:'test',displayName:'Test'});const old=f.conn;f.adapter.updateGatewayUrl('ws://fake.invalid');assert.equal(f.sockets.length,2);assert.notEqual(f.adapter.connections.get('a'),old);f.sockets[0].emit('close');t.mock.timers.tick(30000);assert.equal(f.sockets.length,2);f.adapter.disconnectAgent('a');});

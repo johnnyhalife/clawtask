@@ -160,6 +160,7 @@ interface AgentConnection {
   handshakeDone: boolean;
   challengeNonce: string | null;
   autoPairAttempted: boolean;
+  generation: number;
 }
 
 const CLIENT_ID = 'gateway-client';
@@ -218,7 +219,8 @@ export class AdapterService {
       const authCfg = db.prepare("SELECT value FROM config WHERE key = 'gatewayAuthToken'").get() as { value: string } | undefined;
       if (authCfg?.value) this.gatewayAuthToken = authCfg.value;
     } catch {}
-    for (const [agentId] of this.connections) {
+    // Snapshot: deleting and reinserting during Map iteration otherwise never ends.
+    for (const agentId of Array.from(this.connections.keys())) {
       this.disconnectAgent(agentId);
       this.connectAgentById(agentId);
     }
@@ -345,6 +347,7 @@ export class AdapterService {
       handshakeDone: false,
       challengeNonce: null,
       autoPairAttempted: false,
+      generation: 0,
     };
     this.connections.set(agent.id, conn);
     this.doConnect(conn);
@@ -358,36 +361,36 @@ export class AdapterService {
     } catch {}
   }
 
+  private createSocket() { return new WebSocket(this.gatewayUrl); }
+
+  private scheduleReconnect(conn: AgentConnection, delay: number) {
+    if (this.connections.get(conn.agentId)!==conn || conn.reconnectTimer) return;
+    conn.reconnectTimer=setTimeout(()=>{
+      conn.reconnectTimer=null;
+      if (this.connections.get(conn.agentId)===conn) this.doConnect(conn);
+    },delay);
+  }
+
   private doConnect(conn: AgentConnection) {
-    conn.status = 'connecting';
-    conn.handshakeDone = false;
-    conn.challengeNonce = null;
-    conn.pending.clear();
-
+    if (this.connections.get(conn.agentId)!==conn) return;
+    if (conn.reconnectTimer) { clearTimeout(conn.reconnectTimer);conn.reconnectTimer=null; }
+    const generation=++conn.generation;
+    conn.status='connecting';conn.handshakeDone=false;conn.challengeNonce=null;
+    this.rejectAllPending(conn,'Connection replaced');
     try {
-      const ws = new WebSocket(this.gatewayUrl);
-      conn.ws = ws;
-
-      ws.on('message', (data) => this.handleFrame(conn, data.toString()));
-
-      ws.on('close', () => {
-        conn.status = 'disconnected';
-        conn.ws = null;
-        conn.handshakeDone = false;
-        this.rejectAllPending(conn, 'WebSocket closed');
-        conn.reconnectTimer = setTimeout(() => this.doConnect(conn), 5000);
-      });
-
-      ws.on('error', () => {
-        conn.status = 'error';
-        conn.ws = null;
-        conn.handshakeDone = false;
-        this.rejectAllPending(conn, 'WebSocket error');
-        conn.reconnectTimer = setTimeout(() => this.doConnect(conn), 10000);
-      });
+      const ws=this.createSocket();conn.ws=ws;
+      const current=()=>this.connections.get(conn.agentId)===conn && conn.ws===ws && conn.generation===generation;
+      ws.on('message',data=>{if(current()) this.handleFrame(conn,data.toString());});
+      const failed=(status: 'error' | 'disconnected')=>{
+        if (!current()) return;
+        conn.status=status;conn.ws=null;conn.handshakeDone=false;
+        this.rejectAllPending(conn,'Transport lost');
+        this.scheduleReconnect(conn,status==='error'?10000:5000);
+      };
+      ws.on('close',()=>failed('disconnected'));
+      ws.on('error',()=>{failed('error');try {ws.close();} catch {}});
     } catch {
-      conn.status = 'error';
-      conn.reconnectTimer = setTimeout(() => this.doConnect(conn), 10000);
+      conn.status='error';this.scheduleReconnect(conn,10000);
     }
   }
 
@@ -432,6 +435,8 @@ export class AdapterService {
   // ─── Handshake ────────────────────────────────────────────────────────────
 
   private async doHandshake(conn: AgentConnection) {
+    const generation=conn.generation;
+    const current=()=>this.connections.get(conn.agentId)===conn && conn.generation===generation && conn.ws!==null;
     const nonce = conn.challengeNonce;
     if (!nonce) { conn.ws?.close(); return; }
 
@@ -468,17 +473,20 @@ export class AdapterService {
 
     try {
       await this.sendReq(conn, 'connect', connectParams, 15000);
+      if (!current()) return;
       conn.status = 'connected';
       conn.handshakeDone = true;
       conn.autoPairAttempted = false;
       this.processNextTask(conn);
     } catch (err: any) {
+      if (!current()) return;
       const msg: string = err?.message ?? '';
       const isPairingRequired = msg.toLowerCase().includes('pairing');
 
       if (isPairingRequired && !conn.autoPairAttempted && this.gatewayAuthToken) {
         conn.autoPairAttempted = true;
         const pairOk = await this.autoPairDevice(identity, err?.gatewayDetails?.requestId as string | undefined);
+        if (!current()) return;
         if (pairOk) {
           // Reconnect — will get a new challenge and retry handshake
           conn.ws?.close();
@@ -803,7 +811,11 @@ Your Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to ${CL
   disconnectAgent(agentId: string) {
     const conn = this.connections.get(agentId);
     if (!conn) return;
+    this.connections.delete(agentId);
+    conn.generation++;
     if (conn.reconnectTimer) clearTimeout(conn.reconnectTimer);
+    conn.reconnectTimer=null;
+    conn.handshakeDone=false;
     this.rejectAllPending(conn, 'Agent disconnected');
     conn.ws?.close();
     this.connections.delete(agentId);
