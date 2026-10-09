@@ -4,6 +4,10 @@ This document records all major decisions made during the initial build of Clawt
 
 ---
 
+## 2026-10-09 — One agent comment path
+
+Agent comments use the authenticated API. The gateway socket handles dispatch and run control, not comment storage. This removes the second comment writer and keeps author identity, activity records, and browser events on one path. Historical comments are unchanged.
+
 ## Technology Choices
 
 ### SQLite via better-sqlite3

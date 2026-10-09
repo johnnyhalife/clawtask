@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Bug fixes
+- Agent comments now use the authenticated API only. Gateway stream events no longer create or append task comments. Browser updates still use SSE.
+
+### Tests
+- Added isolated SQLite regression tests for socket output, API comments, gateway responses, and the September 10 blocked-task fix.
+
 ## 2026-09-10
 
 ### Bug fixes

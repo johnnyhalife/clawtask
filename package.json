@@ -8,7 +8,8 @@
     "start": "next start -p 3333",
     "migrate": "tsx src/db/migrate.ts",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

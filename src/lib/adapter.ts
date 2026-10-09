@@ -10,7 +10,7 @@
  * - connect params include role + scopes at top level
  * - auto-pairing: on PAIRING_REQUIRED, connects with token only to approve, then retries
  * - agent.wait receives { runId, timeoutMs }
- * - agent event stream filters by runId + stream === 'assistant'
+ * - task comments are written through the authenticated API only
  */
 
 import WebSocket from 'ws';
@@ -18,7 +18,6 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { getDb } from '@/db/db';
-import { broadcastSse } from './sse';
 import { v4 as uuidv4 } from 'uuid';
 
 // ─── Device identity ──────────────────────────────────────────────────────────
@@ -157,7 +156,6 @@ interface AgentConnection {
   currentTaskId: string | null;
   currentRunId: string | null;
   reconnectTimer: ReturnType<typeof setTimeout> | null;
-  currentCommentId: string | null;
   pending: Map<string, PendingRequest>;
   handshakeDone: boolean;
   challengeNonce: string | null;
@@ -172,7 +170,7 @@ const SCOPES = ['operator.admin'];
 
 // ─── Adapter service ──────────────────────────────────────────────────────────
 
-class AdapterService {
+export class AdapterService {
   private connections = new Map<string, AgentConnection>();
   private gatewayUrl: string = 'ws://localhost:2222';
   private gatewayAuthToken: string = '';
@@ -343,7 +341,6 @@ class AdapterService {
       currentTaskId: null,
       currentRunId: null,
       reconnectTimer: null,
-      currentCommentId: null,
       pending: new Map(),
       handshakeDone: false,
       challengeNonce: null,
@@ -429,39 +426,7 @@ class AdapterService {
       return;
     }
 
-    // Agent stream events: filter by runId and stream=assistant
-    if (frame.event === 'agent' && conn.currentTaskId) {
-      const payload = frame.payload as any;
-      if (!payload) return;
-
-      const runId = typeof payload.runId === 'string' ? payload.runId : null;
-      // Only accept chunks that match the current task's runId exactly — reject anything else (including unrelated sessions on the same agent)
-      if (!runId || !conn.currentRunId || runId !== conn.currentRunId) return;
-
-      const stream = typeof payload.stream === 'string' ? payload.stream : null;
-
-      // Any non-assistant stream event (tool call, job update) = boundary between thoughts
-      if (stream !== 'assistant') {
-        conn.currentCommentId = null;
-        return;
-      }
-
-      const data = payload.data as any;
-      const isDelta = typeof data?.delta === 'string';
-      const chunk = isDelta ? data.delta
-        : typeof data?.text === 'string' ? data.text
-        : null;
-
-      if (!chunk) return;
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[adapter] stream chunk', isDelta ? 'delta' : 'text', JSON.stringify(chunk).slice(0, 80));
-      }
-
-      try {
-        const db = getDb();
-        this.handleAgentOutput(conn, db, chunk, isDelta);
-      } catch {}
-    }
+    // Agent output is not persisted here. Agents post comments through the API.
   }
 
   // ─── Handshake ────────────────────────────────────────────────────────────
@@ -628,7 +593,6 @@ class AdapterService {
       if (!nextTask) return;
 
       conn.currentTaskId = nextTask.id;
-      conn.currentCommentId = null;
       conn.currentRunId = null;
 
       await this.dispatchTask(conn, nextTask);
@@ -691,60 +655,12 @@ Instructions:
 
       conn.currentTaskId = null;
       conn.currentRunId = null;
-      conn.currentCommentId = null;
       this.processNextTask(conn);
     } catch (err) {
       console.error('[adapter] dispatchTask failed', err);
       conn.currentTaskId = null;
       conn.currentRunId = null;
-      conn.currentCommentId = null;
       this.processNextTask(conn);
-    }
-  }
-
-  // ─── Output streaming ─────────────────────────────────────────────────────
-
-  private handleAgentOutput(conn: AgentConnection, db: any, content: string, isDelta: boolean) {
-    if (!conn.currentTaskId) return;
-    if (!content.trim()) return;
-
-    const agentAuthor = db.prepare('SELECT id, openclawAgentId, displayName FROM agents WHERE id = ?').get(conn.agentId);
-
-    if (isDelta) {
-      // Accumulate delta into current comment
-      if (conn.currentCommentId) {
-        const existing = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId) as any;
-        if (existing) {
-          const newContent = existing.content + content;
-          db.prepare("UPDATE comments SET content = ?, updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-            .run(newContent, conn.currentCommentId);
-          const updated = db.prepare('SELECT * FROM comments WHERE id = ?').get(conn.currentCommentId);
-          broadcastSse({ type: 'comment.updated', data: { ...updated, humanRequested: false, author: agentAuthor } });
-          // Seal comment on sentence boundary — next delta opens a fresh one
-          if (/[.!?]\s*$/.test(newContent)) {
-            conn.currentCommentId = null;
-          }
-          return;
-        }
-      }
-      // No current comment — create one
-      const commentId = uuidv4();
-      db.prepare(`INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
-        VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
-        .run(commentId, conn.currentTaskId, conn.agentId, content);
-      conn.currentCommentId = commentId;
-      const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
-      broadcastSse({ type: 'comment.added', data: { ...comment, humanRequested: false, author: agentAuthor } });
-    } else {
-      // Complete text message — each one is its own comment
-      conn.currentCommentId = null;
-      const commentId = uuidv4();
-      db.prepare(`INSERT INTO comments (id, taskId, authorId, authorType, type, content, humanRequested, createdAt, updatedAt)
-        VALUES (?, ?, ?, 'agent', 'message', ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`)
-        .run(commentId, conn.currentTaskId, conn.agentId, content.trim());
-      conn.currentCommentId = commentId;
-      const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
-      broadcastSse({ type: 'comment.added', data: { ...comment, humanRequested: false, author: agentAuthor } });
     }
   }
 
@@ -841,10 +757,9 @@ Instructions:
       }
     }
 
-    // Ensure conn tracks this task so streamed output lands in a comment
+    // Track the task for run completion.
     if (!conn.currentTaskId) {
       conn.currentTaskId = task.id;
-      conn.currentCommentId = null;
       conn.currentRunId = null;
     }
 
@@ -880,7 +795,6 @@ Your Clawtask API key: ${apiKey}\nUse it as Bearer token on ALL requests to ${CL
       if (!prevTaskId) {
         conn.currentTaskId = null;
         conn.currentRunId = null;
-        conn.currentCommentId = null;
         this.processNextTask(conn);
       }
     } catch {}
