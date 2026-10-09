@@ -1,5 +1,5 @@
 // Clawtask Service Worker
-// Cache-first for static assets, network-first for API routes
+// Cache-first for static assets; API requests belong to the browser.
 
 const CACHE_NAME = 'clawtask-v1';
 const STATIC_PATTERNS = [
@@ -23,10 +23,8 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  // Take control of all clients immediately
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -41,31 +39,9 @@ self.addEventListener('fetch', (event) => {
 
   const pathname = url.pathname;
 
-  // EventSource owns the long-lived stream and its reconnects. Do not proxy it
-  // through the worker or replace a failed stream with the JSON offline fallback.
-  if (pathname === '/api/v1/sse' || request.headers.get('accept')?.includes('text/event-stream')) return;
-
-  // API routes → network-first
-  if (API_PATTERN.test(pathname)) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Don't cache API responses
-          return response;
-        })
-        .catch(() => {
-          // If network fails for API, return a simple offline response
-          return new Response(
-            JSON.stringify({ ok: false, error: 'Offline' }),
-            {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        })
-    );
-    return;
-  }
+  // Leave API data, cancellation, and long-lived streams to the browser.
+  // Never convert a failed API request into a synthetic worker response.
+  if (API_PATTERN.test(pathname) || request.headers.get('accept')?.includes('text/event-stream')) return;
 
   // Static assets → cache-first
   const isStatic = STATIC_PATTERNS.some((pattern) => pattern.test(pathname));
