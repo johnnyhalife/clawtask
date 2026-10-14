@@ -20,6 +20,7 @@ import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { executeAssigneeChange } from '@/lib/assignee-change';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function relativeTime(date: string) {
@@ -82,6 +83,16 @@ function PropRow({ label, kbd, children }: { label: string; kbd?: string; childr
         )}
       </div>
       <div className="flex-1 text-sm" style={{ fontFamily: "'Instrument Sans', sans-serif", color: 'var(--color-base-700)' }}>{children}</div>
+    </div>
+  );
+}
+
+function AssigneeMutationFeedback({ loading, error }: { loading: boolean; error: string | null }) {
+  if (!loading && !error) return null;
+  return (
+    <div className="mt-1 text-xs" aria-live="polite" style={{ fontFamily: "'Instrument Sans', sans-serif" }}>
+      {loading && <span role="status" style={{ color: 'var(--color-base-500)' }}>Updating assignee…</span>}
+      {error && <span role="alert" style={{ color: '#F87171' }}>{error}</span>}
     </div>
   );
 }
@@ -242,6 +253,8 @@ export function IssuePageClient() {
   // Inline-edit open states
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [assigneeHighlight, setAssigneeHighlight] = useState(0);
+  const [assigneeLoading, setAssigneeLoading] = useState(false);
+  const [assigneeError, setAssigneeError] = useState<string | null>(null);
   const statusRef = useRef<ChipSelectHandle>(null);
   const priorityRef = useRef<ChipSelectHandle>(null);
   const projectTriggerRef = useRef<HTMLButtonElement>(null);
@@ -350,9 +363,17 @@ export function IssuePageClient() {
     reloadTask();
   };
   const handleAssignChange = async (assigneeId: string | null, assigneeType: 'agent' | 'human' | null) => {
-    setAssigneeOpen(false);
-    await apiPatch(`/api/v1/tasks/${taskId}`, { assigneeId, assigneeType });
-    reloadTask();
+    if (assigneeLoading) return;
+    setAssigneeLoading(true);
+    setAssigneeError(null);
+    const result = await executeAssigneeChange({ taskId, assigneeId, assigneeType, patch: apiPatch });
+    if (result.ok) {
+      setAssigneeOpen(false);
+      reloadTask();
+    } else {
+      setAssigneeError(result.error);
+    }
+    setAssigneeLoading(false);
   };
   const handleProjectChange = async (pid: string | null) => {
     setProjectOpen(false);
@@ -528,8 +549,10 @@ export function IssuePageClient() {
                   <PropRow label="Assignee">
                     <div style={{ position: 'relative' }}>
                       <button ref={assigneeTriggerRef}
+                        disabled={assigneeLoading}
+                        aria-busy={assigneeLoading}
                         onClick={() => { setAssigneeOpen(v => !v); setAssigneeHighlight(0); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        style={{ background: 'none', border: 'none', cursor: assigneeLoading ? 'wait' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, opacity: assigneeLoading ? 0.6 : 1 }}>
                         {task.assignee ? (
                           <>
                             <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={20} />
@@ -552,7 +575,7 @@ export function IssuePageClient() {
                               return allOpts.map((opt, myIdx) => {
                                 const isActive = opt.id ? task.assigneeId === opt.id : !task.assigneeId;
                                 return (
-                                  <button key={opt.id ?? 'none'} onClick={() => handleAssignChange(opt.id, opt.type)}
+                                  <button key={opt.id ?? 'none'} disabled={assigneeLoading} onClick={() => handleAssignChange(opt.id, opt.type)}
                                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                                     style={{ background: myIdx === assigneeHighlight || isActive ? 'var(--color-base-200)' : 'transparent', color: isActive ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
                                     {opt.isAgent ? <ActorAvatar name={opt.label} isAgent size={16} /> : null}
@@ -565,6 +588,7 @@ export function IssuePageClient() {
                           </div>
                         </>
                       )}
+                      <AssigneeMutationFeedback loading={assigneeLoading} error={assigneeError} />
                     </div>
                   </PropRow>
                   <PropRow label="Project">
@@ -1063,8 +1087,11 @@ export function IssuePageClient() {
                   ) : (
                     <div style={{ position: 'relative' }}>
                       <button ref={assigneeTriggerRef}
+                        disabled={assigneeLoading}
+                        aria-busy={assigneeLoading}
                         onClick={() => { setAssigneeOpen(v => !v); setAssigneeHighlight(0); }}
                         onKeyDown={e => {
+                          if (assigneeLoading) return;
                           const opts: { id: string | null; type: 'human' | 'agent' | null }[] = [
                             { id: null, type: null },
                             ...(allHumans ?? []).map(h => ({ id: h.id, type: 'human' as const })),
@@ -1079,7 +1106,7 @@ export function IssuePageClient() {
                           else if (e.key === 'Enter') { e.preventDefault(); const o = opts[assigneeHighlight]; handleAssignChange(o.id, o.type); }
                           else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setAssigneeOpen(false); }
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        style={{ background: 'none', border: 'none', cursor: assigneeLoading ? 'wait' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, opacity: assigneeLoading ? 0.6 : 1 }}>
                         {task.assignee ? (
                           <>
                             <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={20} />
@@ -1111,7 +1138,7 @@ export function IssuePageClient() {
                                       <>
                                         {needsSection && myIdx === 1 && <div key="sec-me" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Me</div>}
                                         {needsSection && myIdx > 1 && <div key="sec-agents" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agents</div>}
-                                        <button key={opt.id ?? 'unassigned'}
+                                        <button key={opt.id ?? 'unassigned'} disabled={assigneeLoading}
                                           onMouseDown={e => { e.preventDefault(); handleAssignChange(opt.id, opt.type); }}
                                           onMouseEnter={() => setAssigneeHighlight(myIdx)}
                                           className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
@@ -1129,6 +1156,7 @@ export function IssuePageClient() {
                           </div>
                         </>
                       )}
+                      <AssigneeMutationFeedback loading={assigneeLoading} error={assigneeError} />
                     </div>
                   )}
                 </PropRow>

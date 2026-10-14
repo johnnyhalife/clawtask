@@ -155,7 +155,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const [agents, setAgents] = useState<{ id: string; displayName: string; openclawAgentId: string }[]>([]);
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [assigneeLoading, setAssigneeLoading] = useState(false);
-  const [assigneeError, setAssigneeError] = useState<string | null>(null);
 
   const [humans, setHumans] = useState<any[]>([]);
 
@@ -167,12 +166,13 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
   const handleAssign = async (assigneeId: string | null, assigneeType: 'agent' | 'human' | null) => {
     setAssigneeLoading(true);
     setAssigneeOpen(false);
-    setAssigneeError(null);
     try {
-      await apiPatch(`/api/v1/tasks/${taskId}`, { assigneeId, assigneeType });
+      await fetch(`/api/v1/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assigneeId, assigneeType }),
+      });
       reloadTask();
-    } catch (error: any) {
-      setAssigneeError(error?.message || 'Could not update assignee');
     } finally {
       setAssigneeLoading(false);
     }
@@ -572,11 +572,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
                             ))}
                           </div>
                         </>
-                      )}
-                      {assigneeError && (
-                        <div role="alert" className="mt-1 text-xs" style={{ color: '#ef4444', fontFamily: "'Instrument Sans', sans-serif" }}>
-                          {assigneeError}
-                        </div>
                       )}
                     </>
                   ) : (
