@@ -37,7 +37,15 @@ export class RunControl {
     this.db.prepare('INSERT OR IGNORE INTO task_sessions(taskId,agentId,sessionKey) VALUES(?,?,?)').run(row.taskId,row.agentId,row.sessionKey);
   }
   private async describe(conn: Transport, row: any, requireExisting: boolean, allowIdentityBinding = false) {
-    const result = await this.request(conn,'sessions.describe',{key:row.sessionKey,agentId:conn.openclawAgentId});
+    // `key` is sufficient to identify the session on current Gateways. Older
+    // Gateways may require the redundant agent id, so retry only when the
+    // portable request is rejected.
+    let result: any;
+    try {
+      result = await this.request(conn,'sessions.describe',{key:row.sessionKey});
+    } catch {
+      result = await this.request(conn,'sessions.describe',{key:row.sessionKey,agentId:conn.openclawAgentId});
+    }
     if (!result || !('session' in result)) throw new Error('invalid_describe');
     const session=result.session;
     if (session===null && !requireExisting) return null;

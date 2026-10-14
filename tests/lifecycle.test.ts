@@ -33,6 +33,25 @@ function fake(){
 const sends=(f:ReturnType<typeof fake>)=>f.calls.filter(c=>c.method==='agent');
 const patches=(f:ReturnType<typeof fake>)=>f.calls.filter(c=>c.method==='sessions.patch');
 
+test('describe uses the portable key-only Gateway contract first',async()=>{
+ const f=fake();await f.control.pump(f.conn);
+ const describe=f.calls.find(c=>c.method==='sessions.describe');
+ assert.deepEqual(describe.params,{key:'agent:test:clawtask:t'});
+});
+test('describe retries with agentId only for a legacy Gateway contract',async()=>{
+ const f=fake();
+ f.setHandler((method,params)=>{
+  if(method!=='sessions.describe') return;
+  if (!('agentId' in params)) throw Error('agentId required');
+  return {session:{sessionId:'legacy-session',hasActiveRun:false,archived:false}};
+ });
+ await f.control.pump(f.conn);
+ const describes=f.calls.filter(c=>c.method==='sessions.describe');
+ assert.deepEqual(describes[0].params,{key:'agent:test:clawtask:t'});
+ assert.deepEqual(describes[1].params,{key:'agent:test:clawtask:t',agentId:'test'});
+ assert.equal(sends(f).length,1);
+});
+
 test('wait timeout keeps ownership, stable key, and uses three bounded waits',async()=>{const f=fake();await f.control.pump(f.conn);assert.equal(f.conn.currentTaskId,'t');assert.equal(f.conn.currentRunId,row().id);assert.equal(row().state,'recovery');assert.equal(sends(f).length,1);assert.equal(f.calls.filter(c=>c.method==='agent.wait').length,3);assert.equal(sends(f)[0].params.idempotencyKey,row().id);});
 test('long run completes after timeout without duplicate dispatch',async()=>{const f=fake();let waits=0;f.setHandler((m,p)=>{if(m==='agent.wait' && ++waits===2){status('t','done');return {runId:p.runId,status:'ok',endedAt:123};}});await f.control.pump(f.conn);assert.equal(sends(f).length,1);assert.equal(row().state,'completed');assert.equal(f.conn.currentTaskId,null);assert.equal(patches(f).length,1);});
 test('terminal run without task outcome is reported and not repeated',async()=>{const f=fake();f.setHandler((m,p)=>m==='agent.wait'?{runId:p.runId,status:'ok',endedAt:123}:undefined);await f.control.pump(f.conn);await f.control.pump(f.conn);assert.equal(row().state,'outcome_required');assert.equal(row().errorCode,'terminal_without_task_outcome');assert.equal(sends(f).length,1);});
