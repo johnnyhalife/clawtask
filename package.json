@@ -9,7 +9,7 @@
     "migrate": "tsx src/db/migrate.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts tests/*.test.tsx"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -23,14 +23,17 @@
     "ws": "8.20.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "7.6.13",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "25.7.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/uuid": "11.0.0",
     "@types/ws": "8.18.1",
     "autoprefixer": "^10.4.19",
+    "jsdom": "^26.1.0",
     "postcss": "8.5.14",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.8.2",
