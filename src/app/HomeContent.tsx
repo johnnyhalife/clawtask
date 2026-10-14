@@ -15,7 +15,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, getDefaultFiltersForTab } from '@/components/task/TaskFilters';
+import { FilterState, getDefaultFiltersForTab, OPEN_STATUS_FILTERS } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
@@ -36,6 +36,7 @@ export function HomeContent() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useState<FilterState>(() => getDefaultFiltersForTab(activeTab));
+  const previousScope = useRef(`${activeTab}:${projectId}:${tagId}`);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [groupingLoaded, setGroupingLoaded] = useState(false);
   useEffect(() => {
@@ -46,6 +47,19 @@ export function HomeContent() {
     if (!groupingLoaded) return;
     try { localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy); } catch { /* storage blocked */ }
   }, [filters.groupBy, groupingLoaded]);
+
+  // `HomeContent` remains mounted while navigating between tabs. Apply the
+  // active-work default whenever entering any issue view, including projects
+  // and tags, while keeping the filter controls visibly in sync.
+  useEffect(() => {
+    const scope = `${activeTab}:${projectId}:${tagId}`;
+    if (previousScope.current === scope) return;
+    previousScope.current = scope;
+    setFilters(current => {
+      if (activeTab === 'all') return { ...current, statuses: [...OPEN_STATUS_FILTERS] };
+      return current;
+    });
+  }, [activeTab, projectId, tagId]);
 
   // Keep explicit selections while navigating between project lists and Pulse.
 

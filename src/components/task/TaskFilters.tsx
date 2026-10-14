@@ -32,7 +32,14 @@ export const DEFAULT_FILTERS: FilterState = {
   groupBy: 'status',
 };
 
-// Empty selections mean no filter, including backlog and completed issues.
-export function getDefaultFiltersForTab(_tab: string): FilterState {
-  return { ...DEFAULT_FILTERS, statuses: [], priorities: [] };
+export const OPEN_STATUS_FILTERS: StatusValue[] = ['backlog', 'todo', 'in_progress', 'blocked'];
+
+// Issue views are active-work queues by default, including project/tag scopes.
+// Closed work remains available through the status filter.
+export function getDefaultFiltersForTab(tab: string): FilterState {
+  return {
+    ...DEFAULT_FILTERS,
+    statuses: tab === 'all' ? [...OPEN_STATUS_FILTERS] : [],
+    priorities: [],
+  };
 }
