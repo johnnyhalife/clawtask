@@ -15,11 +15,14 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, getDefaultFiltersForTab, OPEN_STATUS_FILTERS } from '@/components/task/TaskFilters';
+import { FilterState, getDefaultFiltersForTab, preserveExplicitStatusFilters, StatusValue } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
 
+function haveSameStatuses(left: StatusValue[], right: StatusValue[]) {
+  return left.length === right.length && left.every((status, index) => status === right[index]);
+}
 
 export function HomeContent() {
   const searchParams = useSearchParams();
@@ -36,7 +39,8 @@ export function HomeContent() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useState<FilterState>(() => getDefaultFiltersForTab(activeTab));
-  const previousScope = useRef(`${activeTab}:${projectId}:${tagId}`);
+  const previousScope = useRef({ activeTab, projectId, tagId });
+  const statusSelectionExplicit = useRef(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [groupingLoaded, setGroupingLoaded] = useState(false);
   useEffect(() => {
@@ -48,20 +52,33 @@ export function HomeContent() {
     try { localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy); } catch { /* storage blocked */ }
   }, [filters.groupBy, groupingLoaded]);
 
-  // `HomeContent` remains mounted while navigating between tabs. Apply the
-  // active-work default whenever entering any issue view, including projects
-  // and tags, while keeping the filter controls visibly in sync.
+  // `HomeContent` remains mounted while navigating between tabs. An implicit
+  // Pulse -> Issues transition receives the active-work default; an explicit
+  // status selection remains intact across projects, tags, and Pulse.
   useEffect(() => {
-    const scope = `${activeTab}:${projectId}:${tagId}`;
-    if (previousScope.current === scope) return;
-    previousScope.current = scope;
-    setFilters(current => {
-      if (activeTab === 'all') return { ...current, statuses: [...OPEN_STATUS_FILTERS] };
-      return current;
-    });
+    const nextScope = { activeTab, projectId, tagId };
+    const previous = previousScope.current;
+    if (
+      previous.activeTab === nextScope.activeTab
+      && previous.projectId === nextScope.projectId
+      && previous.tagId === nextScope.tagId
+    ) return;
+    previousScope.current = nextScope;
+    setFilters(current => preserveExplicitStatusFilters(current, {
+      fromTab: previous.activeTab,
+      toTab: nextScope.activeTab,
+      statusSelectionExplicit: statusSelectionExplicit.current,
+    }));
   }, [activeTab, projectId, tagId]);
 
-  // Keep explicit selections while navigating between project lists and Pulse.
+  const handleFiltersChange = (next: FilterState) => {
+    setFilters(current => {
+      if (!haveSameStatuses(current.statuses, next.statuses)) {
+        statusSelectionExplicit.current = true;
+      }
+      return next;
+    });
+  };
 
   // "N" opens create modal (skip when typing in an input/textarea)
   useEffect(() => {
@@ -167,7 +184,7 @@ export function HomeContent() {
         <TopBar ref={searchRef}
           onNewTask={() => setShowCreate(true)}
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           onSearch={query => push(withIssueSearch(searchParams, query))}
           hideAssignee={false}
           hideToolbar={isPulse}

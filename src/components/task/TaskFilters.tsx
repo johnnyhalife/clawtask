@@ -43,3 +43,18 @@ export function getDefaultFiltersForTab(tab: string): FilterState {
     priorities: [],
   };
 }
+
+/**
+ * Issue lists default to active work only, but navigation must never erase a
+ * status choice the user made in the current page session.
+ */
+export function preserveExplicitStatusFilters(
+  filters: FilterState,
+  transition: { fromTab: string; toTab: string; statusSelectionExplicit: boolean },
+): FilterState {
+  const { fromTab, toTab, statusSelectionExplicit } = transition;
+  if (fromTab === 'pulse' && toTab === 'all' && !statusSelectionExplicit) {
+    return { ...filters, statuses: [...OPEN_STATUS_FILTERS] };
+  }
+  return filters;
+}
