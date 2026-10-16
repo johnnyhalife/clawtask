@@ -107,3 +107,56 @@ test('another task followups start only after the active task releases its owner
  follow('c1','other');follow('c2','other');await f.control.pump(f.conn);assert.equal(f.conn.currentTaskId,'t');assert.equal(sends(f).length,1);
  status('t','done');gate.resolve({runId:row().runId,status:'ok',endedAt:123});await running;assert.deepEqual(sends(f).map(c=>c.params.message),['t','c1','c2']);assert.equal(f.conn.currentTaskId,null);
 });
+
+
+// Vocabulary verified against OpenClaw's terminal predicate and active projection.
+const terminalStatuses = ['done','failed','interrupted','killed','timeout'];
+const activityCases: {name:string; evidence:Record<string,unknown>; idle:boolean}[] = [
+ ...terminalStatuses.map(status=>({name:status,evidence:{status},idle:true})),
+ ...['queued','running'].map(status=>({name:status,evidence:{status},idle:false})),
+ {name:'legacy idle',evidence:{hasActiveRun:false},idle:true},
+ {name:'legacy busy',evidence:{hasActiveRun:true},idle:false},
+ ...[false,true].flatMap(hasActiveRun=>[
+  {name:'agreeing boolean '+hasActiveRun,evidence:{hasActiveRun,status:hasActiveRun?'running':'done'},idle:!hasActiveRun},
+  {name:'conflicting boolean '+hasActiveRun,evidence:{hasActiveRun,status:hasActiveRun?'done':'running'},idle:false},
+ ]),
+ ...[{}, {status:''}, {status:'unknown'}, {status:'future-state'}, {status:'idle'}, {status:null}, {status:42}, {hasActiveRun:'false'},
+ {hasActiveRun:false,status:'unknown'}, {hasActiveRun:false,status:''}, {hasActiveRun:null,status:'done'}]
+ .map((evidence,i)=>({name:'ambiguous '+i+' '+JSON.stringify(evidence),evidence,idle:false})),
+];
+for (const sample of activityCases) {
+ for (const operation of ['archive','restore'] as const) test(operation+': activity evidence '+sample.name,async()=>{
+  status('t','done');const f=fake();const key='agent:test:clawtask:t';
+  f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));
+  db.prepare('UPDATE task_sessions SET sessionId=? WHERE taskId=?').run('original','t');
+  const session=f.get(key);session.sessionId='original';session.archived=operation==='restore';
+  delete session.hasActiveRun;Object.assign(session,sample.evidence);
+  if(operation==='restore')follow('evidence-comment');
+  const before=row();
+  if(operation==='archive')await f.control.cleanup(f.conn,'t');else await f.control.pump(f.conn);
+  assert.equal(patches(f).length,sample.idle?1:0);
+  assert.equal(sends(f).length,sample.idle && operation==='restore'?1:0);
+  const saved=db.prepare('SELECT * FROM task_sessions WHERE taskId=?').get('t') as any;
+  assert.equal(saved.sessionKey,key);assert.equal(saved.sessionId,'original');assert.equal(saved.agentId,'a');
+  if(!sample.idle){
+   assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');
+   assert.equal(saved.cleanupPending,1);assert.equal(f.conn.currentRunId,null);
+   if(operation==='restore'){
+    assert.equal(row().id,before.id);assert.equal(row().commentId,'evidence-comment');assert.equal(row().state,'pending');
+    assert.equal(row().runId,before.runId);assert.equal(row().agentId,before.agentId);assert.equal(row().attempts,0);
+   }
+  }
+ });
+}
+for(const failure of ['transport','unauthorized']) for(const operation of ['archive','restore']) test(operation+': '+failure+' describe fails closed',async()=>{
+ status('t','done');const f=fake();f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));
+ db.prepare('UPDATE task_sessions SET sessionId=? WHERE taskId=?').run('original','t');
+ if(operation==='restore')follow('failure-comment');
+ f.setHandler(m=>{if(m==='sessions.describe')throw Error(failure);});
+ if(operation==='archive')await f.control.cleanup(f.conn,'t');else await f.control.pump(f.conn);
+ assert.equal(patches(f).length,0);assert.equal(sends(f).length,0);
+ const saved=db.prepare('SELECT * FROM task_sessions').get() as any;
+ assert.equal(saved.sessionId,'original');assert.equal(saved.cleanupPending,1);assert.equal(saved.agentId,'a');
+ assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');
+ if(operation==='restore'){assert.equal(row().state,'pending');assert.equal(row().commentId,'failure-comment');}
+});

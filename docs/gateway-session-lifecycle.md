@@ -4,7 +4,7 @@ Contract inspected from the installed OpenClaw 2026.9.9 distribution on 2026-10-
 
 ## Verified requests and responses
 
-- sessions.describe params: {key, agentId?}; includeDerivedTitles/includeLastMessage are optional. Response is {session:null} when missing, otherwise {session:{sessionId, archived, hasActiveRun, activeRunIds?, status, ...}}. activeRunIds may be omitted. Missing hasActiveRun is never interpreted as idle.
+- sessions.describe params: {key, agentId?}; includeDerivedTitles/includeLastMessage are optional. Response is {session:null} when missing, otherwise {session:{sessionId, archived, hasActiveRun, activeRunIds?, status, ...}}. activeRunIds may be omitted. Activity evidence is validated as described below; missing hasActiveRun alone is not proof of idle.
 - sessions.patch accepts {key, agentId?, expectedSessionId?, archived:boolean}. expectedLifecycleRevision is also supported. Confirmed result is {ok:true, key, entry:{sessionId, archivedAt?, ...}}. Archived state is entry.archivedAt present. Identity is checked at commit and archive drains reject remaining authoritative work.
 - agent accepts expectedExistingSessionId and expectedExistingSessionLifecycleRevision. Preflight requires client mode backend for these fields (Clawtask already uses backend). Its existing-session constraint rejects a missing or replaced entry before input admission. The adapter sends expectedExistingSessionId whenever it has recorded original identity, including restored followups.
 - agent runId equals its supplied idempotencyKey (agent-request-preflight-RvlrwpA6.mjs:105). Accepted replies contain runId/status. The adapter never substitutes another run ID.
@@ -23,6 +23,20 @@ Inspected installed dist files:
 - agent-XuZuntjH.mjs:86–116; agent-turn-service-W_0N3NA0.mjs:4428–4492 (wait handler)
 - server-maintenance-23cHNzIq.mjs:268–295; server-constants-BH_EolwD.mjs:10–11 (retention)
 
+
+## Activity evidence compatibility
+
+Status-only support was rechecked against OpenClaw 2026.10.3 on 2026-10-16 (installed distribution source, not a live Gateway experiment):
+
+- `queued` and `running` are busy, never eligible for archive, restore, reopening or submission.
+- Exactly `done`, `failed`, `interrupted`, `killed` and `timeout` are accepted terminal status-only values. These establish session activity only, not completion of a saved dispatch. In particular, session status timeout does not release durable ownership; agent.wait timeout remains uncertain as documented below.
+- No other idle name is inferred. Unknown, future, empty, null, wrong-typed or absent activity evidence fails closed before identity binding or lifecycle mutation. A new Gateway status requires an explicit compatibility update.
+- Legacy boolean-only hasActiveRun remains supported: true is busy, false is idle. Undefined fields count as omitted. A present malformed boolean or status is rejected even if the other field is valid.
+- When both fields are supplied, both must be valid and agree on activity. Neither silently overrides a conflict. The supported Gateway projection replaces stale status with queued/running when active; contradictory fields therefore cannot authorize lifecycle actions.
+
+Source evidence: sessions-read-DTN-THv_.mjs:327–365 presents sessions.describe through the session-row projection; session-row-prepared-read's projectGatewaySessionActiveRun returns active?.active and, when active, active.status or running; session-active-runs computes queued/running activity. types-BZlUzQZy.mjs:4–5 defines isTerminalSessionStatus with the five terminal values above. This is session status vocabulary, not the separate agent.wait result vocabulary.
+
+Invalid evidence retains done status, cleanupPending and its bounded retry/error state, or the pending human comment/dispatch. It does not reset cleanup counters, clear owners, replace original sessionKey/sessionId, or resubmit uncertain work. Restore is checked again after patch confirmation before task reopening or agent submission. Recovery remains an explicit operator boundary, not an automatic bypass.
 
 ## Durable ownership
 

@@ -50,15 +50,22 @@ export class RunControl {
     const session=result.session;
     if (session===null && !requireExisting) return null;
     if (!session || typeof session.sessionId!=='string' || typeof session.archived!=='boolean') throw new Error('missing_session_or_contract');
-    // Recent Gateways expose an aggregate session `status` instead of the
-    // legacy boolean. Treat only active lifecycle states as busy so a terminal
-    // session can be safely resumed by the task adapter.
-    if (typeof session.hasActiveRun!=='boolean' && typeof session.status!=='string') {
-      throw new Error('missing_session_or_contract');
+    // OpenClaw projects active work as queued/running; its terminal predicate
+    // recognizes exactly these five terminal states. Never infer idle from an
+    // arbitrary string. A supplied boolean and status must both be valid and
+    // agree: the supported active projection overrides stale terminal status.
+    const booleanPresent = session.hasActiveRun !== undefined;
+    const statusPresent = session.status !== undefined;
+    if (booleanPresent && typeof session.hasActiveRun!=='boolean') throw new Error('missing_session_or_contract');
+    let statusActive: boolean | undefined;
+    if (statusPresent) {
+      if (['queued','running'].includes(session.status)) statusActive=true;
+      else if (['done','failed','interrupted','killed','timeout'].includes(session.status)) statusActive=false;
+      else throw new Error('missing_session_or_contract');
     }
-    const hasActiveRun = typeof session.hasActiveRun==='boolean'
-      ? session.hasActiveRun
-      : ['queued','running'].includes(session.status);
+    if ((!booleanPresent && !statusPresent) ||
+        (booleanPresent && statusPresent && session.hasActiveRun!==statusActive)) throw new Error('missing_session_or_contract');
+    const hasActiveRun = booleanPresent ? session.hasActiveRun : statusActive;
     const stored=this.session(row.taskId);
     if (!stored?.sessionId && !allowIdentityBinding && this.db.prepare("SELECT 1 FROM task_dispatches WHERE taskId=? AND state!='pending' LIMIT 1").get(row.taskId)) throw new Error('original_identity_unobserved');
     if (stored?.sessionId && stored.sessionId!==session.sessionId) throw new Error('session_identity_changed');
