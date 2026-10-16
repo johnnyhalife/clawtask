@@ -15,11 +15,14 @@ import { TopBar } from '@/components/layout/TopBar';
 import { TaskList, getFlatOrderedTasks } from '@/components/task/TaskList';
 import { PulseView } from '@/components/task/PulseView';
 import { CreateTaskModal } from '@/components/task/CreateTaskModal';
-import { FilterState, getDefaultFiltersForTab } from '@/components/task/TaskFilters';
+import { FilterState, getDefaultFiltersForTab, preserveExplicitStatusFilters, StatusValue } from '@/components/task/TaskFilters';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useFavicon } from '@/hooks/useFavicon';
 
+function haveSameStatuses(left: StatusValue[], right: StatusValue[]) {
+  return left.length === right.length && left.every((status, index) => status === right[index]);
+}
 
 export function HomeContent() {
   const searchParams = useSearchParams();
@@ -36,6 +39,8 @@ export function HomeContent() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useState<FilterState>(() => getDefaultFiltersForTab(activeTab));
+  const previousScope = useRef({ activeTab, projectId, tagId });
+  const [statusSelectionExplicit, setStatusSelectionExplicit] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [groupingLoaded, setGroupingLoaded] = useState(false);
   useEffect(() => {
@@ -47,7 +52,37 @@ export function HomeContent() {
     try { localStorage.setItem(GROUPBY_STORAGE_KEY, filters.groupBy); } catch { /* storage blocked */ }
   }, [filters.groupBy, groupingLoaded]);
 
-  // Keep explicit selections while navigating between project lists and Pulse.
+  // `HomeContent` remains mounted while navigating between tabs. An implicit
+  // Pulse -> Issues transition receives the active-work default; an explicit
+  // status selection remains intact across projects, tags, and Pulse.
+  useEffect(() => {
+    const nextScope = { activeTab, projectId, tagId };
+    const previous = previousScope.current;
+    if (
+      previous.activeTab === nextScope.activeTab
+      && previous.projectId === nextScope.projectId
+      && previous.tagId === nextScope.tagId
+    ) return;
+    previousScope.current = nextScope;
+    setFilters(current => preserveExplicitStatusFilters(current, {
+      fromTab: previous.activeTab,
+      toTab: nextScope.activeTab,
+      statusSelectionExplicit,
+    }));
+  }, [activeTab, projectId, tagId, statusSelectionExplicit]);
+
+  const handleFiltersChange = (next: FilterState, intent?: { statusSelectionExplicit: boolean }) => {
+    // Clear All is a status choice even if statuses were already empty.
+    if (intent?.statusSelectionExplicit || !haveSameStatuses(filters.statuses, next.statuses)) {
+      setStatusSelectionExplicit(true);
+    }
+    setFilters(next);
+  };
+  // Predict the project-link destination with the very same transition rule
+  // used by Home navigation, without changing Pulse's own collection.
+  const projectDestinationFilters = preserveExplicitStatusFilters(filters, {
+    fromTab: activeTab, toTab: 'all', statusSelectionExplicit,
+  });
 
   // "N" opens create modal (skip when typing in an input/textarea)
   useEffect(() => {
@@ -147,13 +182,13 @@ export function HomeContent() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
-      <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} />
+      <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} filters={projectDestinationFilters} />
 
       <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 0 }}>
         <TopBar ref={searchRef}
           onNewTask={() => setShowCreate(true)}
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           onSearch={query => push(withIssueSearch(searchParams, query))}
           hideAssignee={false}
           hideToolbar={isPulse}

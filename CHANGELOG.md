@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## Unreleased
 
 ### Features
+- Sidebar projects show issue counts matching active status, priority, assignee, search and tag filters, with live task-event refresh.
 - All Issues includes every status by default. Status selections are explicit, including Backlog and Archived. Issue detail has Previous/Next buttons and unmodified left/right arrow shortcuts in the same grouped order, using the saved grouping preference.
 - Durable per-agent run ownership and FIFO human followups. Unknown acceptance, timeout and connection loss retain work instead of repeating it.
 - Done task sessions archive only after terminal run observation and idle gateway checks. Followups restore the same session before dispatch. Task responses expose dispatch and cleanup recovery state.
@@ -14,6 +15,7 @@ All notable changes to this project are documented in this file.
 
 ### Bug fixes
 - Agent API key rotation requires an authenticated human, atomically refuses pending/active/unresolved dispatch work, and reports concurrent changes or deletion instead of returning an unusable replacement. Settings retains actionable errors and one-time disclosure.
+- Project sidebar counts predict their destination: untouched Pulse uses active-work issue defaults, while explicit Done, Archived and Clear All retain their exact status scope. Project links preserve counted search/tag filters; priority and assignee selections survive in the mounted page session. Only the selected project is excluded from facet counts.
 - Sidebar projects use encoded issue-list links and show a visible project heading. Scoped URLs cannot silently fall back to Pulse; search and clear-search retain project/tag scope. Explicit list filters survive project and Pulse navigation.
 - Service worker leaves SSE requests to the browser instead of proxying long-lived streams through its JSON API/offline policy.
 - Issue lists filter statuses before pagination and load all matching pages. Creation, updates, deletion and reconnect refresh detail navigation; a deleted current issue returns to All Issues. Stale route identities, open pickers, editors, handled keys and modifier keys cannot drive detail navigation.

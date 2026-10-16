@@ -37,20 +37,19 @@ test('project routes encode IDs and select issues without depending on a tab', (
   assert.equal(getIssueScope(new URLSearchParams()).activeTab, 'pulse');
 });
 
-test('completed-only project and mixed project include all statuses but never other or unassigned projects', async () => {
+test('project and All Issues defaults show active work but never leak other scopes', async () => {
   seed('alpha-done', 'done', 'alpha'); seed('alpha-archived', 'archived', 'alpha');
   for (const status of ['backlog', 'todo', 'in_progress', 'blocked', 'done', 'archived']) seed('beta-' + status, status, 'beta');
   seed('unassigned', 'backlog');
   const alpha = await fetchTaskCollection(url('projectId=alpha'), undefined, localFetch);
-  assert.deepEqual(new Set(alpha.tasks.map(t => t.status)), new Set(['done', 'archived']));
-  assert.equal(alpha.total, 2); assert.ok(alpha.tasks.every(t => t.projectId === 'alpha'));
+  assert.deepEqual(alpha.tasks, []);
   const beta = await fetchTaskCollection(url('tab=all&projectId=beta'), undefined, localFetch);
-  assert.equal(beta.total, 6); assert.ok(beta.tasks.every(t => t.projectId === 'beta'));
+  assert.equal(beta.total, 4); assert.ok(beta.tasks.every(t => t.projectId === 'beta'));
   const all = await fetchTaskCollection(url('tab=all'), undefined, localFetch);
-  assert.equal(all.total, 9); assert.ok(all.tasks.some(t => t.projectId === null));
+  assert.equal(all.total, 5); assert.ok(all.tasks.some(t => t.projectId === null));
   const ordered = getFlatOrderedTasks(filterAndSortTasks(all.tasks, getDefaultFiltersForTab('all')), 'status');
-  assert.equal(getIssueNeighbors(ordered, 'alpha-done').next?.status, 'done');
-  assert.equal(getIssueNeighbors(ordered, 'alpha-archived').previous?.status, 'done');
+  assert.equal(getIssueNeighbors(ordered, 'alpha-done').next, null);
+  assert.equal(getIssueNeighbors(ordered, 'alpha-archived').previous, null);
 });
 
 test('explicit status, priority, assignee, sort and grouping selections survive scope and search changes', async () => {
@@ -79,7 +78,7 @@ test('all-status and scoped collections load every page without leaking other pr
     seed('none', 'todo');
   })();
   const alpha = await fetchTaskCollection(url('projectId=alpha'), undefined, localFetch);
-  assert.equal(alpha.total, 505); assert.ok(alpha.tasks.every(t => t.projectId === 'alpha'));
+  assert.equal(alpha.total, 0);
   const all = await fetchTaskCollection(url('tab=all'), undefined, localFetch);
-  assert.equal(all.total, 1026); assert.equal(new Set(all.tasks.map(t => t.id)).size, 1026);
+  assert.equal(all.total, 521); assert.equal(new Set(all.tasks.map(t => t.id)).size, 521);
 });

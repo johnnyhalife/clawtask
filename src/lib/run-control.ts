@@ -37,16 +37,40 @@ export class RunControl {
     this.db.prepare('INSERT OR IGNORE INTO task_sessions(taskId,agentId,sessionKey) VALUES(?,?,?)').run(row.taskId,row.agentId,row.sessionKey);
   }
   private async describe(conn: Transport, row: any, requireExisting: boolean, allowIdentityBinding = false) {
-    const result = await this.request(conn,'sessions.describe',{key:row.sessionKey,agentId:conn.openclawAgentId});
+    // `key` is sufficient to identify the session on current Gateways. Older
+    // Gateways may require the redundant agent id, so retry only when the
+    // portable request is rejected.
+    let result: any;
+    try {
+      result = await this.request(conn,'sessions.describe',{key:row.sessionKey});
+    } catch {
+      result = await this.request(conn,'sessions.describe',{key:row.sessionKey,agentId:conn.openclawAgentId});
+    }
     if (!result || !('session' in result)) throw new Error('invalid_describe');
     const session=result.session;
     if (session===null && !requireExisting) return null;
-    if (!session || typeof session.sessionId!=='string' || typeof session.hasActiveRun!=='boolean' || typeof session.archived!=='boolean') throw new Error('missing_session_or_contract');
+    if (!session || typeof session.sessionId!=='string' || typeof session.archived!=='boolean') throw new Error('missing_session_or_contract');
+    // OpenClaw projects active work as queued/running; its terminal predicate
+    // recognizes exactly these five terminal states. Never infer idle from an
+    // arbitrary string. A supplied boolean and status must both be valid and
+    // agree: the supported active projection overrides stale terminal status.
+    const booleanPresent = session.hasActiveRun !== undefined;
+    const statusPresent = session.status !== undefined;
+    if (booleanPresent && typeof session.hasActiveRun!=='boolean') throw new Error('missing_session_or_contract');
+    let statusActive: boolean | undefined;
+    if (statusPresent) {
+      if (['queued','running'].includes(session.status)) statusActive=true;
+      else if (['done','failed','interrupted','killed','timeout'].includes(session.status)) statusActive=false;
+      else throw new Error('missing_session_or_contract');
+    }
+    if ((!booleanPresent && !statusPresent) ||
+        (booleanPresent && statusPresent && session.hasActiveRun!==statusActive)) throw new Error('missing_session_or_contract');
+    const hasActiveRun = booleanPresent ? session.hasActiveRun : statusActive;
     const stored=this.session(row.taskId);
     if (!stored?.sessionId && !allowIdentityBinding && this.db.prepare("SELECT 1 FROM task_dispatches WHERE taskId=? AND state!='pending' LIMIT 1").get(row.taskId)) throw new Error('original_identity_unobserved');
     if (stored?.sessionId && stored.sessionId!==session.sessionId) throw new Error('session_identity_changed');
     this.db.prepare('UPDATE task_sessions SET sessionId=? WHERE taskId=? AND (sessionId IS NULL OR sessionId=?)').run(session.sessionId,row.taskId,session.sessionId);
-    return session;
+    return {...session,hasActiveRun};
   }
   private pending(taskId: string) {
     return !!this.db.prepare("SELECT 1 FROM task_dispatches WHERE taskId=? AND state IN ('pending','submitting','running','recovery') LIMIT 1").get(taskId);

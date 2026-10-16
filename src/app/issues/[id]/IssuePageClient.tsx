@@ -20,6 +20,7 @@ import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { AssigneePicker, type AssigneePickerHandle } from '@/components/task/AssigneePicker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function relativeTime(date: string) {
@@ -240,12 +241,12 @@ export function IssuePageClient() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Inline-edit open states
-  const [assigneeOpen, setAssigneeOpen] = useState(false);
-  const [assigneeHighlight, setAssigneeHighlight] = useState(0);
+  const [assigneePickerOpen, setAssigneePickerOpen] = useState(false);
   const statusRef = useRef<ChipSelectHandle>(null);
   const priorityRef = useRef<ChipSelectHandle>(null);
   const projectTriggerRef = useRef<HTMLButtonElement>(null);
-  const assigneeTriggerRef = useRef<HTMLButtonElement>(null);
+  const desktopAssigneePickerRef = useRef<AssigneePickerHandle>(null);
+  const mobileAssigneePickerRef = useRef<AssigneePickerHandle>(null);
   const [projectOpen, setProjectOpen] = useState(false);
   const [projectHighlight, setProjectHighlight] = useState(0);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -271,7 +272,7 @@ export function IssuePageClient() {
         if (statusRef.current?.isOpen()) { e.stopPropagation(); statusRef.current.closeDropdown(); return; }
         if (priorityRef.current?.isOpen()) { e.stopPropagation(); priorityRef.current.closeDropdown(); return; }
         if (tagsOpen) { e.stopPropagation(); setTagsOpen(false); return; }
-        if (assigneeOpen) { e.stopPropagation(); setAssigneeOpen(false); return; }
+        if (assigneePickerOpen) { e.stopPropagation(); desktopAssigneePickerRef.current?.close(); mobileAssigneePickerRef.current?.close(); return; }
         if (projectOpen) { e.stopPropagation(); setProjectOpen(false); return; }
         if (editingTask) { e.stopPropagation(); setEditingTask(false); return; }
         push('/?tab=all');
@@ -283,12 +284,13 @@ export function IssuePageClient() {
         statusRef.current?.closeDropdownSilent();
         priorityRef.current?.closeDropdownSilent();
         setTagsOpen(false);
-        setAssigneeOpen(false);
+        desktopAssigneePickerRef.current?.close();
+        mobileAssigneePickerRef.current?.close();
         setProjectOpen(false);
       };
 
       const direction = issueArrowDirection(e, isEditing || editingTask || tag === 'SELECT',
-        projectOpen || tagsOpen || assigneeOpen || editMenuOpen || mobilePropsOpen ||
+        projectOpen || tagsOpen || assigneePickerOpen || editMenuOpen || mobilePropsOpen ||
         !!statusRef.current?.isOpen() || !!priorityRef.current?.isOpen());
       if (direction && (direction === 'previous' ? previousIssue : nextIssue)) {
         e.preventDefault();
@@ -298,7 +300,7 @@ export function IssuePageClient() {
       if (e.key === 'e' || e.key === 'E') { e.preventDefault(); closeAll(); setEditingTask(true); return; }
       if (e.key === 's' || e.key === 'S') { e.preventDefault(); closeAll(); statusRef.current?.openDropdown(); }
       if (e.key === 'p' || e.key === 'P') { e.preventDefault(); closeAll(); priorityRef.current?.openDropdown(); }
-      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); closeAll(); setAssigneeOpen(true); assigneeTriggerRef.current?.focus(); }
+      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); closeAll(); (mobilePropsOpen ? mobileAssigneePickerRef : desktopAssigneePickerRef).current?.open(); }
       if (e.key === 't' || e.key === 'T') { e.preventDefault(); const wasOpen = tagsOpen; closeAll(); setTagsOpen(!wasOpen); }
       if (e.key === 'j' || e.key === 'J') { e.preventDefault(); closeAll(); const currentIdx = [null, ...(allProjects ?? [])].findIndex(p => (p ? (p as any).id : null) === (task?.projectId ?? null)); setProjectHighlight(currentIdx >= 0 ? currentIdx : 0); setProjectOpen(true); return; }
       // Arrow nav inside project picker
@@ -315,7 +317,7 @@ export function IssuePageClient() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [push, assigneeOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task, navigateIssue, previousIssue, nextIssue, editMenuOpen, mobilePropsOpen]);
+  }, [push, assigneePickerOpen, tagsOpen, editingTask, projectOpen, projectHighlight, allProjects, task, navigateIssue, previousIssue, nextIssue, editMenuOpen, mobilePropsOpen]);
 
   useSse(event => {
     if (['task.created', 'task.updated', 'task.deleted'].includes(event.type)) reloadIssueList();
@@ -347,11 +349,6 @@ export function IssuePageClient() {
   };
   const handlePriorityChange = async (priority: string) => {
     await apiPatch(`/api/v1/tasks/${taskId}`, { priority });
-    reloadTask();
-  };
-  const handleAssignChange = async (assigneeId: string | null, assigneeType: 'agent' | 'human' | null) => {
-    setAssigneeOpen(false);
-    await apiPatch(`/api/v1/tasks/${taskId}`, { assigneeId, assigneeType });
     reloadTask();
   };
   const handleProjectChange = async (pid: string | null) => {
@@ -526,46 +523,19 @@ export function IssuePageClient() {
                     </div>
                   </PropRow>
                   <PropRow label="Assignee">
-                    <div style={{ position: 'relative' }}>
-                      <button ref={assigneeTriggerRef}
-                        onClick={() => { setAssigneeOpen(v => !v); setAssigneeHighlight(0); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {task.assignee ? (
-                          <>
-                            <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={20} />
-                            <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>
-                              {task.assigneeType === 'human' ? 'You' : (task.assignee as any).displayName}
-                            </span>
-                          </>
-                        ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No assignee</span>}
-                      </button>
-                      {assigneeOpen && (
-                        <>
-                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
-                          <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
-                            {(() => {
-                              const allOpts = [
-                                { id: null as string | null, type: null as 'human'|'agent'|null, label: 'Unassigned', isAgent: false },
-                                ...(allHumans ?? []).map(h => ({ id: h.id, type: 'human' as const, label: h.displayName, isAgent: false })),
-                                ...(allAgents ?? []).map(a => ({ id: a.id, type: 'agent' as const, label: a.displayName, isAgent: true })),
-                              ];
-                              return allOpts.map((opt, myIdx) => {
-                                const isActive = opt.id ? task.assigneeId === opt.id : !task.assigneeId;
-                                return (
-                                  <button key={opt.id ?? 'none'} onClick={() => handleAssignChange(opt.id, opt.type)}
-                                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
-                                    style={{ background: myIdx === assigneeHighlight || isActive ? 'var(--color-base-200)' : 'transparent', color: isActive ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                                    {opt.isAgent ? <ActorAvatar name={opt.label} isAgent size={16} /> : null}
-                                    {opt.label}
-                                    {isActive && <svg className="ml-auto" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    <AssigneePicker
+                      ref={mobileAssigneePickerRef}
+                      taskId={taskId}
+                      assigneeId={task.assigneeId}
+                      assigneeType={task.assigneeType}
+                      assigneeName={(task.assignee as any)?.displayName}
+                      humans={allHumans ?? []}
+                      agents={allAgents ?? []}
+                      disabled={inFlight}
+                      layout="mobile"
+                      onRefresh={reloadTask}
+                      onOpenChange={setAssigneePickerOpen}
+                    />
                   </PropRow>
                   <PropRow label="Project">
                     <div style={{ position: 'relative' }}>
@@ -1061,75 +1031,18 @@ export function IssuePageClient() {
                       </button>
                     </span>
                   ) : (
-                    <div style={{ position: 'relative' }}>
-                      <button ref={assigneeTriggerRef}
-                        onClick={() => { setAssigneeOpen(v => !v); setAssigneeHighlight(0); }}
-                        onKeyDown={e => {
-                          const opts: { id: string | null; type: 'human' | 'agent' | null }[] = [
-                            { id: null, type: null },
-                            ...(allHumans ?? []).map(h => ({ id: h.id, type: 'human' as const })),
-                            ...(allAgents ?? []).map(a => ({ id: a.id, type: 'agent' as const })),
-                          ];
-                          if (!assigneeOpen) {
-                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAssigneeOpen(true); setAssigneeHighlight(0); }
-                            return;
-                          }
-                          if (e.key === 'ArrowDown') { e.preventDefault(); setAssigneeHighlight(i => Math.min(i + 1, opts.length - 1)); }
-                          else if (e.key === 'ArrowUp') { e.preventDefault(); setAssigneeHighlight(i => Math.max(i - 1, 0)); }
-                          else if (e.key === 'Enter') { e.preventDefault(); const o = opts[assigneeHighlight]; handleAssignChange(o.id, o.type); }
-                          else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setAssigneeOpen(false); }
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {task.assignee ? (
-                          <>
-                            <ActorAvatar name={(task.assignee as any).displayName ?? ''} isAgent={task.assigneeType === 'agent'} size={20} />
-                            <span style={{ color: 'var(--color-base-800)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>
-                              {task.assigneeType === 'human' ? 'You' : (task.assignee as any).displayName}
-                            </span>
-                          </>
-                        ) : <span style={{ color: 'var(--color-base-500)', fontSize: '0.82rem', fontFamily: "'Instrument Sans', sans-serif" }}>No assignee</span>}
-                      </button>
-                      {assigneeOpen && (
-                        <>
-                          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setAssigneeOpen(false)} />
-                          <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', borderRadius: 8, minWidth: 160, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', marginTop: 4, overflow: 'hidden' }}>
-                            {(() => {
-                              let idx = 0;
-                              const allOpts = [
-                                { id: null as string | null, type: null as 'human'|'agent'|null, label: 'Unassigned', isAgent: false },
-                                ...(allHumans ?? []).map(h => ({ id: h.id, type: 'human' as const, label: h.displayName, isAgent: false })),
-                                ...(allAgents ?? []).map(a => ({ id: a.id, type: 'agent' as const, label: a.displayName, isAgent: true })),
-                              ];
-                              return (
-                                <>
-                                  {allOpts.map((opt) => {
-                                    const myIdx = idx++;
-                                    const isActive = opt.id ? task.assigneeId === opt.id : !task.assigneeId;
-                                    const isHL = myIdx === assigneeHighlight;
-                                    const needsSection = (myIdx === 1 && (allHumans ?? []).length > 0) || (myIdx === 1 + (allHumans ?? []).length && (allAgents ?? []).length > 0);
-                                    return (
-                                      <>
-                                        {needsSection && myIdx === 1 && <div key="sec-me" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Me</div>}
-                                        {needsSection && myIdx > 1 && <div key="sec-agents" className="px-3 pt-2 pb-0.5" style={{ color: 'var(--color-base-500)', fontSize: '0.7rem', fontFamily: "'Instrument Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agents</div>}
-                                        <button key={opt.id ?? 'unassigned'}
-                                          onMouseDown={e => { e.preventDefault(); handleAssignChange(opt.id, opt.type); }}
-                                          onMouseEnter={() => setAssigneeHighlight(myIdx)}
-                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
-                                          style={{ background: isHL || isActive ? 'var(--color-base-200)' : 'transparent', color: isActive ? 'var(--color-base-900)' : 'var(--color-base-650)', fontFamily: "'Instrument Sans', sans-serif" }}>
-                                          {opt.id ? <ActorAvatar name={opt.label} isAgent={opt.isAgent} size={16} /> : <span className="size-2 rounded-full flex-shrink-0" style={{ background: 'var(--color-base-400)' }} />}
-                                          {opt.label}
-                                        </button>
-                                      </>
-                                    );
-                                  })}
-                                </>
-                              );
-                            })()}
-
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    <AssigneePicker
+                      ref={desktopAssigneePickerRef}
+                      taskId={taskId}
+                      assigneeId={task.assigneeId}
+                      assigneeType={task.assigneeType}
+                      assigneeName={(task.assignee as any)?.displayName}
+                      humans={allHumans ?? []}
+                      agents={allAgents ?? []}
+                      layout="desktop"
+                      onRefresh={reloadTask}
+                      onOpenChange={setAssigneePickerOpen}
+                    />
                   )}
                 </PropRow>
 

@@ -9,7 +9,7 @@
     "migrate": "tsx src/db/migrate.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts tests/*.test.tsx"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

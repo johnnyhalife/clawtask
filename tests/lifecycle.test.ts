@@ -33,6 +33,25 @@ function fake(){
 const sends=(f:ReturnType<typeof fake>)=>f.calls.filter(c=>c.method==='agent');
 const patches=(f:ReturnType<typeof fake>)=>f.calls.filter(c=>c.method==='sessions.patch');
 
+test('describe uses the portable key-only Gateway contract first',async()=>{
+ const f=fake();await f.control.pump(f.conn);
+ const describe=f.calls.find(c=>c.method==='sessions.describe');
+ assert.deepEqual(describe.params,{key:'agent:test:clawtask:t'});
+});
+test('describe retries with agentId only for a legacy Gateway contract',async()=>{
+ const f=fake();
+ f.setHandler((method,params)=>{
+  if(method!=='sessions.describe') return;
+  if (!('agentId' in params)) throw Error('agentId required');
+  return {session:{sessionId:'legacy-session',hasActiveRun:false,archived:false}};
+ });
+ await f.control.pump(f.conn);
+ const describes=f.calls.filter(c=>c.method==='sessions.describe');
+ assert.deepEqual(describes[0].params,{key:'agent:test:clawtask:t'});
+ assert.deepEqual(describes[1].params,{key:'agent:test:clawtask:t',agentId:'test'});
+ assert.equal(sends(f).length,1);
+});
+
 test('wait timeout keeps ownership, stable key, and uses three bounded waits',async()=>{const f=fake();await f.control.pump(f.conn);assert.equal(f.conn.currentTaskId,'t');assert.equal(f.conn.currentRunId,row().id);assert.equal(row().state,'recovery');assert.equal(sends(f).length,1);assert.equal(f.calls.filter(c=>c.method==='agent.wait').length,3);assert.equal(sends(f)[0].params.idempotencyKey,row().id);});
 test('long run completes after timeout without duplicate dispatch',async()=>{const f=fake();let waits=0;f.setHandler((m,p)=>{if(m==='agent.wait' && ++waits===2){status('t','done');return {runId:p.runId,status:'ok',endedAt:123};}});await f.control.pump(f.conn);assert.equal(sends(f).length,1);assert.equal(row().state,'completed');assert.equal(f.conn.currentTaskId,null);assert.equal(patches(f).length,1);});
 test('terminal run without task outcome is reported and not repeated',async()=>{const f=fake();f.setHandler((m,p)=>m==='agent.wait'?{runId:p.runId,status:'ok',endedAt:123}:undefined);await f.control.pump(f.conn);await f.control.pump(f.conn);assert.equal(row().state,'outcome_required');assert.equal(row().errorCode,'terminal_without_task_outcome');assert.equal(sends(f).length,1);});
@@ -48,6 +67,7 @@ test('next queued task starts after terminal outcome',async()=>{task('other');co
 test('done during active owned run cannot archive',async()=>{const f=fake();await f.control.pump(f.conn);status('t','done');f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));await f.control.cleanup(f.conn,'t');assert.equal(patches(f).length,0);});
 test('idle done schedules cleanup and repeated checks archive once',async()=>{status('t','done');const f=fake();f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));await f.control.cleanup(f.conn,'t');await f.control.cleanup(f.conn,'t');assert.equal(patches(f).length,1);assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');});
 test('gateway active or queued state prevents idle cleanup',async()=>{status('t','done');const f=fake();f.get('agent:test:clawtask:t').hasActiveRun=true;f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));await f.control.cleanup(f.conn,'t');assert.equal(patches(f).length,0);});
+test('Gateway session status is accepted when hasActiveRun is omitted',async()=>{const f=fake();f.setHandler(m=>m==='sessions.describe'?{session:{sessionId:'status-session',status:'done',archived:false}}:undefined);await f.control.pump(f.conn);assert.equal(sends(f).length,1);assert.equal(row().state,'recovery');});
 test('archive and restore preserve original identity and restore before dispatch',async()=>{status('t','done');const f=fake();f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));await f.control.cleanup(f.conn,'t');follow('c');await f.control.pump(f.conn);const restore=f.calls.findIndex(c=>c.method==='sessions.patch' && !c.params.archived),send=f.calls.findIndex(c=>c.method==='agent');assert.ok(restore>=0 && restore<send);assert.equal(patches(f)[0].params.expectedSessionId,patches(f)[1].params.expectedSessionId);assert.equal(sends(f)[0].params.sessionKey,'agent:test:clawtask:t');});
 test('restore failure keeps task done and pending followup, starts no run',async()=>{status('t','done');follow('c');const f=fake();f.get('agent:test:clawtask:t').archived=true;f.setHandler((m,p)=>{if(m==='sessions.patch' && !p.archived)throw Error('restore failed');});await f.control.pump(f.conn);assert.equal(sends(f).length,0);assert.equal(row().state,'pending');assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');});
 test('missing session on followup is explicit recovery, never replacement creation',async()=>{status('t','done');follow('c');const f=fake();f.setHandler(m=>m==='sessions.describe'?{session:null}:undefined);await f.control.pump(f.conn);assert.equal(sends(f).length,0);assert.equal(row().errorCode,'restore_or_identity_failed');assert.equal(patches(f).length,0);});
@@ -86,4 +106,57 @@ test('another task followups start only after the active task releases its owner
  const running=f.control.pump(f.conn);while(!f.calls.some(c=>c.method==='agent.wait'))await new Promise(r=>setImmediate(r));
  follow('c1','other');follow('c2','other');await f.control.pump(f.conn);assert.equal(f.conn.currentTaskId,'t');assert.equal(sends(f).length,1);
  status('t','done');gate.resolve({runId:row().runId,status:'ok',endedAt:123});await running;assert.deepEqual(sends(f).map(c=>c.params.message),['t','c1','c2']);assert.equal(f.conn.currentTaskId,null);
+});
+
+
+// Vocabulary verified against OpenClaw's terminal predicate and active projection.
+const terminalStatuses = ['done','failed','interrupted','killed','timeout'];
+const activityCases: {name:string; evidence:Record<string,unknown>; idle:boolean}[] = [
+ ...terminalStatuses.map(status=>({name:status,evidence:{status},idle:true})),
+ ...['queued','running'].map(status=>({name:status,evidence:{status},idle:false})),
+ {name:'legacy idle',evidence:{hasActiveRun:false},idle:true},
+ {name:'legacy busy',evidence:{hasActiveRun:true},idle:false},
+ ...[false,true].flatMap(hasActiveRun=>[
+  {name:'agreeing boolean '+hasActiveRun,evidence:{hasActiveRun,status:hasActiveRun?'running':'done'},idle:!hasActiveRun},
+  {name:'conflicting boolean '+hasActiveRun,evidence:{hasActiveRun,status:hasActiveRun?'done':'running'},idle:false},
+ ]),
+ ...[{}, {status:''}, {status:'unknown'}, {status:'future-state'}, {status:'idle'}, {status:null}, {status:42}, {hasActiveRun:'false'},
+ {hasActiveRun:false,status:'unknown'}, {hasActiveRun:false,status:''}, {hasActiveRun:null,status:'done'}]
+ .map((evidence,i)=>({name:'ambiguous '+i+' '+JSON.stringify(evidence),evidence,idle:false})),
+];
+for (const sample of activityCases) {
+ for (const operation of ['archive','restore'] as const) test(operation+': activity evidence '+sample.name,async()=>{
+  status('t','done');const f=fake();const key='agent:test:clawtask:t';
+  f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));
+  db.prepare('UPDATE task_sessions SET sessionId=? WHERE taskId=?').run('original','t');
+  const session=f.get(key);session.sessionId='original';session.archived=operation==='restore';
+  delete session.hasActiveRun;Object.assign(session,sample.evidence);
+  if(operation==='restore')follow('evidence-comment');
+  const before=row();
+  if(operation==='archive')await f.control.cleanup(f.conn,'t');else await f.control.pump(f.conn);
+  assert.equal(patches(f).length,sample.idle?1:0);
+  assert.equal(sends(f).length,sample.idle && operation==='restore'?1:0);
+  const saved=db.prepare('SELECT * FROM task_sessions WHERE taskId=?').get('t') as any;
+  assert.equal(saved.sessionKey,key);assert.equal(saved.sessionId,'original');assert.equal(saved.agentId,'a');
+  if(!sample.idle){
+   assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');
+   assert.equal(saved.cleanupPending,1);assert.equal(f.conn.currentRunId,null);
+   if(operation==='restore'){
+    assert.equal(row().id,before.id);assert.equal(row().commentId,'evidence-comment');assert.equal(row().state,'pending');
+    assert.equal(row().runId,before.runId);assert.equal(row().agentId,before.agentId);assert.equal(row().attempts,0);
+   }
+  }
+ });
+}
+for(const failure of ['transport','unauthorized']) for(const operation of ['archive','restore']) test(operation+': '+failure+' describe fails closed',async()=>{
+ status('t','done');const f=fake();f.control.statusChanged(db.prepare('SELECT * FROM tasks WHERE id=?').get('t'));
+ db.prepare('UPDATE task_sessions SET sessionId=? WHERE taskId=?').run('original','t');
+ if(operation==='restore')follow('failure-comment');
+ f.setHandler(m=>{if(m==='sessions.describe')throw Error(failure);});
+ if(operation==='archive')await f.control.cleanup(f.conn,'t');else await f.control.pump(f.conn);
+ assert.equal(patches(f).length,0);assert.equal(sends(f).length,0);
+ const saved=db.prepare('SELECT * FROM task_sessions').get() as any;
+ assert.equal(saved.sessionId,'original');assert.equal(saved.cleanupPending,1);assert.equal(saved.agentId,'a');
+ assert.equal((db.prepare('SELECT status FROM tasks WHERE id=?').get('t') as any).status,'done');
+ if(operation==='restore'){assert.equal(row().state,'pending');assert.equal(row().commentId,'failure-comment');}
 });

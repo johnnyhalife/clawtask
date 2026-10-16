@@ -10,6 +10,10 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { Project, Tag } from '@/types';
 import { useApi } from '@/hooks/useApi';
 import { useSse } from '@/hooks/useSse';
+import { useTaskCollection } from '@/hooks/useTaskCollection';
+import { buildIssueCollectionUrl } from '@/lib/issue-scope';
+import { countProjectIssues } from '@/lib/project-counts';
+import { FilterState, getDefaultFiltersForTab } from '@/components/task/TaskFilters';
 
 const PULSE_ITEMS = [
   {
@@ -61,12 +65,22 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
   );
 }
 
-function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
+type SidebarProps = { appName: string; workspaceLogo?: string; filters?: FilterState };
+
+function SidebarInner({ appName, workspaceLogo, filters }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const { push } = useRouter();
   const { activeTab, projectId, tagId } = getIssueScope(searchParams);
+  const countFilters = filters ?? getDefaultFiltersForTab('all');
+  // Project facets retain every active filter except the selected project.
+  const { data: countData, error: countError, reload: reloadCounts } = useTaskCollection(
+    buildIssueCollectionUrl({ activeTab: 'all', projectId: '', tagId }, countFilters)
+  );
+  const projectCounts = countData && !countError
+    ? countProjectIssues(countData.tasks, countFilters, get('q') || '')
+    : null;
   const isMobile = useIsMobile();
   const { data: projects, reload: reloadProjects } = useApi<Project[]>('/api/v1/projects');
   const { data: tags, reload: reloadTags } = useApi<Tag[]>('/api/v1/tags');
@@ -75,8 +89,8 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
   const TAG_LIMIT = 10;
 
   useSse((_event) => {
-    // Projects/tags don't change per task event
-  });
+    if (['task.created', 'task.updated', 'task.deleted'].includes(_event.type)) reloadCounts();
+  }, reloadCounts);
 
   useEffect(() => {
     const handler = () => {
@@ -158,13 +172,18 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
           <span className="section-label">Projects</span>
         </div>
         <div className="px-2 mb-4">
+          {countError && (
+            <div role="alert" className="px-2.5 py-1 text-xs" style={{ color: 'var(--color-base-600)' }}>
+              Counts unavailable. <button type="button" className="underline" onClick={reloadCounts}>Retry counts</button>
+            </div>
+          )}
           <ul className="space-y-px">
             {(projects || []).map((project) => {
               const isActive = pathname === '/' && projectId === project.id;
               return (
                 <li key={project.id}>
                   <Link
-                    href={projectIssuesHref(project.id)}
+                    href={projectIssuesHref(project.id, searchParams)}
                     aria-current={isActive ? 'page' : undefined}
                     className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-sm transition-colors text-left"
                     style={
@@ -179,7 +198,7 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
                       className="size-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: project.color }}
                     />
-                    <span className="truncate" style={{ fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem' }}>{project.name}</span>
+                    <span className="truncate" style={{ fontFamily: "'Instrument Sans', sans-serif", fontWeight: 500, fontSize: '0.8125rem' }}>{project.name}{projectCounts ? ` (${projectCounts[project.id] ?? 0})` : ''}</span>
                   </Link>
                 </li>
               );
@@ -257,10 +276,10 @@ function SidebarInner({ appName, workspaceLogo }: { appName: string; workspaceLo
   );
 }
 
-export function Sidebar({ appName, workspaceLogo }: { appName: string; workspaceLogo?: string }) {
+export function Sidebar({ appName, workspaceLogo, filters }: SidebarProps) {
   return (
     <Suspense fallback={<aside className="hidden md:flex flex-col w-56 flex-shrink-0" />}>
-      <SidebarInner appName={appName} workspaceLogo={workspaceLogo} />
+      <SidebarInner appName={appName} workspaceLogo={workspaceLogo} filters={filters} />
     </Suspense>
   );
 }
