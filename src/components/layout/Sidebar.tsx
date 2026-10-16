@@ -183,7 +183,7 @@ function SidebarInner({ appName, workspaceLogo, filters }: SidebarProps) {
               return (
                 <li key={project.id}>
                   <Link
-                    href={projectIssuesHref(project.id)}
+                    href={projectIssuesHref(project.id, searchParams)}
                     aria-current={isActive ? 'page' : undefined}
                     className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-sm transition-colors text-left"
                     style={

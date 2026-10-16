@@ -15,7 +15,7 @@ interface TopBarProps {
   onNewTask?: () => void;
   onSearch?: (query: string) => void;
   filters?: FilterState;
-  onFiltersChange?: (f: FilterState) => void;
+  onFiltersChange?: (f: FilterState, intent?: { statusSelectionExplicit: boolean }) => void;
   hideAssignee?: boolean;
   hideToolbar?: boolean;
   totalCount?: number;
@@ -320,7 +320,9 @@ export function TopBar({ onNewTask, onSearch, filters, onFiltersChange, hideAssi
 
   const f = filters ?? DEFAULT_FILTERS;
   const set = useCallback((patch: Partial<FilterState>) => {
-    onFiltersChange?.({ ...f, ...patch });
+    onFiltersChange?.({ ...f, ...patch }, {
+      statusSelectionExplicit: Object.prototype.hasOwnProperty.call(patch, 'statuses'),
+    });
   }, [f, onFiltersChange]);
 
   const cycleSort = (field: SortField) => {

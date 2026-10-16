@@ -20,6 +20,12 @@ export function withIssueSearch(params: SearchParams, query: string) {
   if (query.trim()) next.set('q', query.trim()); else next.delete('q');
   return '/?' + next.toString();
 }
-export function projectIssuesHref(projectId: string) {
-  return '/?' + new URLSearchParams({ tab: 'all', projectId }).toString();
+export function projectIssuesHref(projectId: string, current?: SearchParams) {
+  const params = new URLSearchParams({ tab: 'all', projectId });
+  // Project facets exclude only the selected project, not search/tag scope.
+  for (const key of ['q', 'tagId']) {
+    const value = current?.get(key);
+    if (value) params.set(key, value);
+  }
+  return '/?' + params.toString();
 }

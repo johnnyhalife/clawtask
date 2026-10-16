@@ -40,7 +40,7 @@ export function HomeContent() {
 
   const [filters, setFilters] = useState<FilterState>(() => getDefaultFiltersForTab(activeTab));
   const previousScope = useRef({ activeTab, projectId, tagId });
-  const statusSelectionExplicit = useRef(false);
+  const [statusSelectionExplicit, setStatusSelectionExplicit] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [groupingLoaded, setGroupingLoaded] = useState(false);
   useEffect(() => {
@@ -67,18 +67,22 @@ export function HomeContent() {
     setFilters(current => preserveExplicitStatusFilters(current, {
       fromTab: previous.activeTab,
       toTab: nextScope.activeTab,
-      statusSelectionExplicit: statusSelectionExplicit.current,
+      statusSelectionExplicit,
     }));
-  }, [activeTab, projectId, tagId]);
+  }, [activeTab, projectId, tagId, statusSelectionExplicit]);
 
-  const handleFiltersChange = (next: FilterState) => {
-    setFilters(current => {
-      if (!haveSameStatuses(current.statuses, next.statuses)) {
-        statusSelectionExplicit.current = true;
-      }
-      return next;
-    });
+  const handleFiltersChange = (next: FilterState, intent?: { statusSelectionExplicit: boolean }) => {
+    // Clear All is a status choice even if statuses were already empty.
+    if (intent?.statusSelectionExplicit || !haveSameStatuses(filters.statuses, next.statuses)) {
+      setStatusSelectionExplicit(true);
+    }
+    setFilters(next);
   };
+  // Predict the project-link destination with the very same transition rule
+  // used by Home navigation, without changing Pulse's own collection.
+  const projectDestinationFilters = preserveExplicitStatusFilters(filters, {
+    fromTab: activeTab, toTab: 'all', statusSelectionExplicit,
+  });
 
   // "N" opens create modal (skip when typing in an input/textarea)
   useEffect(() => {
@@ -178,7 +182,7 @@ export function HomeContent() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
-      <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} filters={filters} />
+      <Sidebar appName={config?.appName || 'Clawtask'} workspaceLogo={config?.workspaceLogo} filters={projectDestinationFilters} />
 
       <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom))' : 0 }}>
         <TopBar ref={searchRef}
