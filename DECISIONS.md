@@ -162,3 +162,13 @@ All responses:
 - **Authentication UI:** Not needed (no auth by design).
 - **Pagination UI:** API supports pagination (`page`, `limit`). UI currently loads up to 100 tasks per view. Pagination controls are a future enhancement.
 - **Inline tag creation in task form:** Not yet implemented — type name + enter in the create modal is planned but not built yet. This is in scope.
+
+## 2026-10-16 — Ordinary key rotation requires an idle durable queue
+
+Use the existing authenticated human actor only (401 for missing/invalid credentials; 403 for agent/external actors). The trusted-network human bootstrap remains unchanged. No emergency revocation or credential handoff is introduced.
+
+Hash outside SQLite. Then a synchronous IMMEDIATE transaction checks existence, compares the original bcrypt hash as a credential version, checks every non-completed dispatch for the agent, and updates plaintext/hash together with a CAS predicate and affected-row check. The SQLite write lock serializes this boundary with assignment/followup admission, automatic admission and pending-to-submitting transitions. A durable pending row already blocks rotation while describe/restore or submission is in flight. No owner, outcome, session or work is cleared or replayed.
+
+Pending, submitting, running, recovery and outcome_required all return 409 AGENT_BUSY, including queued work behind another task. Completed history and idle archived sessions do not block. Assignments admitted after rotation read the replacement for their prompt; admission before commit makes rotation fail. Undispatched legacy assignments have no delivered prompt and read the new key on later admission.
+
+Overlapping rotations that read the same version yield at most one success; the loser receives 409 KEY_CONFLICT, with no replacement. Independently initiated rotation after a completed rotation can succeed and intentionally revoke that earlier key. A successful response guarantees a committed usable key at its linearization point, not immunity to subsequent explicit rotation/deletion. Clients must refresh and explicitly retry after a conflict; do not auto-retry. Deletion during hashing yields 404. SQLite failure never returns success. The adapter's existing plaintext local storage contract is unchanged; list/detail mask it, the hash is omitted, and rotation emits neither secrets nor activity/SSE/log output.

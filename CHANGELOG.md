@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Agent API key rotation requires an authenticated human, atomically refuses pending/active/unresolved dispatch work, and reports concurrent changes or deletion instead of returning an unusable replacement. Settings retains actionable errors and one-time disclosure.
 - Sidebar projects use encoded issue-list links and show a visible project heading. Scoped URLs cannot silently fall back to Pulse; search and clear-search retain project/tag scope. Explicit list filters survive project and Pulse navigation.
 - Service worker leaves SSE requests to the browser instead of proxying long-lived streams through its JSON API/offline policy.
 - Issue lists filter statuses before pagination and load all matching pages. Creation, updates, deletion and reconnect refresh detail navigation; a deleted current issue returns to All Issues. Stale route identities, open pickers, editors, handled keys and modifier keys cannot drive detail navigation.
