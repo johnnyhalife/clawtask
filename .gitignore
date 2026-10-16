@@ -38,3 +38,7 @@ coverage/
 *.tar.gz
 clawtask.db
 tsconfig.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/

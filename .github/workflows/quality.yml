@@ -37,6 +37,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser scroll regressions
+        run: npm run test:browser
+
       - name: React Doctor diff
         if: github.event_name == 'pull_request'
         run: npx -y react-doctor@latest . --verbose --diff

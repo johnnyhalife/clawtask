@@ -20,6 +20,7 @@ import { ActorAvatar, actorLabel } from '@/components/ui/ActorDisplay';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { ThemeSegmentedControl } from '@/components/ui/ThemeSegmentedControl';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useDetailScroll } from '@/hooks/useDetailScroll';
 import { AssigneePicker, type AssigneePickerHandle } from '@/components/task/AssigneePicker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -238,7 +239,7 @@ export function IssuePageClient() {
   }, [editingTask]);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { contentRef, onScroll, jumpToLatest, followOwnSend } = useDetailScroll(comments);
 
   // Inline-edit open states
   const [assigneePickerOpen, setAssigneePickerOpen] = useState(false);
@@ -263,7 +264,6 @@ export function IssuePageClient() {
   }, [taskSlug]);
 
   useEffect(() => { loadTimeline(); }, [loadTimeline]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [comments, activities]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -371,6 +371,7 @@ export function IssuePageClient() {
     setNewComment('');
     try {
       await apiPost(`/api/v1/tasks/${taskId}/comments`, { content: text, type: 'message' });
+      followOwnSend.current = true;
     } catch (err) {
       setNewComment(text); // restore on failure
       console.error('Failed to post comment:', err);
@@ -419,10 +420,18 @@ export function IssuePageClient() {
   const priorityCfg = PRIORITY_OPTIONS.find(o => o.value === task?.priority) ?? PRIORITY_OPTIONS[2];
   const appName = config?.appName ?? 'Clawtask';
   const isMobile = useIsMobile();
+  const [viewportHeight, setViewportHeight] = useState('100dvh');
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const resize = () => setViewportHeight(viewport ? viewport.height + 'px' : '100dvh');
+    resize();
+    viewport?.addEventListener('resize', resize);
+    return () => viewport?.removeEventListener('resize', resize);
+  }, []);
 
   if (isMobile) {
     return (
-      <div className="flex flex-col overflow-hidden" style={{ background: 'var(--color-base)', height: '100dvh' }}>
+      <div className="flex flex-col min-h-0 min-w-0 overflow-hidden detail-mobile-shell" style={{ background: 'var(--color-base)', height: viewportHeight }}>
         <RequestState loading={taskLoading && !task} error={taskError} label="issue" onRetry={reloadTask} />
         <RequestState loading={!issueList && !issueListError} error={issueListError} label="issue navigation" onRetry={reloadIssueList} />
         {/* Mobile: top nav bar */}
@@ -638,6 +647,7 @@ export function IssuePageClient() {
           ) : null}
         </div>
 
+        <div ref={contentRef} onScroll={onScroll} tabIndex={0} role="region" aria-label="Issue content" className="detail-content flex-1 min-h-0 min-w-0 overflow-y-auto">
         {/* Issue header */}
         <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
           <h1 style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-base-900)', lineHeight: 1.3, marginBottom: task?.description ? 8 : 0 }}>
@@ -673,7 +683,8 @@ export function IssuePageClient() {
         </div>
 
         {/* Timeline */}
-        <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 'calc(140px + env(safe-area-inset-bottom))' }}>
+        <div className="px-4 py-3">
+          {timeline.length > 0 && <button type="button" onClick={jumpToLatest}>Jump to latest ↓</button>}
           {timeline.map(item => {
             const ext = item as any;
             return <TimelineEntry key={item.id} item={item as any} showHeader={ext._showHeader !== false} showBorder={ext._showBorder !== false} groupLastTime={ext._groupLastTime} />;
@@ -683,18 +694,15 @@ export function IssuePageClient() {
               {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         {/* Reply box — pinned above bottom nav */}
         <form
           onSubmit={handleComment}
-          className="flex-shrink-0 px-4 py-3"
+          className="detail-composer px-4 py-3"
           style={{
             borderTop: '1px solid var(--color-base-200)',
             background: 'var(--color-base)',
-            position: 'sticky',
-            bottom: 'calc(56px + env(safe-area-inset-bottom))',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -725,21 +733,22 @@ export function IssuePageClient() {
           </div>
         </form>
 
-        <BottomNav />
+        </div>
+        <BottomNav inFlow />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-base)' }}>
+    <div className="flex h-dvh min-h-0 min-w-0 overflow-hidden" style={{ background: 'var(--color-base)' }}>
       {/* Sidebar */}
       <Sidebar appName={appName} workspaceLogo={config?.workspaceLogo} />
 
       {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 
         {/* ── Center ── */}
-        <div className="flex-1 flex flex-col overflow-hidden" style={{ borderRight: '1px solid var(--color-base-200)' }}>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden" style={{ borderRight: '1px solid var(--color-base-200)' }}>
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 px-6 flex-shrink-0" style={{ height: 48, borderBottom: '1px solid var(--color-base-200)', background: 'var(--color-base)' }}>
@@ -758,6 +767,7 @@ export function IssuePageClient() {
 
           <RequestState loading={taskLoading && !task} error={taskError} label="issue" onRetry={reloadTask} />
           <RequestState loading={!issueList && !issueListError} error={issueListError} label="issue navigation" onRetry={reloadIssueList} />
+          <div ref={contentRef} onScroll={onScroll} tabIndex={0} role="region" aria-label="Issue content" className="detail-content flex-1 min-h-0 min-w-0 overflow-y-auto">
           {/* Issue header */}
           <div className="flex-shrink-0 px-8 pt-6 pb-5" style={{ borderBottom: '1px solid var(--color-base-200)' }}>
             {/* Meta row */}
@@ -881,10 +891,10 @@ export function IssuePageClient() {
           </div>
 
           {/* Timeline */}
-          <div className="flex-1 overflow-y-auto px-8 py-4">
+          <div className="px-8 py-4">
             {timeline.length > 0 && (
               <div className="flex justify-end mb-3">
-                <button onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                <button onClick={jumpToLatest}
                   style={{ color: 'var(--color-base-500)', fontFamily: "'Instrument Sans', sans-serif", fontSize: '0.78rem', background: 'none', border: 'none', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-base-700)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-base-500)')}>
@@ -901,11 +911,10 @@ export function IssuePageClient() {
                 {activeTab === 'chat' ? 'No messages yet' : 'No activity yet'}
               </div>
             )}
-            <div ref={bottomRef} />
           </div>
 
           {/* Reply box */}
-          <form onSubmit={handleComment} className="flex-shrink-0 px-8 py-4" style={{ borderTop: '1px solid var(--color-base-200)' }}>
+          <form onSubmit={handleComment} className="detail-composer px-8 py-4" style={{ borderTop: '1px solid var(--color-base-200)' }}>
             <textarea
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
@@ -928,6 +937,7 @@ export function IssuePageClient() {
               </button>
             </div>
           </form>
+          </div>
         </div>
 
         {/* ── Right: properties ── */}

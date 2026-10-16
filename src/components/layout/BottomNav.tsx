@@ -228,11 +228,13 @@ const NAV_ITEMS = [
 ];
 
 interface BottomNavProps {
+  /** Detail shells reserve navigation space through normal flow, including keyboard resize. */
+  inFlow?: boolean;
   groupBy?: GroupByField;
   onGroupByChange?: (v: GroupByField) => void;
 }
 
-function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps) {
+function BottomNavInner({ groupBy = 'status', onGroupByChange, inFlow = false }: BottomNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -257,7 +259,8 @@ function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps)
     <>
       <nav
         style={{
-          position: 'fixed',
+          position: inFlow ? 'relative' : 'fixed',
+          flexShrink: 0,
           bottom: 0,
           left: 0,
           right: 0,
@@ -396,10 +399,10 @@ function BottomNavInner({ groupBy = 'status', onGroupByChange }: BottomNavProps)
   );
 }
 
-export function BottomNav({ groupBy, onGroupByChange }: BottomNavProps) {
+export function BottomNav({ groupBy, onGroupByChange, inFlow }: BottomNavProps) {
   return (
     <Suspense fallback={null}>
-      <BottomNavInner groupBy={groupBy} onGroupByChange={onGroupByChange} />
+      <BottomNavInner groupBy={groupBy} onGroupByChange={onGroupByChange} inFlow={inFlow} />
     </Suspense>
   );
 }

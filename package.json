@@ -9,7 +9,8 @@
     "migrate": "tsx src/db/migrate.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts tests/*.test.tsx"
+    "test": "tsx --test tests/*.test.ts tests/*.test.tsx",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -23,6 +24,7 @@
     "ws": "8.20.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@testing-library/react": "^16.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "7.6.13",

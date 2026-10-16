@@ -180,3 +180,25 @@ html, body {
   padding: 0.4rem 0.75rem;
 }
 .prose-clawtask th { background: var(--color-base-200); }
+
+/* Issue detail has one vertical owner. Sticky reply remains in normal flow,
+   so short viewports can scroll it rather than clipping the conversation. */
+.detail-content {
+  container-type: size;
+  overflow-wrap: anywhere;
+  scroll-padding-bottom: 210px;
+}
+.detail-content > * { min-width: 0; }
+.detail-content h1 { overflow-wrap: anywhere; }
+.detail-content .prose-clawtask { min-width: 0; overflow-wrap: anywhere; }
+.detail-content pre { max-width: 100%; }
+.detail-content table { table-layout: fixed; }
+.detail-composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--color-base);
+}
+@container (max-height: 420px) {
+  .detail-composer { position: static; }
+}

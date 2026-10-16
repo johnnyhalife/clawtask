@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Issue detail keeps long descriptions and the full conversation in one accessible content scroller. Initial loads stay at the title; new comments follow only near the bottom, with deliberate jump/send scrolling. Mobile navigation reserves its safe area once and short viewports can scroll the reply form.
 - Agent API key rotation requires an authenticated human, atomically refuses pending/active/unresolved dispatch work, and reports concurrent changes or deletion instead of returning an unusable replacement. Settings retains actionable errors and one-time disclosure.
 - Project sidebar counts predict their destination: untouched Pulse uses active-work issue defaults, while explicit Done, Archived and Clear All retain their exact status scope. Project links preserve counted search/tag filters; priority and assignee selections survive in the mounted page session. Only the selected project is excluded from facet counts.
 - Sidebar projects use encoded issue-list links and show a visible project heading. Scoped URLs cannot silently fall back to Pulse; search and clear-search retain project/tag scope. Explicit list filters survive project and Pulse navigation.
