@@ -27,7 +27,7 @@ function fake(){
   if(method==='agent.wait')return {runId:params.runId,status:'timeout'};
   throw Error('Unknown RPC '+method);
  };
- const create=()=>new RunControl(db,request,()=>available,(task,comment)=>comment?.id??task.id);
+ const create=()=>new RunControl(db,request,()=>available,(task,comment)=>comment?.id??task.id,()=>{},async(_conn,_row,session)=>session);
  return {conn,calls,get,create,setHandler:(fn:typeof handler)=>{handler=fn;},disconnect:()=>{available=false;},reconnect:()=>{available=true;},control:create()};
 }
 const sends=(f:ReturnType<typeof fake>)=>f.calls.filter(c=>c.method==='agent');
@@ -90,10 +90,13 @@ test('missing active-state contract is never interpreted as idle',async()=>{
  f.setHandler(m=>m==='sessions.describe'?{session:{sessionId:'s',archived:false}}:undefined);
  await f.control.cleanup(f.conn,'t');assert.equal(patches(f).length,0);assert.equal((db.prepare('SELECT * FROM task_sessions').get() as any).errorCode,'archive_failed');
 });
-test('uncertain accepted run cannot bind and archive a replacement identity',async()=>{
- const f=fake();f.setHandler(m=>{if(m==='sessions.describe')return {session:null};if(m==='agent')throw Error('lost acknowledgement');});
- await f.control.pump(f.conn);f.setHandler((m,p)=>{if(m==='agent.wait'){status('t','done');return {runId:p.runId,status:'ok',endedAt:123};}});
- await f.create().pump(f.conn);assert.equal(patches(f).length,0);assert.equal((db.prepare('SELECT * FROM task_sessions').get() as any).sessionId,null);assert.equal(sends(f).length,1);
+test('historical uncertain accepted run cannot bind and archive a replacement identity',async()=>{
+ // New submissions bind identity before execution. Seed a pre-migration uncertain
+ // owner to retain the original negative recovery guarantee for historical work.
+ db.prepare("INSERT INTO task_sessions(taskId,agentId,sessionKey) VALUES('t','a','agent:test:clawtask:t')").run();
+ db.prepare("INSERT INTO task_dispatches(id,taskId,agentId,sessionKey,runId,state) VALUES('saved','t','a','agent:test:clawtask:t','saved','recovery')").run();
+ const f=fake();f.setHandler((m,p)=>{if(m==='agent.wait'){status('t','done');return {runId:p.runId,status:'ok',endedAt:123};}});
+ await f.create().pump(f.conn);assert.equal(patches(f).length,0);assert.equal((db.prepare('SELECT * FROM task_sessions').get() as any).sessionId,null);assert.equal(sends(f).length,0);
 });
 test('wait for a different run ID cannot release task ownership',async()=>{
  const f=fake();f.setHandler(m=>m==='agent.wait'?{runId:'other',status:'ok',endedAt:123}:undefined);await f.control.pump(f.conn);assert.equal(row().state,'recovery');assert.equal(f.conn.currentRunId,row().runId);

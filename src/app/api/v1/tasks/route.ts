@@ -1,3 +1,4 @@
+import { validateTaskRuntime } from '@/lib/task-runtime';
 import { assignmentTransaction, AssignmentConflict } from '@/lib/run-store';
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
@@ -83,10 +84,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const db = getDb();
   const body = await req.json();
-
   const actor = await requireActor(req);
   if (actor instanceof Response) return actor;
   const { actorId, actorType } = actor;
+
+  const runtimeError = validateTaskRuntime(body);
+  if (runtimeError) return err('INVALID_RUNTIME', runtimeError, 400);
 
   if (!actorId) return err('NO_ACTOR', 'No actor found', 500);
   if (!body.title) return err('MISSING_TITLE', 'title is required', 400);
@@ -129,8 +132,8 @@ export async function POST(req: NextRequest) {
   try {
     assignmentTransaction(db,id,true,()=>{
       db.prepare(`
-        INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, endDate, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+        INSERT INTO tasks (id, issueId, title, description, priority, status, projectId, parentTaskId, assigneeId, assigneeType, startDate, endDate, modelOverride, thinkingOverride, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       `).run(
         id,
         issueId,
@@ -143,7 +146,9 @@ export async function POST(req: NextRequest) {
         body.assigneeId || null,
         body.assigneeType || null,
         body.startDate || null,
-        body.endDate || null
+        body.endDate || null,
+        body.modelOverride ?? null,
+        body.thinkingOverride ?? null
       );
 
       // Tags

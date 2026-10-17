@@ -32,6 +32,14 @@ Johnny owns the main push and deployment, then triggers harmless production task
 
 Agent comments use the authenticated API. The gateway socket handles dispatch and run control, not comment storage. This removes the second comment writer and keeps author identity, activity records, and browser events on one path. Historical comments are unchanged.
 
+## 2026-10-16 — Task runtime preferences use non-admin session authority
+
+Persist independent nullable task model/thinking overrides; null means agent configuration, not a copied current default. Prepare and verify the original session before pending work can become submitting. Freeze the preference snapshot under task revision and assignment checks; edits during preparation retry safely, edits after submission apply to future dispatches only. Never reconfigure or replay an accepted/uncertain owner.
+
+Before no-execution initial creation, persist an unresolved creation intent. Bind a verified create acknowledgment synchronously before any subsequent fallible Gateway step. Describe/patch/readback failure must not discard that identity; a restarted retry rejects a replacement under the same key. Unknown or incomplete acknowledgment leaves the intent unresolved and blocks automatic adoption/recreation. This conservative hold requires operator investigation, not a synthetic identity or a new reset path.
+
+Keep existing run/lifecycle authentication intact. Runtime preference mutations use a bounded separate connection signing/requesting only operator.write and validating the granted non-admin scope. An admin model patch can persist configured defaults under modelSelectionScope=agent/global; a config pre-read is not an atomic safeguard. The narrow transport neither pairs/upgrades nor falls back to admin. Unsupported or unverifiable metadata retains pending work. See [contract, semantics and limits](docs/task-runtime.md).
+
 ## Technology Choices
 
 ### SQLite via better-sqlite3

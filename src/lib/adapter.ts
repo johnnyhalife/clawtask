@@ -20,6 +20,8 @@ import path from 'path';
 import { getDb } from '@/db/db';
 import { v4 as uuidv4 } from 'uuid';
 import { RunControl } from './run-control';
+import { prepareTaskRuntime, type CreationHandoff } from './runtime-control';
+import type { TaskRuntime } from './task-runtime';
 import { admitFollowup } from './run-store';
 import { logActivity } from './activity';
 import { broadcastSse } from './sse';
@@ -616,7 +618,8 @@ export class AdapterService {
         const human=db.prepare('SELECT id FROM humans LIMIT 1').get() as any;
         if (human) logActivity(db,{taskId,actorId:human.id,actorType:'human',verb:'status_changed',meta:{from:'done',to:'in_progress'}});
         broadcastSse({type:'task.updated',data:enrichTask(db,db.prepare('SELECT * FROM tasks WHERE id=?').get(taskId) as any)});
-      });
+      },
+      (conn,row,session,settings,creation) => this.prepareRuntime(conn,row,session,settings,creation));
     return this.runControl;
   }
 
@@ -656,6 +659,71 @@ Instructions:
 3. Do the work.
 4. Post SHORT comments as you go — one comment per action or finding, not one big block. Each comment should be 1-3 sentences max.
 5. When done, mark it: POST ${CLAWTASK_SELF_URL}/api/v1/tasks/${slug}/status with body { "status": "done" }`;
+  }
+
+  /** One bounded connection per preparation, deliberately never paired/upgraded/retried. */
+  private async prepareRuntime(conn: AgentConnection, row: any, session: any, settings: TaskRuntime, creation?: CreationHandoff) {
+    const generation = conn.generation;
+    const identity = this.deviceIdentity;
+    if (!identity) throw new Error('runtime_identity_unavailable');
+    const current = () => this.connections.get(conn.agentId) === conn && conn.generation === generation && conn.handshakeDone;
+    const socket = new WebSocket(this.gatewayUrl);
+    const pending = new Map<string, PendingRequest>();
+    let closed = false;
+    const rejectPending = () => {
+      closed = true;
+      for (const item of pending.values()) { clearTimeout(item.timer); item.reject(new Error('runtime_transport_lost')); }
+      pending.clear();
+    };
+    const request = (method: string, params: unknown): Promise<any> => new Promise((resolve, reject) => {
+      if (closed || !current() || socket.readyState !== WebSocket.OPEN) { reject(new Error('runtime_transport_lost')); return; }
+      const id = uuidv4();
+      const timer = setTimeout(() => { pending.delete(id); reject(new Error('runtime_request_timeout')); }, 15000);
+      pending.set(id, { timer, resolve: value => current() ? resolve(value) : reject(new Error('runtime_transport_lost')), reject });
+      socket.send(JSON.stringify({ type: 'req', id, method, params }));
+    });
+    let rejectHello!: (error: Error) => void;
+    let challenged = false;
+    const hello = new Promise<void>((resolve, reject) => {
+      rejectHello = reject;
+      socket.on('message', raw => {
+        try {
+          const frame = JSON.parse(raw.toString());
+          if (frame.type === 'res') {
+            const item = pending.get(frame.id);
+            if (item) { clearTimeout(item.timer); pending.delete(frame.id); frame.ok ? item.resolve(frame.payload) : item.reject(new Error('runtime_request_rejected')); }
+          } else if (frame.type === 'event' && frame.event === 'connect.challenge') {
+            if (challenged) { reject(new Error('runtime_duplicate_challenge')); socket.close(); return; }
+            challenged = true;
+            const challenge = parseGatewayChallenge(frame.payload);
+            if (!challenge) { reject(new Error('runtime_invalid_challenge')); socket.close(); return; }
+            // The signed authority and the actual connect authority MUST be identical and non-admin.
+            const scopes = ['operator.write'];
+            const payload = buildDeviceAuthPayloadV3({ deviceId: identity.deviceId, clientId: CLIENT_ID, clientMode: CLIENT_MODE,
+              role: ROLE, scopes, signedAtMs: challenge.ts, token: this.gatewayAuthToken, nonce: challenge.nonce });
+            void request('connect', {
+              minProtocol: GATEWAY_PROTOCOL_VERSION, maxProtocol: GATEWAY_PROTOCOL_VERSION,
+              client: { id: CLIENT_ID, version: CLIENT_VERSION, platform: process.platform, mode: CLIENT_MODE },
+              role: ROLE, scopes, auth: this.gatewayAuthToken ? { token: this.gatewayAuthToken } : undefined,
+              device: { id: identity.deviceId, publicKey: identity.publicKeyRawBase64Url,
+                signature: signDevicePayload(identity.privateKeyPem, payload), signedAt: challenge.ts, nonce: challenge.nonce },
+            }).then(result => {
+              if (result?.type !== 'hello-ok' || result.protocol !== GATEWAY_PROTOCOL_VERSION || result.auth?.role !== ROLE ||
+                  !Array.isArray(result.auth.scopes) || !result.auth.scopes.includes('operator.write') ||
+                  result.auth.scopes.some((scope: string) => !['operator.write', 'operator.read'].includes(scope))) throw new Error('runtime_scope_unconfirmed');
+              resolve();
+            }).catch(reject);
+          }
+        } catch { reject(new Error('runtime_invalid_frame')); }
+      });
+    });
+    const timer = setTimeout(() => { rejectHello(new Error('runtime_transport_timeout')); rejectPending(); socket.close(); }, 60000);
+    socket.on('error', () => { rejectHello(new Error('runtime_transport_lost')); rejectPending(); socket.close(); });
+    socket.on('close', () => { rejectHello(new Error('runtime_transport_lost')); rejectPending(); });
+    try {
+      await hello;
+      return await prepareTaskRuntime(request, { sessionKey: row.sessionKey, agentId: conn.openclawAgentId, dispatchId: row.id, session, creation }, settings);
+    } finally { clearTimeout(timer); rejectPending(); socket.close(); }
   }
 
   // ─── Request primitive ────────────────────────────────────────────────────

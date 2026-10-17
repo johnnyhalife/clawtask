@@ -13,6 +13,9 @@ interface TaskRow {
   assigneeType: string | null;
   startDate: string | null;
   endDate: string | null;
+  modelOverride: string | null;
+  thinkingOverride: string | null;
+  runtimeRevision: number;
   createdAt: string;
   updatedAt: string;
 }

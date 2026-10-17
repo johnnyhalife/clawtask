@@ -175,6 +175,22 @@ function runMigrations(db: Database.Database) {
     db.pragma('foreign_keys = ON');
   }
 
+  // M008: additive task runtime preferences; historical rows inherit agent defaults.
+  const runtimeCols = (db.pragma('table_info(tasks)') as Array<{ name: string }>).map(c => c.name);
+  for (const column of ['modelOverride', 'thinkingOverride']) {
+    if (!runtimeCols.includes(column)) db.exec(`ALTER TABLE tasks ADD COLUMN ${column} TEXT`);
+  }
+
+  if (!runtimeCols.includes('runtimeRevision')) db.exec('ALTER TABLE tasks ADD COLUMN runtimeRevision INTEGER NOT NULL DEFAULT 0');
+  const dispatchCols = (db.pragma('table_info(task_dispatches)') as Array<{ name: string }>).map(c => c.name);
+  for (const column of ['runtimeSettings', 'runtimeSessionRevision']) {
+    if (!dispatchCols.includes(column)) db.exec(`ALTER TABLE task_dispatches ADD COLUMN ${column} TEXT`);
+  }
+
+  // Unknown session creation cannot be retried/adopted after restart. Historical rows are unchanged.
+  const sessionCols = (db.pragma('table_info(task_sessions)') as Array<{ name: string }>).map(c => c.name);
+  if (!sessionCols.includes('creationPending')) db.exec('ALTER TABLE task_sessions ADD COLUMN creationPending INTEGER NOT NULL DEFAULT 0');
+
   // Backfill: any agent with empty apiKey gets a fresh key+hash pair (sync both)
   const stale = db
     .prepare(`SELECT id FROM agents WHERE apiKey = '' OR apiKey IS NULL`)

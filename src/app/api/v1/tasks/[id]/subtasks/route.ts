@@ -1,3 +1,4 @@
+import { validateTaskRuntime } from '@/lib/task-runtime';
 import { assignmentTransaction, AssignmentConflict } from '@/lib/run-store';
 import { notifyTaskState } from '@/lib/task-status';
 import { NextRequest } from 'next/server';
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const { actorId, actorType } = actor;
 
   const body = await req.json();
+  const runtimeError = validateTaskRuntime(body);
+  if (runtimeError) return err('INVALID_RUNTIME', runtimeError, 400);
   if (!body.title) return err('MISSING_TITLE', 'title is required', 400);
 
   if ((body.status ?? parent.status)==='blocked') { body.assigneeId=null; body.assigneeType=null; }
@@ -39,8 +42,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   try {
     assignmentTransaction(db,id,true,()=>{
       db.prepare(`
-        INSERT INTO tasks (id, issueId, title, description, priority, status, parentTaskId, assigneeId, assigneeType, startDate, endDate, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+        INSERT INTO tasks (id, issueId, title, description, priority, status, parentTaskId, assigneeId, assigneeType, startDate, endDate, modelOverride, thinkingOverride, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       `).run(
         id,
         issueId,
@@ -52,7 +55,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         body.assigneeId !== undefined ? body.assigneeId : parent.assigneeId,
         body.assigneeType !== undefined ? body.assigneeType : parent.assigneeType,
         body.startDate || null,
-        body.endDate || null
+        body.endDate || null,
+        body.modelOverride ?? null,
+        body.thinkingOverride ?? null
       );
     });
   } catch (error) {

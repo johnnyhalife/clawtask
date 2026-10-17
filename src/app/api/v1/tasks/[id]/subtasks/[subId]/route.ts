@@ -1,3 +1,4 @@
+import { validateTaskRuntime } from '@/lib/task-runtime';
 import { assignmentTransaction, AssignmentConflict } from '@/lib/run-store';
 import { NextRequest } from 'next/server';
 import { applyStatusRules, notifyTaskState } from '@/lib/task-status';
@@ -22,8 +23,10 @@ export async function PATCH(
   const { actorId, actorType } = actor;
 
   const body = await req.json();
+  const runtimeError = validateTaskRuntime(body);
+  if (runtimeError) return err('INVALID_RUNTIME', runtimeError, 400);
   if (!applyStatusRules(body,sub.status)) return err('INVALID_STATUS','Invalid task status',400);
-  const allowed = ['title', 'description', 'priority', 'status', 'assigneeId', 'assigneeType', 'startDate', 'endDate'];
+  const allowed = ['modelOverride', 'thinkingOverride', 'title', 'description', 'priority', 'status', 'assigneeId', 'assigneeType', 'startDate', 'endDate'];
 
   const updates: string[] = [];
   const values: unknown[] = [];
@@ -37,6 +40,7 @@ export async function PATCH(
         }
       }
 
+      if ('modelOverride' in body || 'thinkingOverride' in body) updates.push('runtimeRevision = runtimeRevision + 1');
       if (updates.length > 0) {
         updates.push("updatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')");
         values.push(params.subId);

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { TaskRuntimeFields } from './TaskRuntimeSettings';
+import { validateTaskRuntime, type TaskRuntime } from '@/lib/task-runtime';
 import NextImage from 'next/image';
 import { Project, Tag, Agent } from '@/types';
 import { apiPost, useApi } from '@/hooks/useApi';
@@ -241,6 +243,7 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
   const { data: agents } = useApi<Agent[]>('/api/v1/agents');
   const { data: humans } = useApi<{ id: string; displayName: string }[]>('/api/v1/humans');
 
+  const [runtime, setRuntime] = useState<TaskRuntime>({ modelOverride: null, thinkingOverride: null });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -282,11 +285,15 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
     setSelectedTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    const runtimeError = validateTaskRuntime(runtime);
+    if (runtimeError) { setError(runtimeError); return; }
     if (!title.trim()) { setError('Title is required'); return; }
     setSubmitting(true);
     setError('');
     try {
       const created = await apiPost<{ id: string; issueId: string }>('/api/v1/tasks', {
+        ...runtime,
         title: title.trim(),
         description: description.trim(),
         priority, status,
@@ -434,6 +441,8 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
             }}
           />
         </div>
+
+        <div className="px-4 py-3 flex-shrink-0"><TaskRuntimeFields value={runtime} onChange={setRuntime} disabled={submitting} /></div>
 
         {/* Bottom toolbar + submit */}
         <div
@@ -592,6 +601,8 @@ export function CreateTaskModal({ onClose, onCreated, defaultProjectId }: Create
             }}
           />
         </div>
+
+        <div className="px-5 py-3 overflow-y-auto flex-shrink-0" style={{ maxHeight: 230 }}><TaskRuntimeFields value={runtime} onChange={setRuntime} disabled={submitting} /></div>
 
         {/* Bottom toolbar */}
         <div style={{ borderTop: '1px solid var(--color-base-200)' }}>

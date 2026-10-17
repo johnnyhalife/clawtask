@@ -5,15 +5,18 @@ All notable changes to this project are documented in this file.
 ## Unreleased
 
 ### Features
+- Tasks independently inherit agent model/thinking defaults, with optional persisted API and desktop/mobile overrides and explicit Default clearing. Runtime preparation verifies the exact session before dispatch using non-admin authority; unsupported settings retain pending work instead of submitting. See docs/task-runtime.md for Gateway requirements and active-run edit semantics.
 - Sidebar projects show issue counts matching active status, priority, assignee, search and tag filters, with live task-event refresh.
 - All Issues includes every status by default. Status selections are explicit, including Backlog and Archived. Issue detail has Previous/Next buttons and unmodified left/right arrow shortcuts in the same grouped order, using the saved grouping preference.
 - Durable per-agent run ownership and FIFO human followups. Unknown acceptance, timeout and connection loss retain work instead of repeating it.
 - Done task sessions archive only after terminal run observation and idle gateway checks. Followups restore the same session before dispatch. Task responses expose dispatch and cleanup recovery state.
 
 ### Database
+- Additive nullable task runtime preferences, revision and dispatch snapshots preserve historical rows and run ownership.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Initial runtime session creation durably binds the verified identity before describe/patch/readback. Failures and restart cannot adopt a replacement; unknown creation acknowledgment retains an explicit durable hold without replay or submission.
 - Agent API key rotation requires an authenticated human, atomically refuses pending/active/unresolved dispatch work, and reports concurrent changes or deletion instead of returning an unusable replacement. Settings retains actionable errors and one-time disclosure.
 - Project sidebar counts predict their destination: untouched Pulse uses active-work issue defaults, while explicit Done, Archived and Clear All retain their exact status scope. Project links preserve counted search/tag filters; priority and assignee selections survive in the mounted page session. Only the selected project is excluded from facet counts.
 - Sidebar projects use encoded issue-list links and show a visible project heading. Scoped URLs cannot silently fall back to Pulse; search and clear-search retain project/tag scope. Explicit list filters survive project and Pulse navigation.

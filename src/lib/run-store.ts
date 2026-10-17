@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export interface Dispatch {
   id: string; taskId: string; agentId: string; sessionKey: string;
+  runtimeSettings?: string | null; runtimeSessionRevision?: string | null;
   commentId: string | null; runId: string | null; state: string; attempts: number;
 }
 

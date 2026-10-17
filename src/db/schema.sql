@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   assigneeType TEXT CHECK (assigneeType IN ('agent', 'human', NULL)),
   startDate TEXT,
   endDate TEXT,
+  modelOverride TEXT,
+  thinkingOverride TEXT,
+  runtimeRevision INTEGER NOT NULL DEFAULT 0,
   createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updatedAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
@@ -126,6 +129,8 @@ CREATE TABLE IF NOT EXISTS task_dispatches (
   commentId TEXT UNIQUE REFERENCES comments(id) ON DELETE RESTRICT,
   runId TEXT,
   state TEXT NOT NULL CHECK(state IN ('pending','submitting','running','recovery','completed','outcome_required')),
+  runtimeSettings TEXT,
+  runtimeSessionRevision TEXT,
   attempts INTEGER NOT NULL DEFAULT 0,
   errorCode TEXT,
   createdAt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -137,6 +142,7 @@ CREATE TABLE IF NOT EXISTS task_sessions (
   agentId TEXT NOT NULL,
   sessionKey TEXT NOT NULL,
   sessionId TEXT,
+  creationPending INTEGER NOT NULL DEFAULT 0,
   cleanupPending INTEGER NOT NULL DEFAULT 0,
   cleanupAttempts INTEGER NOT NULL DEFAULT 0,
   errorCode TEXT

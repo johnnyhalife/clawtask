@@ -144,7 +144,7 @@ test('rotation first: later fake-gateway dispatch uses new key and completes onc
     }
     if(method==='sessions.patch') return {ok:true,entry:{sessionId:'s',archivedAt:123}};
     throw Error(method);
-  },()=>true,()=>stored().apiKey);
+  },()=>true,()=>stored().apiKey,()=>{},async(_conn,_row,session)=>session);
   const conn={agentId:'a',openclawAgentId:'test',currentTaskId:null,currentRunId:null};
   await control.pump(conn); await control.pump(conn);
   assert.equal(calls.filter(m=>m==='agent').length,1);
@@ -162,7 +162,7 @@ test('pending to submitting while hashing blocks rotation and retains delivered 
     if(method==='agent') {assert.equal(p.message,oldKey); delivered(); await waiting; return {runId:p.idempotencyKey};}
     if(method==='agent.wait') return {runId:p.runId,status:'timeout'};
     throw Error(method);
-  },()=>true,()=>stored().apiKey);
+  },()=>true,()=>stored().apiKey,()=>{},async(_conn,_row,session)=>session);
   const pump=control.pump({agentId:'a',openclawAgentId:'test',currentTaskId:null,currentRunId:null});
   await delivery; assert.equal((db.prepare('SELECT state FROM task_dispatches').get() as any).state,'submitting');
   const before=snapshot(); await calls[0].release(); assert.equal((await rotation).status,409); assert.equal(snapshot(),before);
