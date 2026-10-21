@@ -38,6 +38,10 @@ Source evidence: sessions-read-DTN-THv_.mjs:327–365 presents sessions.describe
 
 Invalid evidence retains done status, cleanupPending and its bounded retry/error state, or the pending human comment/dispatch. It does not reset cleanup counters, clear owners, replace original sessionKey/sessionId, or resubmit uncertain work. Restore is checked again after patch confirmation before task reopening or agent submission. Recovery remains an explicit operator boundary, not an automatic bypass.
 
+## Runtime preferences
+
+[Task runtime defaults and overrides](task-runtime.md) adds verified, non-admin session preparation before pending work can become submitting. Both Default fields explicitly clear prior task-session overrides. Accepted/uncertain ownership is never reconfigured or resubmitted on reconnect. Existing lifecycle recovery rules below remain in force.
+
 ## Durable ownership
 
 The comments API writes a human comment and its pending dispatch in one SQLite transaction. The dispatch ID is saved before submission and is the gateway idempotency key. Initial work and followups use one per-agent owner and completion path. FIFO comment admission order uses an increasing database sequence. An agent cannot dispatch another task while an accepted or uncertain attempt owns it.

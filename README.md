@@ -191,3 +191,9 @@ Johnny owns the main push and deployment. Before deployment, save the current im
 If a check fails, pause new assignments and followups. Verify all accepted runs and pending dispatches before reverting to the saved image digest. The old app can leave the additive tables in place, but it does not honor their ownership or recovery rules. Do not restore the database automatically or discard uncertain work. Keep failure evidence for diagnosis.
 
 Local evidence and limits: docs/plans/session-lifecycle.md. Node 20 CI and container behavior are separate from the completed Node 26 local checks.
+
+## Task runtime compatibility
+
+Task and subtask model/thinking defaults remain independently nullable and dynamic. Conservative runtime preparation currently audits the authenticated OpenClaw 2026.10.5 contract and requires actual matching nonempty lifecycle revisions plus supported effective thinking on exact full describe readback. .3/.4, unknown versions, revisionless legacy sessions and missing proof remain pending with no agent submission; .5 alone is not sufficient. No Gateway upgrade or global-default change is performed. See [task runtime contract and limits](docs/task-runtime.md).
+
+After `npm run build`, `npm run test:browser` runs both upstream Playwright scroll specs and the standalone desktop/mobile runtime harness in sequence with failure propagation. Both use synthetic API/SSE and isolated temporary HOME; they do not prove real Gateway/provider acceptance.

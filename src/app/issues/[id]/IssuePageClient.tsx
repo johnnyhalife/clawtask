@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { TaskRuntimeSettings } from '@/components/task/TaskRuntimeSettings';
 import { Task, Comment, Activity } from '@/types';
 import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
 import { RequestState } from '@/components/ui/RequestState';
@@ -579,6 +580,7 @@ export function IssuePageClient() {
                     </div>
                   </PropRow>
                   <div style={{ height: 1, background: 'var(--color-base-200)', margin: '8px 0' }} />
+                  <TaskRuntimeSettings key={task.id} task={task} onSaved={reloadTask} />
                   <PropRow label="Created by">
                     {(() => {
                       const createdAct = activities.find(a => a.verb === 'created');
@@ -1089,6 +1091,8 @@ export function IssuePageClient() {
                     )}
                   </div>
                 </PropRow>
+
+                <TaskRuntimeSettings key={task.id} task={task} onSaved={reloadTask} />
 
                 {/* Metadata */}
                 <div style={{ height: 1, background: 'var(--color-base-200)', margin: '8px 0' }} />

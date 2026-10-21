@@ -43,7 +43,7 @@ function gateway(){
   }
   if(method==='sessions.patch')return {ok:true,entry:{sessionId:'original-session',archivedAt:123}};
   throw Error(method);
- },()=>true,(task,c,connection)=>adapter.buildMessage(connection,task,c));
+ },()=>true,(task,c,connection)=>adapter.buildMessage(connection,task,c),()=>{},async(_conn,_row,session)=>session);
  return {control,conn,calls};
 }
 for(const route of ['assign','patch'])test(route+' resumes exact blocked/unassigned/comment/todo/reassign flow',async()=>{
@@ -83,7 +83,7 @@ test('new assignment waits behind another task owner, then uses its saved dispat
  await assign(req('POST',{assigneeId:'a',assigneeType:'agent'}),props());
  const pending=db.prepare("SELECT * FROM task_dispatches WHERE state='pending'").get() as any;assert.ok(pending);
  let finish=false;const calls:any[]=[];const conn:any={agentId:'a',openclawAgentId:'test',currentTaskId:'other',currentRunId:'other-run'};
- const control=new RunControl(db,async(_,m,p)=>{calls.push({m,p});if(m==='agent.wait'){if(!finish)return {runId:p.runId,status:'timeout'};db.prepare("UPDATE tasks SET status='blocked',assigneeId=NULL,assigneeType=NULL WHERE id=?").run(conn.currentTaskId);return {runId:p.runId,status:'ok',endedAt:123};}if(m==='sessions.describe')return {session:{sessionId:'saved-session',archived:false,hasActiveRun:false}};if(m==='agent')return {runId:p.idempotencyKey};throw Error(m);},()=>true,()=> 'task');
+ const control=new RunControl(db,async(_,m,p)=>{calls.push({m,p});if(m==='agent.wait'){if(!finish)return {runId:p.runId,status:'timeout'};db.prepare("UPDATE tasks SET status='blocked',assigneeId=NULL,assigneeType=NULL WHERE id=?").run(conn.currentTaskId);return {runId:p.runId,status:'ok',endedAt:123};}if(m==='sessions.describe')return {session:{sessionId:'saved-session',archived:false,hasActiveRun:false}};if(m==='agent')return {runId:p.idempotencyKey};throw Error(m);},()=>true,()=> 'task',()=>{},async(_conn,_row,session)=>session);
  await control.pump(conn);assert.equal(conn.currentTaskId,'other');assert.equal(calls.filter(c=>c.m==='agent').length,0);
  finish=true;await control.pump(conn);assert.equal(calls.filter(c=>c.m==='agent').length,1);assert.equal(calls.find(c=>c.m==='agent').p.idempotencyKey,pending.id);
 });

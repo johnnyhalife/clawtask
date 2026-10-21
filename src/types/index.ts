@@ -61,6 +61,8 @@ export interface Task {
   tags: Tag[];
   startDate: string | null;
   endDate: string | null;
+  modelOverride?: string | null;
+  thinkingOverride?: string | null;
   createdAt: string;
   updatedAt: string;
   // Joined

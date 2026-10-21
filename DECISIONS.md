@@ -32,6 +32,14 @@ Johnny owns the main push and deployment, then triggers harmless production task
 
 Agent comments use the authenticated API. The gateway socket handles dispatch and run control, not comment storage. This removes the second comment writer and keeps author identity, activity records, and browser events on one path. Historical comments are unchanged.
 
+## 2026-10-16 — Task runtime preferences use non-admin session authority
+
+Persist independent nullable task model/thinking overrides; null means agent configuration, not a copied current default. Prepare and verify the original session before pending work can become submitting. Freeze the preference snapshot under task revision and assignment checks; edits during preparation retry safely, edits after submission apply to future dispatches only. Never reconfigure or replay an accepted/uncertain owner.
+
+Before no-execution initial creation, persist an unresolved creation intent. Bind a verified create acknowledgment synchronously before any subsequent fallible Gateway step. Describe/patch/readback failure must not discard that identity; a restarted retry rejects a replacement under the same key. Unknown or incomplete acknowledgment leaves the intent unresolved and blocks automatic adoption/recreation. This conservative hold requires operator investigation, not a synthetic identity or a new reset path.
+
+Keep existing run/lifecycle authentication intact. Runtime preference mutations use a bounded separate connection signing/requesting only operator.write and validating the granted non-admin scope. An admin model patch can persist configured defaults under modelSelectionScope=agent/global; a config pre-read is not an atomic safeguard. The narrow transport neither pairs/upgrades nor falls back to admin. Unsupported or unverifiable metadata retains pending work. See [contract, semantics and limits](docs/task-runtime.md).
+
 ## Technology Choices
 
 ### SQLite via better-sqlite3
@@ -178,3 +186,7 @@ Overlapping rotations that read the same version yield at most one success; the 
 Keep the description/editor, tabs and normal-flow timeline in one bounded center region. Do not cap the description or introduce a nested vertical timeline scroll trap. Navigation and properties stay outside. The reply form is sticky when space permits and joins normal flow in short content regions. Mobile navigation participates in layout and the shell tracks visualViewport height for keyboard resize.
 
 Scroll only the content ref: initial loads stay at the top, explicit jump/successful send may go to latest, and new comment IDs follow only if the reader was already within 80px of the bottom. Edits, duplicate events and activity refresh do not initiate scrolling. See [the contract and browser harness](docs/issue-detail-scroll.md) for scope and verification boundaries.
+
+## 2026-10-21 — Conservative supported runtime readback (B1)
+
+Use the audited authenticated .5 hello/method contract plus actual full session evidence, not protocol/version alone. Thinking is resolved from describe thinkingLevel ?? thinkingDefault with canonical model/native runtime and supported-level proof; catalog-dependent receipt thinking is optional but must agree if supplied. Require equal nonempty prepatch, receipt and postpatch lifecycle revisions and send the verified revision to backend admission. .3/.4 and revisionless rows fail closed; .4 receipt-only/null-CAS compatibility (B2) is not implemented. Share the existing status/boolean activity interpretation rather than requiring a legacy boolean from a full status row. Preserve durable creation handoff, pending/uncertain ownership and independent dynamic defaults. Snapshot-thinking UI option D remains unselected and unimplemented. See docs/task-runtime.md for immutable source evidence and explicit live-validation limits.

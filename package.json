@@ -10,7 +10,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts tests/*.test.tsx",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test && node tests/browser/task-runtime.cjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -36,6 +36,7 @@
     "@types/ws": "8.18.1",
     "autoprefixer": "^10.4.19",
     "jsdom": "^26.1.0",
+    "playwright": "1.61.1",
     "postcss": "8.5.14",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.8.2",
