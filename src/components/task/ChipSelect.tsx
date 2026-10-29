@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useRef, useImperativeHandle, Ref } from 'react';
+import { useState, useRef, useImperativeHandle, useCallback, useEffect, useId, Ref } from 'react';
+
+import { ChipPopover } from './ChipPopover';
 
 export const STATUS_OPTIONS = [
   { value: 'backlog', label: 'Backlog', color: '#94A3B8' },
@@ -175,6 +177,17 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
   const [open, setOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const dismiss = useCallback(() => setOpen(false), []);
+  useEffect(() => {
+    if (!open) return;
+    const option = document.getElementById(menuId + '-' + highlightIdx);
+    const panel = option?.closest('[data-chip-popover]');
+    if (!option || !panel) return;
+    const r = option.getBoundingClientRect(), p = panel.getBoundingClientRect();
+    if (r.bottom > p.bottom) panel.scrollTop += r.bottom - p.bottom;
+    else if (r.top < p.top) panel.scrollTop -= p.top - r.top;
+  }, [open, highlightIdx, menuId]);
 
   const doOpen = () => {
     const currentIdx = options.findIndex(o => o.label === label);
@@ -182,7 +195,7 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
     setOpen(true);
   };
   const doClose = () => { setOpen(false); buttonRef.current?.focus(); };
-  const doSelect = (opt: ChipOption) => { onChange(opt.value); setOpen(false); };
+  const doSelect = (opt: ChipOption) => { onChange(opt.value); doClose(); };
 
   useImperativeHandle(ref, () => ({
     openDropdown: () => { doOpen(); buttonRef.current?.focus(); },
@@ -196,7 +209,10 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doOpen(); }
       return;
     }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIdx(i => Math.min(i + 1, options.length - 1)); }
+    if (e.key === 'Tab') { dismiss(); }
+    else if (e.key === 'Home') { e.preventDefault(); setHighlightIdx(0); }
+    else if (e.key === 'End') { e.preventDefault(); setHighlightIdx(options.length - 1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIdx(i => Math.min(i + 1, options.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIdx(i => Math.max(i - 1, 0)); }
     else if (e.key === 'Enter') { e.preventDefault(); doSelect(options[highlightIdx]); }
     else if (e.key === 'Escape') {
@@ -211,6 +227,8 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
     <div className="relative inline-block">
       <button
         ref={buttonRef}
+        aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? menuId : undefined}
+        aria-activedescendant={open ? menuId + '-' + highlightIdx : undefined}
         type="button"
         onClick={() => open ? doClose() : doOpen()}
         onKeyDown={handleKeyDown}
@@ -233,20 +251,18 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
         </svg>
       </button>
       {open && (
-        <>
-          <div role="presentation" className="fixed inset-0 z-10" onClick={doClose} />
-          <div
-            className="absolute left-0 top-full mt-1 rounded-lg shadow-2xl overflow-hidden z-20"
-            style={{ background: 'var(--color-base-150)', border: '1px solid var(--color-base-300)', minWidth: '140px' }}
-          >
+        <ChipPopover anchor={buttonRef} onDismiss={dismiss}>
+          <div id={menuId} role="listbox" aria-label="Choose property">
             {options.map((opt, i) => {
               const active = opt.label === label;
               const highlighted = i === highlightIdx;
               return (
                 <button
                   key={opt.value}
+                  id={menuId + '-' + i} role="option" aria-selected={active} tabIndex={-1}
                   type="button"
-                  onMouseDown={e => { e.preventDefault(); doSelect(opt); }}
+                  onClick={() => doSelect(opt)}
+                  onMouseDown={e => e.preventDefault()}
                   onMouseEnter={() => setHighlightIdx(i)}
                   className="flex items-center gap-2 w-full px-3 py-2 text-xs text-left"
                   style={{
@@ -261,7 +277,7 @@ export function ChipSelect({ label, color, options, onChange, ref }: {
               );
             })}
           </div>
-        </>
+        </ChipPopover>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ All notable changes to this project are documented in this file.
 - Startup adds task_dispatches and task_sessions with CREATE TABLE IF NOT EXISTS. Existing task, comment, and activity records remain unchanged.
 
 ### Bug fixes
+- Issue status and priority chip menus escape mobile metadata-row clipping using viewport-bounded body portals. Horizontal metadata scrolling and the single issue content scroller remain unchanged.
 - Conservative runtime preparation accepts catalog-optional patch thinking only with authoritative supported full describe proof. Requires an authenticated exact audited .5/.8 contract and matching nonempty lifecycle revisions; .3/.4, unaudited releases and incomplete metadata remain pending. Shares the existing fail-closed activity interpreter, including terminal status-only rows.
 - Initial runtime session creation durably binds the verified identity before describe/patch/readback. Failures and restart cannot adopt a replacement; unknown creation acknowledgment retains an explicit durable hold without replay or submission.
 - Issue detail keeps long descriptions and the full conversation in one accessible content scroller. Initial loads stay at the title; new comments follow only near the bottom, with deliberate jump/send scrolling. Mobile navigation reserves its safe area once and short viewports can scroll the reply form.

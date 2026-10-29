@@ -197,3 +197,7 @@ Local evidence and limits: docs/plans/session-lifecycle.md. Node 20 CI and conta
 Task and subtask model/thinking defaults remain independently nullable and dynamic. Runtime preparation uses a 2026.10.5 minimum semantic baseline with exact qualified releases 2026.10.5 and 2026.10.8, and requires actual matching nonempty lifecycle revisions plus supported effective thinking on exact full describe readback. .3/.4, unaudited releases (including .6/.7), revisionless legacy sessions and missing proof remain pending with no agent submission; version alone is not sufficient. No Gateway upgrade or global-default change is performed. See [task runtime contract and limits](docs/task-runtime.md) and [qualified-release audit, rollout and legacy holds](docs/runtime-gateway-rollout.md).
 
 After `npm run build`, `npm run test:browser` runs both upstream Playwright scroll specs and the standalone desktop/mobile runtime harness in sequence with failure propagation. Both use synthetic API/SSE and isolated temporary HOME; they do not prove real Gateway/provider acceptance.
+
+### Issue property menus
+
+Status and priority chip dropdowns use viewport-bounded overlays so mobile metadata scrolling cannot clip choices. See [behavior and regression checks](docs/issue-chip-dropdown.md).
