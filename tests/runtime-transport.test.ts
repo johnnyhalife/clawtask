@@ -32,7 +32,7 @@ async function fixture(mode='ok',scope='global',version='2026.10.5',settings={mo
     // This is the actual authority used by the fake server for subsequent mutations.
     granted=[...p.scopes];
     if(mode==='reject'){socket.send(JSON.stringify({type:'res',id:frame.id,ok:false,error:{message:'pairing required'}}));return;}
-    result={type:'hello-ok',protocol:4,server:{version:mode==='version3'?'2026.10.3':mode==='version4'?'2026.10.4':mode==='future-version'?'2026.10.9':version,buildId:'synthetic-build',connId:'synthetic'},features:{methods:['sessions.create','sessions.describe','sessions.patch','agent']},auth:{role:'operator',scopes:mode==='admin-response'?['operator.admin']:mode==='missing-write'?[]:granted}};
+    result={type:'hello-ok',protocol:4,server:{version:mode==='version3'?'2026.10.3':mode==='version4'?'2026.10.4':mode==='unqualified-version'?'2026.10.7':version,buildId:'synthetic-build',connId:'synthetic'},features:{methods:['sessions.create','sessions.describe','sessions.patch','agent']},auth:{role:'operator',scopes:mode==='admin-response'?['operator.admin']:mode==='missing-write'?[]:granted}};
    if(mode==='missing-server')delete result.server;
     if(mode==='missing-methods')delete result.features;
     if(mode==='missing-patch')result.features.methods=result.features.methods.filter((m:string)=>m!=='sessions.patch');
@@ -67,7 +67,7 @@ async function fixture(mode='ok',scope='global',version='2026.10.5',settings={mo
   if(mode==='ok' || mode==='dispatch' || mode==='dispatch-create')assert.equal((await operation).model,settings.modelOverride===null?'agent-model':'model');else await assert.rejects(operation);
   assert.equal(globals.model,'global/original');
   assert.equal(calls.some(c=>c.method.startsWith('device.')||c.method==='agent'),false);
-  if(['admin-response','missing-write','reject','invalid-challenge','version3','version4','future-version','missing-server','missing-methods','missing-patch','empty-build'].includes(mode))assert.equal(calls.filter(c=>c.method==='sessions.patch').length,0);
+  if(['admin-response','missing-write','reject','invalid-challenge','version3','version4','unqualified-version','missing-server','missing-methods','missing-patch','empty-build'].includes(mode))assert.equal(calls.filter(c=>c.method==='sessions.patch').length,0);
   if(mode==='dispatch' || mode==='dispatch-create'){
    const db=new Database(':memory:');db.exec(fs.readFileSync('src/db/schema.sql','utf8'));
    db.prepare("INSERT INTO agents(id,openclawAgentId,displayName,apiKeyHash) VALUES('a','test','Test','unused')").run();
@@ -99,11 +99,18 @@ for(const scope of ['session','agent','global'])test('signed non-admin runtime a
 });
 test('adapter admission uses actual narrowed socket before its single admin run submission',async()=>{await fixture('dispatch');});
 test('adapter persists verified initial creation over signed socket before describe and submission',async()=>{await fixture('dispatch-create');});
-for(const mode of ['admin-response','missing-write','reject','invalid-challenge','close','stale','version3','version4','future-version','missing-server','missing-methods','missing-patch','empty-build'])test('runtime transport fail closed: '+mode,async()=>{await fixture(mode);});
+for(const mode of ['admin-response','missing-write','reject','invalid-challenge','close','stale','version3','version4','unqualified-version','missing-server','missing-methods','missing-patch','empty-build'])test('runtime transport fail closed: '+mode,async()=>{await fixture(mode);});
 
 // Source-audited .8 shapes over real signed loopback sockets, not a running .8 Gateway.
 for(const scope of ['session','agent','global'])test('.8 signed narrowed authority preserves '+scope+' defaults',async()=>{await fixture('ok',scope,'2026.10.8');});
 for(const settings of [{modelOverride:null,thinkingOverride:null},{modelOverride:'test/model',thinkingOverride:'high'}]) {
  for(const mode of ['dispatch','dispatch-create'])test('.8 single submission '+mode+' '+JSON.stringify(settings),async()=>{await fixture(mode,'global','2026.10.8',settings);});
 }
-for(const mode of ['version3','version4','future-version','missing-methods','missing-patch','admin-response','missing-write','revisionless','changed-revision','compact-readback','wrong-runtime','missing-thinking'])test('.8 transport rejects missing contract/row guarantees: '+mode,async()=>{await fixture(mode,'global','2026.10.8');});
+for(const mode of ['version3','version4','unqualified-version','missing-methods','missing-patch','admin-response','missing-write','revisionless','changed-revision','compact-readback','wrong-runtime','missing-thinking'])test('.8 transport rejects missing contract/row guarantees: '+mode,async()=>{await fixture(mode,'global','2026.10.8');});
+
+// Source-audited 2026.11.1 shapes over real signed loopback sockets, not a running 2026.11.1 Gateway.
+for(const scope of ['session','agent','global'])test('2026.11.1 signed narrowed authority preserves '+scope+' defaults',async()=>{await fixture('ok',scope,'2026.11.1');});
+for(const settings of [{modelOverride:null,thinkingOverride:null},{modelOverride:'test/model',thinkingOverride:'high'}]) {
+ for(const mode of ['dispatch','dispatch-create'])test('2026.11.1 single submission '+mode+' '+JSON.stringify(settings),async()=>{await fixture(mode,'global','2026.11.1',settings);});
+}
+for(const mode of ['version3','version4','unqualified-version','missing-methods','missing-patch','admin-response','missing-write','revisionless','changed-revision','compact-readback','wrong-runtime','missing-thinking'])test('2026.11.1 transport rejects missing contract/row guarantees: '+mode,async()=>{await fixture(mode,'global','2026.11.1');});
