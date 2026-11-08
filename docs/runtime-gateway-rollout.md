@@ -3,13 +3,14 @@
 ## Compatibility policy
 
 OpenClaw 2026.10.5 is the minimum semantic baseline for task runtime preparation.
-Qualified releases are 2026.10.5 and every plain YYYY.M.P release at or above
-**2026.10.8**. The range is a deliberate choice: the audited surface (sessions.create,
-sessions.describe, sessions.patch and agent admission) did not change in meaning
-between .8 and 2026.11.1, and a per-release allowlist stopped all dispatches after
-each Gateway update. Skipped releases (.6/.7), releases below .8, and prerelease or
-custom labels (for example 2026.11.1-dev, 2026.11.1+custom, v2026.11.1) stay
-unqualified. The authenticated hello must also
+Qualified releases are every plain YYYY.M.P release at or above
+**2026.10.5**, the minimum semantic baseline. The range is a deliberate choice: the
+audited surface (sessions.create, sessions.describe, sessions.patch and agent
+admission) did not change in meaning between .5, .8 and 2026.11.1, and a
+per-release allowlist stopped all dispatches after each Gateway update. Releases
+below .5 and prerelease or custom labels (for example 2026.11.1-dev,
+2026.11.1+custom, v2026.11.1) stay unqualified. The skipped releases .6/.7 were not
+audited separately. The readback proofs below are the guard for them. The authenticated hello must also
 advertise sessions.create, sessions.describe, sessions.patch and agent. Every
 actual row and receipt must independently satisfy [the runtime verifier](task-runtime.md).
 A version match is never evidence of lifecycle proof, provider availability or

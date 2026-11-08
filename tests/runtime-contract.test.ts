@@ -6,7 +6,7 @@ const hello = (version: unknown = '2026.10.8') => ({
   server: { version, buildId: 'synthetic-build' },
   features: { methods: ['sessions.create', 'sessions.describe', 'sessions.patch', 'agent'] },
 });
-for (const version of ['2026.10.5', '2026.10.8', '2026.10.9', '2026.10.50', '2026.11.0', '2026.11.1', '2026.12.3', '2027.1.0']) {
+for (const version of ['2026.10.5', '2026.10.6', '2026.10.7', '2026.10.8', '2026.10.9', '2026.10.50', '2026.11.0', '2026.11.1', '2026.12.3', '2027.1.0']) {
   test('qualified contract accepts release ' + version, () => {
     assert.doesNotThrow(() => verifyRuntimeContract(hello(version)));
     const noBuild: any = hello(version); delete noBuild.server.buildId;
@@ -17,7 +17,7 @@ for (const version of ['2026.10.5', '2026.10.8', '2026.10.9', '2026.10.50', '202
     assert.throws(() => verifyRuntimeContract(value), /runtime_contract_unsupported/);
   });
 }
-for (const version of ['2026.10.3', '2026.10.4', '2026.10.6', '2026.10.7', '2026.9.30', '2025.12.1',
+for (const version of ['2026.10.3', '2026.10.4', '2026.10.4.9', '2026.9.30', '2025.12.1', '2026.10.5-dev', '2026.10.5+custom',
   '2026.10.8-dev', '2026.10.8+custom', 'v2026.10.8', '2026.11.1-dev', '2026.11.1+custom', 'v2026.11.1',
   '2026.10', '2026.10.8.1', ' 2026.10.8', '2026.10.8 ', '', null, 8, {}, undefined]) {
   test('unqualified release is rejected: ' + String(version), () => {

@@ -32,7 +32,7 @@ async function fixture(mode='ok',scope='global',version='2026.10.5',settings={mo
     // This is the actual authority used by the fake server for subsequent mutations.
     granted=[...p.scopes];
     if(mode==='reject'){socket.send(JSON.stringify({type:'res',id:frame.id,ok:false,error:{message:'pairing required'}}));return;}
-    result={type:'hello-ok',protocol:4,server:{version:mode==='version3'?'2026.10.3':mode==='version4'?'2026.10.4':mode==='unqualified-version'?'2026.10.7':version,buildId:'synthetic-build',connId:'synthetic'},features:{methods:['sessions.create','sessions.describe','sessions.patch','agent']},auth:{role:'operator',scopes:mode==='admin-response'?['operator.admin']:mode==='missing-write'?[]:granted}};
+    result={type:'hello-ok',protocol:4,server:{version:mode==='version3'?'2026.10.3':mode==='version4'?'2026.10.4':mode==='unqualified-version'?'2026.10.2':version,buildId:'synthetic-build',connId:'synthetic'},features:{methods:['sessions.create','sessions.describe','sessions.patch','agent']},auth:{role:'operator',scopes:mode==='admin-response'?['operator.admin']:mode==='missing-write'?[]:granted}};
    if(mode==='missing-server')delete result.server;
     if(mode==='missing-methods')delete result.features;
     if(mode==='missing-patch')result.features.methods=result.features.methods.filter((m:string)=>m!=='sessions.patch');
