@@ -3,9 +3,13 @@
 ## Compatibility policy
 
 OpenClaw 2026.10.5 is the minimum semantic baseline for task runtime preparation.
-Qualified exact release labels are **2026.10.5 and 2026.10.8**. This is not a
-numeric ">= .5" check: .6/.7, future releases and custom/prerelease labels are
-unqualified until their contract is audited. The authenticated hello must also
+Qualified releases are 2026.10.5 and every plain YYYY.M.P release at or above
+**2026.10.8**. The range is a deliberate choice: the audited surface (sessions.create,
+sessions.describe, sessions.patch and agent admission) did not change in meaning
+between .8 and 2026.11.1, and a per-release allowlist stopped all dispatches after
+each Gateway update. Skipped releases (.6/.7), releases below .8, and prerelease or
+custom labels (for example 2026.11.1-dev, 2026.11.1+custom, v2026.11.1) stay
+unqualified. The authenticated hello must also
 advertise sessions.create, sessions.describe, sessions.patch and agent. Every
 actual row and receipt must independently satisfy [the runtime verifier](task-runtime.md).
 A version match is never evidence of lifecycle proof, provider availability or
@@ -45,6 +49,23 @@ running .8 Gateway or live provider has been tested.
 The prior immutable .5 audit is retained in [task-runtime.md](task-runtime.md).
 These constraints are not a preference/config lock; do not concurrently edit a
 task session outside Clawtask during preparation/admission.
+
+## Immutable 2026.11.1 source audit
+
+The release tag v2026.11.1 resolves to commit
+
+4ffdd2047d192dd65554de3c8c46c0e0197c6e2a.
+The review compares the fifteen source files audited for .8 (commit dc2523e5a5c7a309517fd7fa834add938231d526) at both commits. It qualifies the wire semantics below. It does not claim a live provider was tested.
+
+- Unchanged: the protocol version file (protocol 4), the expected-session constraint comparison (agent-expected-session.ts) and the non-admin sticky model policy (session-model-selection-policy.ts).
+- Create: the schema adds only optional communication and deviceFolder fields. A request with key, agentId and idempotencyKey and no message, task or attachments still resolves no initial turn, so create makes no model call. Mention validation moved to a helper and runs only when mentions are present. Required cloud-worker preparation is a no-op unless the Gateway config sets cloudWorkers.requiredProfile. Clawtask sends no titleSource, so background naming does not invoke a model.
+- Row projection: full rows still include the stored lifecycleRevision, canonical model and runtime, raw thinking, supported levels and thinkingDefault. thinkingLevel now reports the raw stored value and effectiveThinkingLevel the resolved value. Undefined fields are omitted. Clawtask readback uses thinkingLevel ?? thinkingDefault.
+- Patch: the schema adds only optional communication, sidebarRoot and organization expectations. Expectations still reject a changed stored identity or lifecycle revision. A null model resets to the configured default with default provenance. A null thinkingLevel deletes the stored value. A string thinkingLevel is validated against the effective profile. An existing session keeps its revision; only a new identity receives one.
+- Admission: backend agent admission still enforces expectedExistingSessionId and the lifecycle revision against the latest stored entry. It re-reads that entry after it acquires the session work lease and checks again.
+
+The range gate covers 2026.11.1 and later releases. If a later release changes the audited surface, the runtime verifier row, receipt and revision proofs still fail closed and keep work pending. Add a new audit section here and raise the range floor or add an exclusion in the same change.
+
+The rollout procedure below applies unchanged.
 
 ## Revisionless legacy policy
 
