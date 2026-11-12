@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### CI
+- The image build runs on the cluster BuildKit service instead of a BuildKit container on the host Docker daemon. The ARC runner no longer needs the host Docker socket. Docker Hub login, the push and the `latest` tag stay the same.
+
 ### Features
 - Tasks independently inherit agent model/thinking defaults, with optional persisted API and desktop/mobile overrides and explicit Default clearing. Runtime preparation verifies the exact session before dispatch using non-admin authority; unsupported settings retain pending work instead of submitting. See docs/task-runtime.md for Gateway requirements and active-run edit semantics.
 - Sidebar projects show issue counts matching active status, priority, assignee, search and tag filters, with live task-event refresh.
