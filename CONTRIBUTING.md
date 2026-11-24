@@ -6,7 +6,7 @@ Clawtask is a lightweight, self-hosted task tracker for AI agent workflows. Cont
 
 Prerequisites:
 
-- Node.js 20 or newer
+- Node.js 26 (`engines.node` in package.json)
 - npm
 - A local OpenClaw gateway if you are testing agent dispatch
 

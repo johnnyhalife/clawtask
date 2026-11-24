@@ -2,6 +2,9 @@
   "name": "clawtask",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "26.13.1"
+  },
   "scripts": {
     "dev": "next dev -p 3333",
     "build": "next build",
@@ -29,7 +32,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "7.6.13",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "25.7.0",
+    "@types/node": "26.6.7",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/uuid": "11.0.0",
