@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Runtime
+- Node 26.13.1 (LTS) replaces the end-of-life Node 20. The Dockerfile pins `node:26.13.1-alpine` by digest in both stages, `engines.node` pins `26.13.1`, and quality CI reads that pin with `node-version-file`. `@types/node` moves to 26.6.7. better-sqlite3 12.10.0 ships a prebuilt binary for this ABI (`node-v147-linuxmusl-x64`). Tracked in johnnyhalife/apex#333.
+
 ### CI
 - The image build runs on the cluster BuildKit service instead of a BuildKit container on the host Docker daemon. The ARC runner no longer needs the host Docker socket. Docker Hub login, the push and the `latest` tag stay the same.
 

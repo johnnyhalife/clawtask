@@ -68,7 +68,7 @@ Agents use the authenticated comments API. Run completion is observed through ag
 
 ### Prerequisites
 
-- Node.js compatible with Next.js 16. Local lifecycle verification used Node 26.9.0 on Darwin arm64; quality CI uses Node 20.
+- Node.js compatible with Next.js 16. Local lifecycle verification used Node 26.9.0 on Darwin arm64; quality CI and the image use Node 26.13.1 (`engines.node` in package.json).
 - OpenClaw gateway running locally
 - An OpenClaw agent configured (e.g. `main`)
 
@@ -190,7 +190,7 @@ Johnny owns the main push and deployment. Before deployment, save the current im
 
 If a check fails, pause new assignments and followups. Verify all accepted runs and pending dispatches before reverting to the saved image digest. The old app can leave the additive tables in place, but it does not honor their ownership or recovery rules. Do not restore the database automatically or discard uncertain work. Keep failure evidence for diagnosis.
 
-Local evidence and limits: docs/plans/session-lifecycle.md. Node 20 CI and container behavior are separate from the completed Node 26 local checks.
+Local evidence and limits: docs/plans/session-lifecycle.md.
 
 ## Task runtime compatibility
 
